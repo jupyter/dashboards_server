@@ -1,0 +1,87 @@
+/**
+ * Copyright (c) Jupyter Development Team.
+ * Distributed under the terms of the Modified BSD License.
+ */
+html {
+    box-sizing: border-box;
+}
+*, *:before, *:after {
+    box-sizing: inherit;
+}
+body {
+    margin: 0;
+
+    &.grid-view {
+        background-color: #606672;
+        background-image: url(img/noisy-texture.png);
+    }
+}
+
+#outer-dashboard {
+    position: relative;
+    padding: 15px 0;
+    background-color: white;
+    min-height: 100vh;
+    box-shadow: 0 0 59px 19px rgba(0, 0, 0, 0.5);
+
+    #dashboard-container {
+        margin: 0 auto;
+
+        /* styles taken from `#notebook` selector in Notebook */
+        font-size: 14px;
+        line-height: 20px;
+
+        .dashboard-cell.hidden {
+            display: none;
+        }
+
+        .grid-stack-item.rendered_html {
+            /*
+                computed in dashboard.js:
+                padding: (margin/2)px  (margin/2 + 6)px;
+             */
+        }
+
+        /* busy indicator */
+        .busy-indicator {
+            visibility: hidden;
+            position: fixed;
+            top: -8px;
+            height: 8px;
+            width: inherit;
+            border-radius: 0;
+            /* change 'visibility' after 'top' transition is done */
+            transition: top 0.3s, visibility 0s linear 0.3s;
+
+            &.show {
+                top: 0;
+                visibility: visible;
+                transition-delay: 0s;
+                /* change 'visibility' before 'top' transition is done */
+            }
+        }
+    }
+}
+
+
+.show-row-only {
+    background: none;
+
+    &.single-cell .grid-stack-item {
+        width: 100%;
+        height: 100%;
+    }
+
+    #outer-dashboard {
+        min-height: auto;
+        box-shadow: none;
+        width: auto;
+
+        #dashboard-container {
+            padding: 0;
+            display: -webkit-flex;
+            display: -ms-flexbox;
+            display: flex;
+        }
+    }
+}
