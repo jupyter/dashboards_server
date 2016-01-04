@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) Jupyter Development Team.
+ * Distributed under the terms of the Modified BSD License.
+ */
+
 // Adapted from [code](http://stackoverflow.com/a/10402443) written by
 // [Richard Astbury](http://stackoverflow.com/users/349014), based on general algorithm by
 // [pimvdb](http://stackoverflow.com/users/514749).
