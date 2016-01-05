@@ -16,15 +16,20 @@ var gulp = require('gulp'),
 gulp.task('browserify:components', function() {
     var components = [
         'jupyter-js-services',
-        'jupyter-js-output-area'
+        'jupyter-js-output-area',
+        'jupyter-js-widgets'
     ];
 
     var tasks = components.map(function(compName) {
-        return browserify({
+        var b = browserify({
                 standalone: compName
-            })
-            .require(compName)
-            .bundle()
+            });
+
+        b.require(compName);
+
+        b.transform('node-lessify', { global: true }); // required by jupyter-js-widgets
+
+        return b.bundle()
             //Pass desired output filename to vinyl-source-stream
             .pipe(source(compName + '.js'))
             // Start piping stream to tasks!
@@ -63,6 +68,7 @@ gulp.task('browserify:components', function() {
 gulp.task('copy:components', ['browserify:components'], function() {
     var c1 = gulp.src([
             './node_modules/requirejs/require.js',
+            './node_modules/jupyter-js-widgets/static/widgets/css/widgets.min.css',
             './bower_components/gridstack/dist/gridstack.min.js',
             './bower_components/gridstack/dist/gridstack.min.css',
             './bower_components/jquery/dist/jquery.min.js',
@@ -75,9 +81,13 @@ gulp.task('copy:components', ['browserify:components'], function() {
             './bower_components/jquery-ui/ui/minified/mouse.min.js',
             './bower_components/jquery-ui/ui/minified/widget.min.js',
             './bower_components/jquery-ui/ui/minified/resizable.min.js',
-            './bower_components/jquery-ui/ui/minified/draggable.min.js'
+            './bower_components/jquery-ui/ui/minified/draggable.min.js',
+            './bower_components/jquery-ui/themes/smoothness/jquery-ui.min.css',
         ]).pipe(gulp.dest('./public/components/jquery-ui'));
-    return merge(c1, c2);
+    var c3 = gulp.src([
+            './bower_components/jquery-ui/themes/smoothness/images/*'
+        ]).pipe(gulp.dest('./public/components/jquery-ui/images'));
+    return merge(c1, c2, c3);
 });
 
 gulp.task('less', function () {

@@ -7,12 +7,15 @@ var path = require('path');
 var Promise = require('es6-promise').Promise;
 var Services = require('jupyter-js-services');
 
+var config = require('./config');
+
 var store = {};
 
 function _loadNb(nbpath) {
     return new Promise(function(resolve, reject) {
         var ipynb = /\.ipynb$/.test(nbpath) ? '' : '.ipynb';
-        var nbPath = path.join(__dirname, '../data/', nbpath + ipynb);
+        var nbdir = config.get('NOTEBOOKS_DIR');
+        var nbPath = path.join(__dirname, nbdir, nbpath + ipynb);
         console.info('Attempting to load notebook file:',nbPath);
         fs.readFile(nbPath, 'utf8', function(err, rawData) {
             if (err) {
