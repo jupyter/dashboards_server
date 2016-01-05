@@ -14,6 +14,7 @@ requirejs.config({
         'jquery-ui/resizable': require.toUrl('/components/jquery-ui/resizable.min'),
         'jquery-ui/draggable': require.toUrl('/components/jquery-ui/draggable.min'),
         'jupyter-js-output-area': require.toUrl('/components/jupyter-js-output-area'),
-        'jupyter-js-services': require.toUrl('/components/jupyter-js-services')
+        'jupyter-js-services': require.toUrl('/components/jupyter-js-services'),
+        'jupyter-js-widgets': require.toUrl('/components/jupyter-js-widgets')
     }
 });

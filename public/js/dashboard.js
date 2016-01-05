@@ -7,8 +7,10 @@ require(['main'], function() {
         'jquery',
         'gridstack-custom',
         'jupyter-js-output-area',
+        'jupyter-js-widgets',
+        'widget-manager',
         './kernel'
-    ], function($, Gridstack, OutputArea, Kernel) {
+    ], function($, Gridstack, OutputArea, Widgets, WidgetManager, Kernel) {
         'use strict';
 
         var CONTAINER_URL = 'urth_container_url';
@@ -39,7 +41,7 @@ require(['main'], function() {
         _initGrid();
 
         // start kernel
-        Kernel.start().then(function() {
+        Kernel.start().then(function(kernel) {
             // create an output area for each dashboard code cell
             $('.dashboard-cell.code-cell').each(function() {
                 var $cell = $(this);
@@ -47,6 +49,9 @@ require(['main'], function() {
                 var model = new OutputArea.OutputModel();
                 var view = new OutputArea.OutputView(model, document);
                 $cell.append(view.el);
+
+                // TODO Create new div for widget area??
+                var manager = new WidgetManager(kernel, view.el);
 
                 Kernel.execute($cell.index(), function(msg) {
                     if (model) {
