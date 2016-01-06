@@ -85,9 +85,12 @@ gulp.task('copy:components', ['browserify:components'], function() {
             './bower_components/jquery-ui/themes/smoothness/jquery-ui.min.css',
         ]).pipe(gulp.dest('./public/components/jquery-ui'));
     var c3 = gulp.src([
-            './bower_components/jquery-ui/themes/smoothness/images/*'
+            './bower_components/jquery-ui/themes/smoothness/images/**/*'
         ]).pipe(gulp.dest('./public/components/jquery-ui/images'));
-    return merge(c1, c2, c3);
+    var c4 = gulp.src([
+            './node_modules/bootstrap/dist/**/*'
+        ]).pipe(gulp.dest('./public/components/bootstrap'));
+    return merge(c1, c2, c3, c4);
 });
 
 gulp.task('less', function () {
