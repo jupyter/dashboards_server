@@ -86,6 +86,7 @@ define([
                 resultHandler(msg);
             }
         };
+        return future;
         // TODO error handling
     }
 

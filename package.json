@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node ./bin/www",
+    "test": "node_modules/mocha/bin/mocha test/**/*-test.js"
   },
   "dependencies": {
     "body-parser": "^1.13.3",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "browserify": "^12.0.1",
+    "chai": "^3.4.1",
     "gulp": "^3.9.0",
     "gulp-less": "^3.0.1",
     "gulp-livereload": "^3.8.0",
@@ -33,7 +35,11 @@
     "gulp-open": "^1.0.0",
     "gulp-plumber": "^1.0.0",
     "merge-stream": "^1.0.0",
+    "mocha": "^2.3.4",
     "node-lessify": "^0.1.1",
+    "proxyquire": "^1.7.3",
+    "sinon": "^1.17.2",
+    "sinon-chai": "^2.8.0",
     "vinyl-source-stream": "^1.1.0"
   }
 }

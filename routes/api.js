@@ -38,7 +38,6 @@ function setupWSProxy(_server) {
 
                     // substitute in code if necessary
                     // for performance reasons, first do a quick string check before JSON parsing
-                    // TODO filter out messages that contain actual code
                     if (d && d.payload.indexOf('execute_request') !== -1) {
                         try {
                             d.payload = JSON.parse(d.payload);
@@ -48,10 +47,22 @@ function setupWSProxy(_server) {
                                 transformedData = nbstore.get(nbpath).then(
                                     function success(nb) {
                                         // get code string for cell at index and update WS message
+
+                                        // code must be an integer corresponding to a cell index
                                         var cellIdx = parseInt(d.payload.content.code, 10);
-                                        var code = nb.cells[cellIdx].source.join('');
-                                        d.payload.content.code = code;
-                                        d.payload = JSON.stringify(d.payload);
+
+                                        // code must only consist of a non-negative integer
+                                        if (cellIdx.toString(10) === d.payload.content.code &&
+                                                cellIdx >= 0) {
+
+                                            // substitute cell's actual code into the message
+                                            var code = nb.cells[cellIdx].source.join('');
+                                            d.payload.content.code = code;
+                                            d.payload = JSON.stringify(d.payload);
+                                        } else {
+                                            // throw away execute request that has non-integer code
+                                            d = null;
+                                        }
                                         return d;
                                     },
                                     function error() {
@@ -67,6 +78,12 @@ function setupWSProxy(_server) {
                 });
             }
             Promise.all(codeCellsSubstituted).then(function(data) {
+                // data is an array of messages
+                // filter out null messages (if any)
+                data = data.filter(function(d) {
+                    return !!d;
+                });
+                // re-encode
                 data = wsutils.encodeWebSocket(data);
                 _emit.call(socket, eventName, data);
             });
