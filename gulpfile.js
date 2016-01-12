@@ -143,9 +143,9 @@ gulp.task('build', [
 ]);
 
 gulp.task('default', [
-  'build',
-  'develop',
-  'watch'
+    'build',
+    'develop',
+    'watch'
 ]);
 
 gulp.task('debug', [

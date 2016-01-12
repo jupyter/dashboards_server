@@ -3,6 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "build": "gulp build",
+    "bower": "bower install",
     "start": "node ./bin/www",
     "test": "node_modules/mocha/bin/mocha test/**/*-test.js"
   },
@@ -16,7 +18,7 @@
     "http-proxy": "^1.12.0",
     "jupyter-js-output-area": "^0.2.0",
     "jupyter-js-services": "^0.2.1",
-    "jupyter-js-widgets": "file:../ipywidgets/ipywidgets",
+    "jupyter-js-widgets": "file:./ext/ipywidgets/ipywidgets",
     "morgan": "^1.6.1",
     "nconf": "^0.8.2",
     "request": "^2.67.0",
@@ -26,6 +28,7 @@
     "xmlhttprequest": "^1.8.0"
   },
   "devDependencies": {
+    "bower": "^1.7.2",
     "browserify": "^12.0.1",
     "chai": "^3.4.1",
     "gulp": "^3.9.0",
