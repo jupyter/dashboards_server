@@ -20,7 +20,7 @@
     "express-handlebars": "^2.0.1",
     "hjson": "^1.7.4",
     "http-proxy": "^1.12.0",
-    "jupyter-js-output-area": "^0.2.0",
+    "jupyter-js-output-area": "^0.3.0",
     "jupyter-js-services": "^0.3.0",
     "jupyter-js-widgets": "file:./ext/ipywidgets/ipywidgets",
     "morgan": "^1.6.1",
