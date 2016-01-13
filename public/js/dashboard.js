@@ -13,6 +13,11 @@ require(['main'], function() {
     ], function($, Gridstack, OutputArea, Widgets, WidgetManager, Kernel) {
         'use strict';
 
+        var OutputType = OutputArea.OutputType;
+        var OutputAreaModel = OutputArea.OutputAreaModel;
+        var OutputAreaWidget = OutputArea.OutputAreaWidget;
+        var StreamName = OutputArea.StreamName;
+
         var CONTAINER_URL = 'urth_container_url';
         var SESSION_URL = 'urth_session_url';
 
@@ -37,6 +42,53 @@ require(['main'], function() {
             gridstack.generateStylesheet(styleRules);
         }
 
+        function _consumeMessage(msg, outputArea) {
+            var output = {};
+            var content = msg.content;
+            switch (msg.header.msg_type) {
+                case 'clear_output':
+                  outputArea.clear(content.wait);
+                  break;
+                case 'stream':
+                  output.outputType = OutputType.Stream;
+                  output.text = content.text;
+                  switch(content.name) {
+                      case "stderr":
+                        output.name = StreamName.StdErr;
+                        break;
+                      case "stdout":
+                        output.name = StreamName.StdOut;
+                        break;
+                      default:
+                        throw new Error('Unrecognized stream type ' + content.name);
+                  }
+                  outputArea.add(output);
+                  break;
+                case 'display_data':
+                  output.outputType = OutputType.DisplayData;
+                  output.data = content.data;
+                  output.metadata = content.metadata;
+                  outputArea.add(output);
+                  break;
+                case 'execute_result':
+                  output.outputType = OutputType.ExecuteResult;
+                  output.data = content.data;
+                  output.metadata = content.metadata;
+                  output.execution_count = content.execution_count;
+                  outputArea.add(output);
+                  break;
+                case 'error':
+                  output.outputType = OutputType.Error;
+                  output.ename = content.ename;
+                  output.evalue = content.evalue;
+                  output.traceback = content.traceback.join('\n');
+                  outputArea.add(output);
+                  break;
+                default:
+                  console.error('Unhandled message', msg);
+            }
+        }
+
         // initialize Gridstack
         _initGrid();
 
@@ -46,16 +98,16 @@ require(['main'], function() {
             $('.dashboard-cell.code-cell').each(function() {
                 var $cell = $(this);
 
-                var model = new OutputArea.OutputModel();
-                var view = new OutputArea.OutputView(model, document);
-                $cell.append(view.el);
+                var model = new OutputAreaModel();
+                var view = new OutputAreaWidget(model);
+                view.attach(this);
 
                 // TODO Create new div for widget area??
-                var manager = new WidgetManager(kernel, view.el);
+                var manager = new WidgetManager(kernel, view.node);
 
                 Kernel.execute($cell.index(), function(msg) {
                     if (model) {
-                        model.consumeMessage(msg);
+                        _consumeMessage(msg, model);
                     }
                 });
             });
