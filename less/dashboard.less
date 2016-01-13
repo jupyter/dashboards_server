@@ -9,12 +9,16 @@ html {
     box-sizing: inherit;
 }
 body {
+    font-size: 14px;
     margin: 0;
 
     &.grid-view {
         background-color: #606672;
         background-image: url(img/noisy-texture.png);
     }
+}
+h1 {
+    font-size: 1.8em;
 }
 
 #outer-dashboard {
@@ -27,12 +31,24 @@ body {
     #dashboard-container {
         margin: 0 auto;
 
-        /* styles taken from `#notebook` selector in Notebook */
-        font-size: 14px;
-        line-height: 20px;
+        line-height: 1.5em;
 
-        .dashboard-cell.hidden {
-            display: none;
+        .dashboard-cell {
+            .jp-OutputArea {
+                pre {
+                    background-color: transparent;
+                    border: none;
+                    font-family: monospace;
+                    font-size: 1em;
+                    line-height: 1.2em;
+                    margin: 0;
+                    padding: 0;
+                }
+            }
+
+            &.hidden {
+                display: none;
+            }
         }
 
         .grid-stack-item.rendered_html {
@@ -47,8 +63,8 @@ body {
     .busy-indicator {
         visibility: hidden;
         position: fixed;
-        top: -8px;
-        height: 8px;
+        top: -0.5em;
+        height: 0.5em;
         width: 100%;
         border-radius: 0;
         /* change 'visibility' after 'top' transition is done */
