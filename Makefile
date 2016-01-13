@@ -29,8 +29,7 @@ run: | build run-kernel-gateway
 run-debug:
 	$(MAKE) run CMD=start-debug
 
-# TODO change to proper kernel-gateway minimal image
-run-kernel-gateway: KG_IMAGE?=jupyter-incubator/all-spark-kernels
+run-kernel-gateway: KG_IMAGE?=jupyter/minimal-kernel
 run-kernel-gateway:
 	@kg_is_running=`docker ps -q --filter="name=$(KG_CONTAINER_NAME)"`; \
 	if [ -n "$$kg_is_running" ] ; then \
