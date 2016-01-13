@@ -36,4 +36,5 @@ USER node
 RUN npm run build
 
 EXPOSE 3000
-ENTRYPOINT ["npm", "run", "start"]
+ENTRYPOINT ["npm", "run"]
+CMD ["start"]

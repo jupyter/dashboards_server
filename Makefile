@@ -1,30 +1,33 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: help build run run-kernel-gateway kill dev-install dev debug _dev-install-ipywidgets
+.PHONY: help build run run-debug run-kernel-gateway kill dev-install dev debug _dev-install-ipywidgets
 
 DASHBOARD_CONTAINER_NAME=dashboard-proxy
 DASHBOARD_IMAGE_NAME=jupyter-incubator/$(DASHBOARD_CONTAINER_NAME)
 KG_CONTAINER_NAME=kernel_gateway
 
-KG_IP_CMD=docker inspect --format '{{ .NetworkSettings.IPAddress }}' $(KG_CONTAINER_NAME)
-
 help:
 	@echo 'Make commands:'
 	@echo '             build - builds Docker image for dashboard proxy app'
 	@echo '               run - runs the dashboard proxy and kernel gateway containers'
+	@echo '         run-debug - like `run` but with node network logging enabled'
 	@echo '              kill - stops both containers'
 
 build:
 	@docker build -t $(DASHBOARD_IMAGE_NAME) .
 
-run: build run-kernel-gateway
-	@kgip=`$(KG_IP_CMD)`; \
-	docker run -it --rm \
+run: CMD?=
+run: | build run-kernel-gateway
+	@docker run -it --rm \
 		--name $(DASHBOARD_CONTAINER_NAME) \
 		-p 9700:3000 \
-		-e KERNEL_GATEWAY_URL=http://$$kgip:8888 \
-		$(DASHBOARD_IMAGE_NAME)
+		-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
+		--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
+		$(DASHBOARD_IMAGE_NAME) $(CMD)
+
+run-debug:
+	$(MAKE) run CMD=start-debug
 
 # TODO change to proper kernel-gateway minimal image
 run-kernel-gateway: KG_IMAGE?=jupyter-incubator/all-spark-kernels
