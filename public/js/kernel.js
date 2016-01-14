@@ -19,21 +19,21 @@ define([
     function _startKernel() {
         var loc = window.location;
         var kernelUrl = loc.protocol + '//' + loc.host;
-
+        var clientId = _uuid();
         var kernelOptions = {
             baseUrl: kernelUrl,
             wsUrl: kernelUrl.replace(/^http/, 'ws'),
             name: 'python3',
-            clientId: _uuid()
-        };
-        var ajaxOptions = {
-            requestHeaders: {
-                'X-jupyter-notebook-path': window.location.pathname,
-                'X-jupyter-session-id': kernelOptions.clientId
+            clientId: clientId,
+            ajaxSettings: {
+                requestHeaders: {
+                    'X-jupyter-notebook-path': window.location.pathname,
+                    'X-jupyter-session-id': clientId
+                }
             }
         };
 
-        return Services.startNewKernel(kernelOptions, ajaxOptions)
+        return Services.startNewKernel(kernelOptions)
             .then(function(kernel) {
                 _kernel = kernel;
 
