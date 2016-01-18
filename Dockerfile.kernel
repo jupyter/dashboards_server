@@ -1,0 +1,26 @@
+# Copyright (c) Jupyter Development Team.
+# Distributed under the terms of the Modified BSD License.
+
+#FROM jupyter/minimal-kernel
+FROM jupyter/minimal-kernel:9cb6443840b2
+
+USER root
+
+# install latest version of node & npm (this and git clone also requires ca-certs)
+RUN apt-get install -yq --no-install-recommends ca-certificates curl
+RUN curl -sL https://deb.nodesource.com/setup_5.x | bash -
+
+RUN apt-get install -yq --no-install-recommends git nodejs
+
+# config bower & npm, which are both invoked during `pip install` and need options to run as root
+RUN echo '{ "allow_root": true }' > /root/.bowerrc
+RUN echo 'unsafe-perm = true' > /root/.npmrc && chmod 0600 /root/.npmrc
+
+RUN pip install git+https://github.com/ipython/ipywidgets.git@82d1a14df9c79bf9a913965aa9c5f14399adb805
+
+# cleanup
+RUN apt-get remove --purge -y git nodejs curl && \
+    rm /root/.npmrc
+
+# reset user to non-root
+USER jovyan

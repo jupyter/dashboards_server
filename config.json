@@ -1,6 +1,6 @@
 // Hjson format, see http://hjson.org for syntax
 {
-    KERNEL_GATEWAY_URL: http://192.168.99.100:9500
+    KERNEL_GATEWAY_URL: http://192.168.99.100:8888
     // KERNEL_GATEWAY_URL: https://tmpnb-urth-demo.cloudet.xyz/
 
     NOTEBOOKS_DIR: ../data/

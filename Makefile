@@ -5,7 +5,8 @@
 
 DASHBOARD_CONTAINER_NAME=dashboard-proxy
 DASHBOARD_IMAGE_NAME=jupyter-incubator/$(DASHBOARD_CONTAINER_NAME)
-KG_CONTAINER_NAME=kernel_gateway
+KG_IMAGE=jupyter-incubator/kernel-gateway-extras
+KG_CONTAINER_NAME=kernel-gateway
 
 help:
 	@echo 'Make commands:'
@@ -15,7 +16,8 @@ help:
 	@echo '              kill - stops both containers'
 
 build:
-	@docker build -t $(DASHBOARD_IMAGE_NAME) .
+	@docker build -f Dockerfile.kernel -t $(KG_IMAGE) .
+	@docker build -f Dockerfile.proxy -t $(DASHBOARD_IMAGE_NAME) .
 
 run: CMD?=
 run: | build run-kernel-gateway
@@ -29,7 +31,6 @@ run: | build run-kernel-gateway
 run-debug:
 	$(MAKE) run CMD=start-debug
 
-run-kernel-gateway: KG_IMAGE?=jupyter/minimal-kernel
 run-kernel-gateway:
 	@kg_is_running=`docker ps -q --filter="name=$(KG_CONTAINER_NAME)"`; \
 	if [ -n "$$kg_is_running" ] ; then \
