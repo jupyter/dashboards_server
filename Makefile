@@ -17,6 +17,14 @@ help:
 build:
 	@docker build -t $(DASHBOARD_IMAGE_NAME) .
 
+gen-certs:
+	@mkdir -p certs ; \
+		cd certs ; \
+		openssl genrsa -des3 -out server.enc.key 1024 ; \
+		openssl req -new -key server.enc.key -out server.csr ; \
+		openssl rsa -in server.enc.key -out server.key ; \
+		openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
+
 run: CMD?=
 run: | build run-kernel-gateway
 	@docker run -it --rm \

@@ -3,3 +3,4 @@ ext/
 node_modules/
 public/components/
 public/css/
+certs/
