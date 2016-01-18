@@ -28,6 +28,8 @@ This project uses [Node.js](nodejs.org), [npm](npmjs.com) and [gulp](http://gulp
 
 * The notebook code is never made available to the client -- it is only run in our proxy server. Execution request messages from the client which contain code are ignored.
 * To enable HTTPS:
-    1. Generate the key and certificate files by running `make gen-certs`
+    1. Optionally, Generate the key and certificate files by running `make gen-certs` to be used for development.
+    If one is not generated you can skip to step 2 and use your own key/certificate.
+    Note the installation of openssl is a prerequisite for this target.
     2. When running include the environment variables for the key and certificate file locations, such as:
      `HTTPS_KEY_FILE=certs/server.key HTTPS_CERT_FILE=certs/server.crt`

@@ -28,9 +28,14 @@ app.set('port', port);
 var key_file_location = nconf.get('HTTPS_KEY_FILE');
 var cert_file_location = nconf.get('HTTPS_CERT_FILE');
 var server;
-//if both key and cert locations are set and they are valid file paths use them and run in https mode
-if (key_file_location !== undefined && cert_file_location !== undefined &&
-    fs.existsSync(key_file_location) && fs.existsSync(cert_file_location)) {
+//if both key and cert locations are set use them and run in https mode
+if (key_file_location !== undefined && cert_file_location !== undefined) {
+    if(!fs.existsSync(key_file_location)) {
+        throw new Error('Invalid file path for HTTPS_KEY_FILE');
+    }
+    if(!fs.existsSync(cert_file_location)) {
+        throw new Error('Invalid file path for HTTPS_CERT_FILE');
+    }
     var options = {
        key: fs.readFileSync(key_file_location),
        cert: fs.readFileSync(cert_file_location)

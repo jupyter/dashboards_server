@@ -10,6 +10,7 @@ KG_CONTAINER_NAME=kernel_gateway
 help:
 	@echo 'Make commands:'
 	@echo '             build - builds Docker image for dashboard proxy app'
+	@echo '         gen-certs - generate HTTPS key and certificate files'
 	@echo '               run - runs the dashboard proxy and kernel gateway containers'
 	@echo '         run-debug - like `run` but with node network logging enabled'
 	@echo '              kill - stops both containers'
@@ -18,11 +19,11 @@ build:
 	@docker build -t $(DASHBOARD_IMAGE_NAME) .
 
 gen-certs:
-	@mkdir -p certs ; \
-		cd certs ; \
-		openssl genrsa -des3 -out server.enc.key 1024 ; \
-		openssl req -new -key server.enc.key -out server.csr ; \
-		openssl rsa -in server.enc.key -out server.key ; \
+	@mkdir -p certs && \
+		cd certs && \
+		openssl genrsa -des3 -out server.enc.key 1024 && \
+		openssl req -new -key server.enc.key -out server.csr && \
+		openssl rsa -in server.enc.key -out server.key && \
 		openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
 
 run: CMD?=
