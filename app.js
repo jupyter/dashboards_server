@@ -3,6 +3,8 @@
  * Distributed under the terms of the Modified BSD License.
  */
 var express = require('express');
+var session = require('express-session')
+var nconf = require('nconf');
 var path = require('path');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
@@ -15,8 +17,11 @@ var config = require('./app/config');
 
 var routes = require('./routes/index');
 var apiRoutes = require('./routes/api');
+var loginRoutes = require('./routes/login');
+var logoutRoutes = require('./routes/logout');
 
 var app = express();
+var router = express.Router();
 
 var env = config.get('NODE_ENV') || 'development';
 app.locals.ENV = env;
@@ -53,6 +58,36 @@ app.use(function(req, res, next) {
        next();
    }
 });
+
+app.use(cookieParser());
+app.use(session({
+        secret:'secret_token',
+        cookie: {maxAge: 24*3600*1000},//cookie max age set to one day
+        resave: true,
+        saveUninitialized: true
+        }));
+
+//if username and password supplied enabled auth
+if(nconf.get('USERNAME') !== undefined && nconf.get('PASSWORD') !== undefined) {
+    app.use('/login', loginRoutes);
+    app.use('/logout', logoutRoutes);
+
+    //routes registered below this filter will require a valid session value/user
+    app.all('*',function(req,res,next){
+        res.header("Access-Control-Allow-Origin", req.headers['origin']);
+        res.header("Access-Control-Allow-Credentials", true);
+        res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+
+        if(req.session.username) {
+            next();
+        }
+        else {
+            //save the previous page in the session to know where to redirect back to after login
+            req.session.redirect_after_login = req.path;
+            res.redirect('/login');
+        }
+    });
+}
 
 app.use('/', routes);
 app.use('/api', apiRoutes);
