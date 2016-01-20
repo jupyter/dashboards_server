@@ -46,7 +46,10 @@ run-kernel-gateway:
 		echo "$(KG_CONTAINER_NAME) is already running."; \
 	else \
 		docker rm $(KG_CONTAINER_NAME); \
-		docker run -d -it --name $(KG_CONTAINER_NAME) -p 8888:8888 $(KG_IMAGE); \
+		docker run -d -it \
+			--name $(KG_CONTAINER_NAME) \
+			-p 8888:8888 \
+			$(KG_IMAGE); \
 	fi;
 
 kill:
@@ -58,7 +61,7 @@ _dev-install-ipywidgets:
 		cd ext ; \
 		git clone https://github.com/jhpedemonte/ipywidgets.git ; \
 	    cd ipywidgets ; \
-	    git checkout 470c93a711adaea9db6e2283c06f0cad0085c8e9 ; \
+	    git checkout 395703edbe26f822eb2bd6a90be50eaa588b3398 ; \
 		cd ipywidgets ; \
 		npm install
 	# @mkdir -p ext ; \
