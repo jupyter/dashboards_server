@@ -16,7 +16,8 @@ RUN apt-get install -yq --no-install-recommends git nodejs
 RUN echo '{ "allow_root": true }' > /root/.bowerrc
 RUN echo 'unsafe-perm = true' > /root/.npmrc && chmod 0600 /root/.npmrc
 
-RUN pip install git+https://github.com/ipython/ipywidgets.git@82d1a14df9c79bf9a913965aa9c5f14399adb805
+# RUN pip install git+https://github.com/ipython/ipywidgets.git@293705e770a4567d41180f7c26fc1391e76e96ab
+RUN pip install git+https://github.com/jhpedemonte/ipywidgets.git@470c93a711adaea9db6e2283c06f0cad0085c8e9
 
 # cleanup
 RUN apt-get remove --purge -y git nodejs curl && \

@@ -38,6 +38,7 @@
     "gulp-nodemon": "^2.0.2",
     "gulp-open": "^1.0.0",
     "gulp-plumber": "^1.0.0",
+    "gulp-webpack": "^1.5.0",
     "merge-stream": "^1.0.0",
     "mocha": "^2.3.4",
     "node-lessify": "^0.1.1",

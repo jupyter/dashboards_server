@@ -44,13 +44,21 @@ kill:
 	-@docker kill $(DASHBOARD_CONTAINER_NAME) $(KG_CONTAINER_NAME)
 
 _dev-install-ipywidgets:
+	-npm uninstall jupyter-js-widgets
 	@mkdir -p ext ; \
 		cd ext ; \
-		git clone https://github.com/ipython/ipywidgets.git ; \
+		git clone https://github.com/jhpedemonte/ipywidgets.git ; \
 	    cd ipywidgets ; \
-	    git checkout 82d1a14df9c79bf9a913965aa9c5f14399adb805 ; \
+	    git checkout 470c93a711adaea9db6e2283c06f0cad0085c8e9 ; \
 		cd ipywidgets ; \
 		npm install
+	# @mkdir -p ext ; \
+	# 	cd ext ; \
+	# 	git clone https://github.com/ipython/ipywidgets.git ; \
+	#     cd ipywidgets ; \
+	#     git checkout 293705e770a4567d41180f7c26fc1391e76e96ab ; \
+	# 	cd ipywidgets ; \
+	# 	npm install
 
 dev-install: _dev-install-ipywidgets
 	npm install

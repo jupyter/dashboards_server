@@ -40,24 +40,33 @@ require(['main'], function() {
         // initialize Gridstack
         _initGrid();
 
+
         // start kernel
         Kernel.start().then(function(kernel) {
+            var widgetManager = new WidgetManager(kernel);
+
             // create an output area for each dashboard code cell
             $('.dashboard-cell.code-cell').each(function() {
                 var $cell = $(this);
 
+                var widgetArea = $('<div class="widget-area">').get(0);
+
                 var model = new OutputArea.OutputModel();
                 var view = new OutputArea.OutputView(model, document);
-                $cell.append(view.el);
 
-                // TODO Create new div for widget area??
-                var manager = new WidgetManager(kernel, view.el);
+                $cell.append(widgetArea, view.el);
 
-                Kernel.execute($cell.index(), function(msg) {
+                var kernelFuture = Kernel.execute($cell.index(), function(msg) {
                     if (model) {
                         model.consumeMessage(msg);
                     }
                 });
+
+                widgetManager.addWidget(widgetArea, kernelFuture.msg.header.msg_id);
+
+                // kernelFuture.onReply = function(msg) {
+                //     console.log('=> kernel reply:', msg);
+                // };
             });
         });
     });

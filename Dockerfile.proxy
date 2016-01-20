@@ -12,10 +12,14 @@ RUN mkdir -p /home/node/app/ext
 WORKDIR /home/node/app
 
 # 'jupyter-js-widgets' isn't currently published as npm module, so download directly from repo
+# RUN cd ext && \
+#     git clone https://github.com/ipython/ipywidgets.git && \
+#     cd ipywidgets && \
+#     git checkout 293705e770a4567d41180f7c26fc1391e76e96ab
 RUN cd ext && \
-    git clone https://github.com/ipython/ipywidgets.git && \
+    git clone https://github.com/jhpedemonte/ipywidgets.git && \
     cd ipywidgets && \
-    git checkout 82d1a14df9c79bf9a913965aa9c5f14399adb805
+    git checkout 470c93a711adaea9db6e2283c06f0cad0085c8e9
 RUN cd ext/ipywidgets/ipywidgets && npm install
 
 # npm & bower install separately, so these are properly cached by docker and not affected by

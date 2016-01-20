@@ -8,6 +8,7 @@ var gulp = require('gulp'),
     livereload = require('gulp-livereload'),
     less = require('gulp-less'),
     open = require('gulp-open'),
+    webpack = require('gulp-webpack'),
     browserify = require('browserify'),
     source = require('vinyl-source-stream'),
     merge = require('merge-stream');
@@ -16,8 +17,7 @@ var gulp = require('gulp'),
 gulp.task('browserify:components', function() {
     var components = [
         'jupyter-js-services',
-        'jupyter-js-output-area',
-        'jupyter-js-widgets'
+        'jupyter-js-output-area'
     ];
 
     var tasks = components.map(function(compName) {
@@ -39,30 +39,11 @@ gulp.task('browserify:components', function() {
     return merge(tasks);
 });
 
-// XXX This tries to combine jupyter components into 1 file, but doesn't seem to fully work --
-//     resulting file only seems to contain exports for `services` but not for `output-area`
-// gulp.task('browserify:components', function() {
-//     return browserify({
-//             standalone: 'jupyter'
-//         })
-//         .require('jupyter-js-services')
-//         .require('jupyter-js-output-area')
-//         .bundle()
-//         //Pass desired output filename to vinyl-source-stream
-//         .pipe(source('jupyter.js'))
-//         // Start piping stream to tasks!
-//         .pipe(gulp.dest('./public/components'));
-// });
-
-// gulp.task('browserify:js', ['components'], function() {
-//     return browserify('./public/js/main.js')
-//         .external('./public/components/jupyter-modules.js')
-//         .bundle()
-//         //Pass desired output filename to vinyl-source-stream
-//         .pipe(source('app.js'))
-//         // Start piping stream to tasks!
-//         .pipe(gulp.dest('./public/js'));
-// });
+gulp.task('webpack', function() {
+    return gulp.src('node_modules/jupyter-js-widgets/index.js')
+       .pipe(webpack( require('./webpack.config.js') ))
+       .pipe(gulp.dest('./public/components'));
+});
 
 // copy source into `public/components`
 gulp.task('copy:components', ['browserify:components'], function() {
