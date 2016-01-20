@@ -10,6 +10,9 @@
 var app = require('../app');
 var debug = require('debug')('dashboard-proxy:server');
 var http = require('http');
+var https = require('https');
+var fs = require('fs');
+var nconf = require('nconf');
 
 /**
  * Get port from environment and store in Express.
@@ -19,10 +22,32 @@ var port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
 
 /**
- * Create HTTP server.
+ * Create HTTP or HTTPS server.
  */
 
-var server = http.createServer(app);
+var key_file_location = nconf.get('HTTPS_KEY_FILE');
+var cert_file_location = nconf.get('HTTPS_CERT_FILE');
+var server;
+//if both key and cert locations are set use them and run in https mode
+if (key_file_location !== undefined && cert_file_location !== undefined) {
+    if(!fs.existsSync(key_file_location)) {
+        throw new Error('Invalid file path for HTTPS_KEY_FILE');
+    }
+    if(!fs.existsSync(cert_file_location)) {
+        throw new Error('Invalid file path for HTTPS_CERT_FILE');
+    }
+    var options = {
+       key: fs.readFileSync(key_file_location),
+       cert: fs.readFileSync(cert_file_location)
+    };
+    server = https.createServer(options, app);
+    debug('Using, HTTPS_KEY_FILE = ' + key_file_location);
+    debug('Using, HTTPS_CERT_FILE = ' + cert_file_location);
+    debug('Server set to HTTPS mode');
+} else {
+    server = http.createServer(app);
+    debug('Server set to HTTP mode');
+}
 
 /**
  * Listen on provided port, on all network interfaces.
