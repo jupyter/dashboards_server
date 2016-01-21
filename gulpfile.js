@@ -39,7 +39,7 @@ gulp.task('browserify:components', function() {
     return merge(tasks);
 });
 
-gulp.task('webpack', function() {
+gulp.task('webpack:components', function() {
     return gulp.src('node_modules/jupyter-js-widgets/index.js')
        .pipe(webpack( require('./webpack.config.js') ))
        .pipe(gulp.dest('./public/components'));
@@ -115,6 +115,7 @@ gulp.task('open-debug-tab', function() {
 
 gulp.task('components', [
     'browserify:components',
+    'webpack:components',
     'copy:components'
 ]);
 
