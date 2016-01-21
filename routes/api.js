@@ -8,6 +8,7 @@ var wsutils = require('../app/ws-utils');
 var nbstore = require('../app/notebook-store');
 var config = require('../app/config');
 var Promise = require('es6-promise').Promise;
+var url = require('url');
 
 var KERNEL_GATEWAY_URL = config.get('KERNEL_GATEWAY_URL');
 
@@ -117,7 +118,7 @@ proxy.on('proxyRes', function (proxyRes, req, res) {
         JSON.stringify(proxyRes.headers, true, 2));
 
     // Store the notebook path for use within the WS proxy.
-    if (req.originalUrl === '/api/kernels') {
+    if (url.parse(req.originalUrl).pathname === '/api/kernels') {
         var notebookPathHeader = req.headers['x-jupyter-notebook-path'];
         var sessionId = req.headers['x-jupyter-session-id'];
         if (!notebookPathHeader || !sessionId) {

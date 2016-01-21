@@ -6,7 +6,8 @@
     "build": "gulp build",
     "bower": "bower install",
     "start": "node ./bin/www",
-    "start-debug": "NODE_DEBUG=http DEBUG=express:*,dashboard-proxy:* node ./bin/www",
+    "start-debug": "node-inspector & node --debug-brk ./bin/www",
+    "start-logging": "NODE_DEBUG=http DEBUG=express:*,dashboard-proxy:* node ./bin/www",
     "test": "node_modules/mocha/bin/mocha test/**/*-test.js"
   },
   "dependencies": {

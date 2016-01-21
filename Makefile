@@ -1,7 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: help build run run-debug run-kernel-gateway kill dev-install dev debug _dev-install-ipywidgets
+.PHONY: help build run run-debug run-logging run-kernel-gateway kill dev-install dev debug _dev-install-ipywidgets
 
 DASHBOARD_CONTAINER_NAME=dashboard-proxy
 DASHBOARD_IMAGE_NAME=jupyter-incubator/$(DASHBOARD_CONTAINER_NAME)
@@ -13,7 +13,8 @@ help:
 	@echo '             build - builds Docker image for dashboard proxy app'
 	@echo '         gen-certs - generate HTTPS key and certificate files'
 	@echo '               run - runs the dashboard proxy and kernel gateway containers'
-	@echo '         run-debug - like `run` but with node network logging enabled'
+	@echo '         run-debug - enable debugging through node-inspector'
+	@echo '       run-logging - like `run` but with node network logging enabled'
 	@echo '              kill - stops both containers'
 
 build:
@@ -33,12 +34,16 @@ run: | build run-kernel-gateway
 	@docker run -it --rm \
 		--name $(DASHBOARD_CONTAINER_NAME) \
 		-p 9700:3000 \
+		-p 9711:8080 \
 		-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
 		--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
 		$(DASHBOARD_IMAGE_NAME) $(CMD)
 
 run-debug:
 	$(MAKE) run CMD=start-debug
+
+run-logging:
+	$(MAKE) run CMD=start-logging
 
 run-kernel-gateway:
 	@kg_is_running=`docker ps -q --filter="name=$(KG_CONTAINER_NAME)"`; \

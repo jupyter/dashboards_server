@@ -36,6 +36,11 @@ USER node
 # build our node app
 RUN npm run build
 
-EXPOSE 3000
+# for debugging purposes, setup node-inspector
+USER root
+RUN npm install -g node-inspector
+USER node
+
+EXPOSE 3000 8080
 ENTRYPOINT ["npm", "run"]
 CMD ["start"]

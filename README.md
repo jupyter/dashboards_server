@@ -24,6 +24,11 @@ This project uses [Node.js](nodejs.org), [npm](npmjs.com) and [gulp](http://gulp
    * In order to debug using Node Inspector, run `KG_IP=<external docker IP> make debug`.
 4. Load http://localhost:3000/notebooks/simple in the browser.
 
+### Debug from Docker container
+
+1. Invoke `make run-debug` (instead of `make run`).
+2. Open http://EXTERNAL_DOCKER_IP:9711/?ws=EXTERNAL_DOCKER_IP:9711&port=5858] to access the node-inspector and commence debugging.
+
 ## Security
 
 * The notebook code is never made available to the client -- it is only run in our proxy server. Execution request messages from the client which contain code are ignored.

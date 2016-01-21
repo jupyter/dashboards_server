@@ -15,7 +15,7 @@ function _loadNb(nbpath) {
         var ipynb = /\.ipynb$/.test(nbpath) ? '' : '.ipynb';
         var nbdir = config.get('NOTEBOOKS_DIR');
         var nbPath = path.join(__dirname, nbdir, nbpath + ipynb);
-        console.info('Attempting to load notebook file:',nbPath);
+        console.info('Attempting to load notebook file:', nbPath);
         fs.readFile(nbPath, 'utf8', function(err, rawData) {
             if (err) {
                 reject(new Error('Error loading notebook file'));
