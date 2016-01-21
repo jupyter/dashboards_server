@@ -75,10 +75,10 @@ dev-install: _dev-install-ipywidgets
 	npm install
 	npm run bower
 
-dev: KG_IP?=192.168.99.100
+dev: KG_IP?=$$(docker-machine ip $$(docker-machine active))
 dev: run-kernel-gateway
 	KERNEL_GATEWAY_URL=http://$(KG_IP):8888 gulp
 
-debug: KG_IP?=192.168.99.100
+debug: KG_IP?=$$(docker-machine ip $$(docker-machine active))
 debug: run-kernel-gateway
 	KERNEL_GATEWAY_URL=http://$(KG_IP):8888 gulp debug
