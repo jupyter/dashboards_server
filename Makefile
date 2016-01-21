@@ -57,20 +57,14 @@ kill:
 
 _dev-install-ipywidgets:
 	-npm uninstall jupyter-js-widgets
+	-rm -rf ext/ipywidgets
 	@mkdir -p ext ; \
 		cd ext ; \
-		git clone https://github.com/jhpedemonte/ipywidgets.git ; \
+		git clone https://github.com/ipython/ipywidgets.git ; \
 	    cd ipywidgets ; \
-	    git checkout 395703edbe26f822eb2bd6a90be50eaa588b3398 ; \
+	    git checkout 38218351c9dc4196419f6c8f0129df7d0f4cd24c ; \
 		cd ipywidgets ; \
 		npm install
-	# @mkdir -p ext ; \
-	# 	cd ext ; \
-	# 	git clone https://github.com/ipython/ipywidgets.git ; \
-	#     cd ipywidgets ; \
-	#     git checkout 293705e770a4567d41180f7c26fc1391e76e96ab ; \
-	# 	cd ipywidgets ; \
-	# 	npm install
 
 dev-install: _dev-install-ipywidgets
 	npm install
