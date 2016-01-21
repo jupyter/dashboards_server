@@ -27,7 +27,7 @@ This project uses [Node.js](nodejs.org), [npm](npmjs.com) and [gulp](http://gulp
 ### Debug from Docker container
 
 1. Invoke `make run-debug` (instead of `make run`).
-2. Open http://EXTERNAL_DOCKER_IP:9711/?ws=EXTERNAL_DOCKER_IP:9711&port=5858] to access the node-inspector and commence debugging.
+2. Open `http://<external docker IP>:9711/?ws=<external docker IP>:9711&port=5858` to access the node-inspector and commence debugging.
 
 ## Security
 
