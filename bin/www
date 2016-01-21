@@ -19,6 +19,7 @@ var config = require('../app/config');
  */
 
 var port = normalizePort(config.get('PORT') || 3000);
+var https_port = normalizePort(config.get('HTTPS_PORT') || 3001);
 var ip = config.get('IP') || '127.0.0.1';
 app.set('port', port);
 app.set('ip', ip);
@@ -42,12 +43,19 @@ if (key_file_location || cert_file_location) {
        key: fs.readFileSync(key_file_location),
        cert: fs.readFileSync(cert_file_location)
     };
-    server = https.createServer(options, app);
+    server = https.createServer(options, app).listen(https_port, ip);
+
+    http.createServer(function (req, res) {
+        var url_location = "https://" + req.headers['host'].split(":")[0] + ":" + https_port + req.url;
+        res.writeHead(301, { "Location": url_location});
+        res.end();
+    }).listen(port, ip);
+
     debug('Using, HTTPS_KEY_FILE = ' + key_file_location);
     debug('Using, HTTPS_CERT_FILE = ' + cert_file_location);
     debug('Server set to HTTPS mode');
 } else {
-    server = http.createServer(app);
+    server = http.createServer(app).listen(port, ip);
     debug('Server set to HTTP mode');
 }
 
@@ -55,7 +63,6 @@ if (key_file_location || cert_file_location) {
  * Listen on provided port, on all network interfaces.
  */
 
-server.listen(port, ip);
 server.on('error', onError);
 server.on('listening', onListening);
 
