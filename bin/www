@@ -12,21 +12,21 @@ var debug = require('debug')('dashboard-proxy:server');
 var http = require('http');
 var https = require('https');
 var fs = require('fs');
-var nconf = require('nconf');
+var config = require('../app/config');
 
 /**
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '3000');
+var port = normalizePort(config.get('PORT'));
 app.set('port', port);
 
 /**
  * Create HTTP or HTTPS server.
  */
 
-var key_file_location = nconf.get('HTTPS_KEY_FILE');
-var cert_file_location = nconf.get('HTTPS_CERT_FILE');
+var key_file_location = config.get('HTTPS_KEY_FILE');
+var cert_file_location = config.get('HTTPS_CERT_FILE');
 var server;
 //if both key and cert locations are set use them and run in https mode
 if (key_file_location !== undefined && cert_file_location !== undefined) {
