@@ -5,6 +5,7 @@
 var fs = require('fs');
 var path = require('path');
 var Promise = require('es6-promise').Promise;
+var debug = require('debug')('dashboard-proxy:server');
 
 var config = require('./config');
 
@@ -24,7 +25,7 @@ function _loadNb(nbpath) {
                     var nb = JSON.parse(rawData);
                     store[nbpath] = nb;
                     resolve(nb);
-                    console.log('resolving nb load');
+                    debug('Resolving nb load:', nbpath);
                 } catch(e) {
                     reject(new Error('Error parsing notebook file'));
                 }

@@ -1,9 +1,13 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-FROM node
+FROM node:5.5
 
 USER root
+
+# for debugging purposes, setup node-inspector
+RUN npm install -g node-inspector
+# add an unprivileged node user
 RUN useradd -ms /bin/bash node
 
 USER node
@@ -36,11 +40,12 @@ USER node
 # build our node app
 RUN npm run build
 
-# for debugging purposes, setup node-inspector
-USER root
-RUN npm install -g node-inspector
-USER node
+# always expose server on all interfaces in a container
+ENV IP 0.0.0.0
 
+# expose the default express http/https port (3000) and the node debugger port (8080)
 EXPOSE 3000 8080
+
+# default to running npm and the commands in package.json
 ENTRYPOINT ["npm", "run"]
 CMD ["start"]

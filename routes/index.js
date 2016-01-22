@@ -4,6 +4,7 @@
  */
 var express = require('express');
 var nbstore = require('../app/notebook-store');
+var debug = require('debug')('dashboard-proxy:server');
 
 var router = express.Router();
 
@@ -34,7 +35,7 @@ router.get('/notebooks/*', function(req, res) {
     if (path) {
         nbstore.get(path).then(
             function success(notebook) {
-                console.log('success loading nb');
+                debug('Success loading nb');
                 res.status(200);
                 res.render('dashboard', {
                     title: 'Dashboard',
