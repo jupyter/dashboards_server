@@ -1,7 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: help build run run-debug run-logging run-kernel-gateway kill dev-install dev debug _dev-install-ipywidgets
+.PHONY: help build certs run run-debug run-logging run-kernel-gateway kill dev-install dev debug _dev-install-ipywidgets
 
 DASHBOARD_CONTAINER_NAME=dashboard-proxy
 DASHBOARD_IMAGE_NAME=jupyter-incubator/$(DASHBOARD_CONTAINER_NAME)
@@ -12,7 +12,7 @@ help:
 	@echo 'Make commands:'
 	@echo '             build - builds Docker images for dashboard proxy app and kernel gateway'
 	@echo '              kill - stops both containers'
-	@echo '         gen-certs - generate self-signed HTTPS key and certificate files'
+	@echo '             certs - generate self-signed HTTPS key and certificate files'
 	@echo '               run - runs the dashboard proxy and kernel gateway containers'
 	@echo '         run-debug - run + debugging through node-inspector'
 	@echo '       run-logging - run + node network logging enabled'
@@ -20,17 +20,25 @@ help:
 	@echo 'Dashboard proxy option defaults (via nconf):'
 	@cat config.json
 
+clean:
+	@rm -rf certs/
+
 build:
 	@docker build -f Dockerfile.kernel -t $(KG_IMAGE_NAME) .
 	@docker build -f Dockerfile.proxy -t $(DASHBOARD_IMAGE_NAME) .
 
-gen-certs:
-	@mkdir -p certs && \
-		cd certs && \
-		openssl genrsa -des3 -out server.enc.key 1024 && \
-		openssl req -new -key server.enc.key -out server.csr && \
-		openssl rsa -in server.enc.key -out server.key && \
-		openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
+certs/server.pem:
+	@mkdir -p certs
+	@openssl req -new \
+		-newkey rsa:2048 \
+		-days 365 \
+		-nodes -x509 \
+		-subj '/C=XX/ST=XX/L=XX/O=generated/CN=generated' \
+    -keyout $@ \
+		-out $@
+
+# shortcut
+certs: certs/server.pem
 
 # Targets for running the nodejs app and kernel gateway in containers
 run: | build run-kernel-gateway
@@ -38,6 +46,8 @@ run: | build run-kernel-gateway
 		--name $(DASHBOARD_CONTAINER_NAME) \
 		-p 9700:3000 \
 		-p 9711:8080 \
+		-e HTTPS_KEY_FILE=$(HTTPS_KEY_FILE) \
+		-e HTTPS_CERT_FILE=$(HTTPS_CERT_FILE) \
 		-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
 		--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
 		$(DASHBOARD_IMAGE_NAME) $(CMD)

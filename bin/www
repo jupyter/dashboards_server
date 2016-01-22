@@ -31,7 +31,7 @@ var key_file_location = config.get('HTTPS_KEY_FILE');
 var cert_file_location = config.get('HTTPS_CERT_FILE');
 var server;
 //if both key and cert locations are set use them and run in https mode
-if (!key_file_location && !cert_file_location) {
+if (key_file_location || cert_file_location) {
     if(!fs.existsSync(key_file_location)) {
         throw new Error('Invalid file path for HTTPS_KEY_FILE');
     }

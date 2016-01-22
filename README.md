@@ -48,6 +48,6 @@ If you want to enable debug logging:
 If you want to run with a self-signed certificate:
 
 ```bash
-make gen-certs
-HTTPS_KEY_FILE=certs/server.key HTTPS_CERT_FILE=certs/server.crt make run
+make certs
+HTTPS_KEY_FILE=../certs/server.pem HTTPS_CERT_FILE=../certs/server.pem make run
 ```
