@@ -19,7 +19,9 @@ var config = require('../app/config');
  */
 
 var port = normalizePort(config.get('PORT') || 3000);
+var ip = config.get('IP') || '127.0.0.1';
 app.set('port', port);
+app.set('ip', ip);
 
 /**
  * Create HTTP or HTTPS server.
@@ -53,7 +55,7 @@ if (key_file_location !== undefined && cert_file_location !== undefined) {
  * Listen on provided port, on all network interfaces.
  */
 
-server.listen(port);
+server.listen(port, ip);
 server.on('error', onError);
 server.on('listening', onListening);
 
@@ -113,6 +115,6 @@ function onListening() {
   var addr = server.address();
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
-    : 'port ' + addr.port;
+    : addr.address + ':' + addr.port;
   debug('Listening on ' + bind);
 }

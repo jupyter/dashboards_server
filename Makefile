@@ -30,7 +30,6 @@ gen-certs:
 		openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
 
 # Targets for running the nodejs app and kernel gateway in containers
-run: CMD?=
 run: | build run-kernel-gateway
 	@docker run -it --rm \
 		--name $(DASHBOARD_CONTAINER_NAME) \
@@ -40,11 +39,11 @@ run: | build run-kernel-gateway
 		--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
 		$(DASHBOARD_IMAGE_NAME) $(CMD)
 
-run-debug:
-	$(MAKE) run CMD=start-debug
+run-debug: CMD=start-debug
+run-debug: run
 
-run-logging:
-	$(MAKE) run CMD=start-logging
+run-logging: CMD=start-logging
+run-logging: run
 
 run-kernel-gateway:
 	@kg_is_running=`docker ps -q --filter="name=$(KG_CONTAINER_NAME)"`; \
