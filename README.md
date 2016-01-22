@@ -19,7 +19,11 @@ In the meantime, if you want to get a sense of all the configuration options, ru
 
 ## Deploy It
 
-TBD
+A minimal deployment of the dashboards server has the following components:
+
+![Minimal dashboard app deployment diagram](etc/simple_deploy.png)
+
+For more details, including use cases and alternative deployments, see the [dashboards deployment roadmap](https://github.com/jupyter-incubator/dashboards/wiki/Deployment-Roadmap).
 
 ## Develop It
 
