@@ -1,0 +1,16 @@
+language: node_js
+
+node_js:
+    - "4.1"
+
+before_install:
+    - make _dev-install-ipywidgets
+
+before_script:
+    - npm install -g gulp
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always
+  slack: cloudet:rMfRKhvsbZuCIRZpTct3kBI4
