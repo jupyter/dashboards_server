@@ -11,11 +11,11 @@ KG_CONTAINER_NAME=kernel-gateway
 help:
 	@echo 'Make commands:'
 	@echo '             build - builds Docker images for dashboard proxy app and kernel gateway'
+	@echo '              kill - stops both containers'
 	@echo '         gen-certs - generate self-signed HTTPS key and certificate files'
 	@echo '               run - runs the dashboard proxy and kernel gateway containers'
-	@echo '         run-debug - enable debugging through node-inspector'
-	@echo '       run-logging - like `run` but with node network logging enabled'
-	@echo '              kill - stops both containers'
+	@echo '         run-debug - run + debugging through node-inspector'
+	@echo '       run-logging - run + node network logging enabled'
 
 build:
 	@docker build -f Dockerfile.kernel -t $(KG_IMAGE_NAME) .
