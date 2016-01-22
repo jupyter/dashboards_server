@@ -8,6 +8,7 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var exphbs  = require('express-handlebars');
+var debug = require('debug')('dashboard-proxy:server');
 
 var hbsHelpers = require('./app/handlebars-helpers');
 var config = require('./app/config');
@@ -20,6 +21,7 @@ var app = express();
 var env = config.get('NODE_ENV') || 'development';
 app.locals.ENV = env;
 app.locals.ENV_DEVELOPMENT = env == 'development';
+debug('Using environment ' + env);
 
 // view engine setup
 app.engine('handlebars', exphbs({
