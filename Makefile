@@ -16,6 +16,9 @@ help:
 	@echo '               run - runs the dashboard proxy and kernel gateway containers'
 	@echo '         run-debug - run + debugging through node-inspector'
 	@echo '       run-logging - run + node network logging enabled'
+	@echo
+	@echo 'Dashboard proxy option defaults (via nconf):'
+	@cat config.json
 
 build:
 	@docker build -f Dockerfile.kernel -t $(KG_IMAGE_NAME) .

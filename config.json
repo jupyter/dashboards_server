@@ -1,8 +1,18 @@
 // Hjson format, see http://hjson.org for syntax
 {
+    // The URL of the kernel gateway / jupyter notebook server to contact for
+    // kernels
     KERNEL_GATEWAY_URL: http://192.168.99.100:8888
+    // Port on which the dashboard server listens
     PORT: 3000
+    // Interface on which the dashboard server listens
     IP: 127.0.0.1
+    // Mode in which the dashboard server express environment runs
     NODE_ENV: development
+    // Directory that contains notebooks to serve as dashboards
     NOTEBOOKS_DIR: ../data/
+    // Optional HTTPS key
+    HTTPS_KEY_FILE: null
+    // Optional HTTPS certificate
+    HTTPS_CERT_FILE: null
 }
