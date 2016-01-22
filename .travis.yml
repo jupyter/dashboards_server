@@ -13,10 +13,8 @@ addons:
             - g++-4.8
 
 before_install:
+    - npm install -g gulp bower
     - make _dev-install-ipywidgets
-
-before_script:
-    - npm install -g gulp
 
 notifications:
   email:
