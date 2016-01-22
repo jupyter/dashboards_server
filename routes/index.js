@@ -2,11 +2,22 @@
  * Copyright (c) Jupyter Development Team.
  * Distributed under the terms of the Modified BSD License.
  */
-var express = require('express');
-var nbstore = require('../app/notebook-store');
 var debug = require('debug')('dashboard-proxy:server');
+var express = require('express');
+var multer = require('multer');
+var nbstore = require('../app/notebook-store');
+var uploadNb = require('../app/upload-notebook');
 
 var router = express.Router();
+
+// multer setup
+var storage = multer.diskStorage({
+    destination: uploadNb.destination,
+    filename: uploadNb.filename
+});
+var upload = multer({
+    storage: storage
+});
 
 /* GET / - redirect to notebook list page */
 router.get('/', function(req, res) {
@@ -54,6 +65,15 @@ router.get('/notebooks/*', function(req, res) {
         // redirect to home page when no path specified
         res.redirect('/');
     }
+});
+
+/* POST /notebooks/* - upload a notebook */
+router.post('/notebooks/*', upload.single('file'), function(req, res) {
+    res.status(201).json({
+        url: req.url,
+        status: 201,
+        message: 'Notebook successfully uploaded.'
+    });
 });
 
 module.exports = router;
