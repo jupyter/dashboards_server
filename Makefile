@@ -10,8 +10,8 @@ KG_CONTAINER_NAME=kernel-gateway
 
 help:
 	@echo 'Make commands:'
-	@echo '             build - builds Docker image for dashboard proxy app'
-	@echo '         gen-certs - generate HTTPS key and certificate files'
+	@echo '             build - builds Docker images for dashboard proxy app and kernel gateway'
+	@echo '         gen-certs - generate self-signed HTTPS key and certificate files'
 	@echo '               run - runs the dashboard proxy and kernel gateway containers'
 	@echo '         run-debug - enable debugging through node-inspector'
 	@echo '       run-logging - like `run` but with node network logging enabled'
@@ -29,6 +29,7 @@ gen-certs:
 		openssl rsa -in server.enc.key -out server.key && \
 		openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
 
+# Targets for running the nodejs app and kernel gateway in containers
 run: CMD?=
 run: | build run-kernel-gateway
 	@docker run -it --rm \
@@ -60,6 +61,7 @@ run-kernel-gateway:
 kill:
 	-@docker kill $(DASHBOARD_CONTAINER_NAME) $(KG_CONTAINER_NAME)
 
+# Targets for running the nodejs app on the host
 _dev-install-ipywidgets:
 	-npm uninstall jupyter-js-widgets
 	-rm -rf ext/ipywidgets
