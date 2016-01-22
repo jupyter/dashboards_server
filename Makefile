@@ -34,7 +34,7 @@ certs/server.pem:
 		-days 365 \
 		-nodes -x509 \
 		-subj '/C=XX/ST=XX/L=XX/O=generated/CN=generated' \
-    -keyout $@ \
+		-keyout $@ \
 		-out $@
 
 # shortcut
@@ -85,8 +85,8 @@ _dev-install-ipywidgets:
 	@mkdir -p ext ; \
 		cd ext ; \
 		git clone https://github.com/ipython/ipywidgets.git ; \
-	    cd ipywidgets ; \
-	    git checkout 38218351c9dc4196419f6c8f0129df7d0f4cd24c ; \
+		cd ipywidgets ; \
+		git checkout 38218351c9dc4196419f6c8f0129df7d0f4cd24c ; \
 		cd ipywidgets ; \
 		npm install
 
