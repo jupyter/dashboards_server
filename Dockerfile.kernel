@@ -12,6 +12,11 @@ RUN curl -sL https://deb.nodesource.com/setup_5.x | bash -
 RUN apt-get update && \
     apt-get install -yq --no-install-recommends git nodejs
 
+# Put the command in CMD instead of ENTRYPOINT because tmpnb invokes
+# using "/bin/sh -c"
+ENTRYPOINT ["tini", "--"]
+CMD ["jupyter", "kernelgateway", "--KernelGatewayApp.ip=0.0.0.0"]
+
 USER jovyan
 
 # install ipywidgets from github for now
