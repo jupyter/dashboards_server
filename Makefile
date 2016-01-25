@@ -79,8 +79,8 @@ MAX_LOG_SIZE:=50m
 MAX_LOG_ROLLOVER:=10
 
 token-check:
-	@test -n "$(TOKEN)" || \
-		(echo "ERROR: TOKEN not defined (make help)"; exit 1)
+	@test -n "$(TMPNB_PROXY_AUTH_TOKEN)" || \
+		(echo "ERROR: TMPNB_PROXY_AUTH_TOKEN not defined (make help)"; exit 1)
 
 tmpnb-proxy: PROXY_IMAGE?=jupyter/configurable-http-proxy@sha256:f84940db7ddf324e35f1a5935070e36832cc5c1f498efba4d69d7b962eec5d08
 tmpnb-proxy: token-check
@@ -90,7 +90,7 @@ tmpnb-proxy: token-check
 		--log-opt max-size=$(MAX_LOG_SIZE) \
 		--log-opt max-file=$(MAX_LOG_ROLLOVER) \
 		-p 8080:8000 \
-		-e CONFIGPROXY_AUTH_TOKEN=$(TOKEN) \
+		-e CONFIGPROXY_AUTH_TOKEN=$(TMPNB_PROXY_AUTH_TOKEN) \
 		$(PROXY_IMAGE) \
 			--default-target http://127.0.0.1:9999
 
@@ -106,7 +106,7 @@ tmpnb-pool: token-check
 		--log-opt max-size=$(MAX_LOG_SIZE) \
 		--log-opt max-file=$(MAX_LOG_ROLLOVER) \
 		--net=container:tmpnb-proxy \
-		-e CONFIGPROXY_AUTH_TOKEN=$(TOKEN) \
+		-e CONFIGPROXY_AUTH_TOKEN=$(TMPNB_PROXY_AUTH_TOKEN) \
 		-v /var/run/docker.sock:/docker.sock \
 		$(TMPNB_IMAGE) \
 		python orchestrate.py --image='$(IMAGE)' \
