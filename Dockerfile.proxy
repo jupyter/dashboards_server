@@ -43,8 +43,8 @@ RUN npm run build
 # always expose server on all interfaces in a container
 ENV IP 0.0.0.0
 
-# expose the default express http/https port (3000) and the node debugger port (8080)
-EXPOSE 3000 8080
+# expose the default express http/https port (3000/3001) and the node debugger port (8080)
+EXPOSE 3000 3001 8080
 
 # default to running npm and the commands in package.json
 ENTRYPOINT ["npm", "run"]

@@ -41,11 +41,16 @@ certs/server.pem:
 certs: certs/server.pem
 
 # Targets for running the nodejs app and kernel gateway in containers
+run: HTTP_PORT?=3000
+run: HTTPS_PORT?=3001
 run: | build run-kernel-gateway
 	@docker run -it --rm \
 		--name $(DASHBOARD_CONTAINER_NAME) \
-		-p 9700:3000 \
+		-p $(HTTP_PORT):$(HTTP_PORT) \
+		-p $(HTTPS_PORT):$(HTTPS_PORT) \
 		-p 9711:8080 \
+		-e PORT=$(HTTP_PORT) \
+		-e HTTPS_PORT=$(HTTPS_PORT) \
 		-e HTTPS_KEY_FILE=$(HTTPS_KEY_FILE) \
 		-e HTTPS_CERT_FILE=$(HTTPS_CERT_FILE) \
 		-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
