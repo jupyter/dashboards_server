@@ -3,7 +3,7 @@
 
 .PHONY: help build certs \
 	run run-debug run-logging run-kernel-gateway \
-	run-tmpnb tmpnb-proxy tmpnb-proxy\
+	run-tmpnb tmpnb-proxy tmpnb-pool kill-tmpnb token-check \
 	kill dev-install dev debug _dev-install-ipywidgets
 
 DASHBOARD_CONTAINER_NAME=dashboard-proxy
@@ -19,6 +19,8 @@ help:
 	@echo '               run - runs the dashboard proxy and kernel gateway containers'
 	@echo '         run-debug - run + debugging through node-inspector'
 	@echo '       run-logging - run + node network logging enabled'
+	@echo '         run-tmpnb - run tmpnb notebook service containers'
+	@echo '        kill-tmpnb - stops tmpnb notebook service containers'
 	@echo
 	@echo 'Dashboard proxy option defaults (via nconf):'
 	@cat config.json
