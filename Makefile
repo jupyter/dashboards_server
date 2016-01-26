@@ -3,7 +3,7 @@
 
 .PHONY: help build certs \
 	run run-debug run-logging run-kernel-gateway \
-	run-tmpnb run-tmpnb-proxy run-tmpnb-pool kill-tmpnb token-check \
+	run-tmpnb run-tmpnb-debug run-tmpnb-logging run-tmpnb-proxy run-tmpnb-pool kill-tmpnb token-check \
 	kill dev-install dev debug _dev-install-ipywidgets
 
 DASHBOARD_CONTAINER_NAME=dashboard-proxy
@@ -12,17 +12,22 @@ KG_IMAGE_NAME=jupyter-incubator/kernel-gateway-extras
 KG_CONTAINER_NAME=kernel-gateway
 TMPNB_POOL_CONTAINER_NAME=tmpnb-pool
 TMPNB_PROXY_CONTAINER_NAME=tmpnb-proxy
+TMPNB_PROXY_AUTH_TOKEN:=devauthtokenonly
+HTTP_PORT?=3000
+HTTPS_PORT?=3001
 
 help:
 	@echo 'Make commands:'
 	@echo '             build - builds Docker images for dashboard proxy app and kernel gateway'
 	@echo '              kill - stops both containers'
 	@echo '             certs - generate self-signed HTTPS key and certificate files'
-	@echo '               run - runs the dashboard proxy, kernel gateway, and tmpnb containers'
+	@echo '               run - runs the dashboard proxy and a single kernel gateway'
 	@echo '         run-debug - run + debugging through node-inspector'
 	@echo '       run-logging - run + node network logging enabled'
-	@echo '         run-tmpnb - run tmpnb notebook service containers'
-	@echo '        kill-tmpnb - stops tmpnb notebook service containers'
+	@echo '         run-tmpnb - run the dashboard and tmpnb notebook service'
+	@echo '   run-tmpnb-debug - run-tmpnb + debugging through node-inspector'
+	@echo ' run-tmpnb-logging - run-tmpnb + node network logging enabled'
+	@echo '        kill-tmpnb - stops tmpnb notebook service'
 	@echo
 	@echo 'Dashboard proxy option defaults (via nconf):'
 	@cat config.json
@@ -47,32 +52,46 @@ certs/server.pem:
 # shortcut
 certs: certs/server.pem
 
-# Targets for running the nodejs app and kernel gateway in containers
-run: HTTP_PORT?=3000
-run: HTTPS_PORT?=3001
-run: KERNEL_GATEWAY_URL?=http://$(KG_CONTAINER_NAME):8888
-run: KERNEL_CLUSTER_URL?=http://$(TMPNB_PROXY_CONTAINER_NAME):8080
-run: | build run-kernel-gateway run-tmpnb
-	@docker run -it --rm \
-		--name $(DASHBOARD_CONTAINER_NAME) \
-		-p $(HTTP_PORT):$(HTTP_PORT) \
-		-p $(HTTPS_PORT):$(HTTPS_PORT) \
-		-p 9711:8080 \
-		-e PORT=$(HTTP_PORT) \
-		-e HTTPS_PORT=$(HTTPS_PORT) \
-		-e HTTPS_KEY_FILE=$(HTTPS_KEY_FILE) \
-		-e HTTPS_CERT_FILE=$(HTTPS_CERT_FILE) \
-		-e KERNEL_GATEWAY_URL=$(KERNEL_GATEWAY_URL) \
-		-e KERNEL_CLUSTER_URL=$(KERNEL_CLUSTER_URL) \
-		--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
-		--link $(TMPNB_PROXY_CONTAINER_NAME):$(TMPNB_PROXY_CONTAINER_NAME) \
-		$(DASHBOARD_IMAGE_NAME) $(CMD)
+# command to run the nodejs app container
+define DOCKER_APP
+@docker run -it --rm \
+	--name $(DASHBOARD_CONTAINER_NAME) \
+	-p $(HTTP_PORT):$(HTTP_PORT) \
+	-p $(HTTPS_PORT):$(HTTPS_PORT) \
+	-p 9711:8080 \
+	-e PORT=$(HTTP_PORT) \
+	-e HTTPS_PORT=$(HTTPS_PORT) \
+	-e HTTPS_KEY_FILE=$(HTTPS_KEY_FILE) \
+	-e HTTPS_CERT_FILE=$(HTTPS_CERT_FILE)
+endef
+
+# targets for running nodejs app and kernel gateway containers
+run: | build run-kernel-gateway
+	$(DOCKER_APP) \
+	-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
+	--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
+	$(DASHBOARD_IMAGE_NAME) $(CMD)
 
 run-debug: CMD=start-debug
 run-debug: run
 
 run-logging: CMD=start-logging
 run-logging: run
+
+# targets for running nodejs app and tmpnb containers
+run-tmpnb: | build run-tmpnb-proxy run-tmpnb-pool
+	$(DOCKER_APP) \
+	-e KERNEL_CLUSTER_URL=http://$(TMPNB_PROXY_CONTAINER_NAME):8000 \
+	--link $(TMPNB_PROXY_CONTAINER_NAME):$(TMPNB_PROXY_CONTAINER_NAME) \
+	$(DASHBOARD_IMAGE_NAME) $(CMD)
+
+run-tmpnb-debug: CMD=start-debug
+run-tmpnb-debug: run-tmpnb
+
+run-tmpnb-logging: CMD=start-logging
+run-tmpnb-logging: run-tmpnb
+
+###### kernel gateway
 
 run-kernel-gateway:
 	@kg_is_running=`docker ps -q --filter="name=$(KG_CONTAINER_NAME)"`; \
@@ -106,7 +125,7 @@ run-tmpnb-proxy: token-check
 			--log-driver=json-file \
 			--log-opt max-size=$(MAX_LOG_SIZE) \
 			--log-opt max-file=$(MAX_LOG_ROLLOVER) \
-			-p 8080:8000 \
+			-p 8000:8000 \
 			-e CONFIGPROXY_AUTH_TOKEN=$(TMPNB_PROXY_AUTH_TOKEN) \
 			$(PROXY_IMAGE) \
 				--default-target http://127.0.0.1:9999; \
@@ -146,9 +165,6 @@ run-tmpnb-pool: token-check
 					--KernelGatewayApp.port={port} \
 					--KernelGatewayApp.base_url={base_path}'; \
 	fi;
-
-run-tmpnb: TMPNB_PROXY_AUTH_TOKEN?=devauthtokenonly
-run-tmpnb: run-tmpnb-proxy run-tmpnb-pool
 
 kill-tmpnb:
 	@-docker rm -f $(TMPNB_PROXY_CONTAINER_NAME) $(TMPNB_POOL_CONTAINER_NAME)
