@@ -68,7 +68,9 @@ app.use(session({
         }));
 
 //if username and password supplied enabled auth
-if(nconf.get('USERNAME') !== undefined && nconf.get('PASSWORD') !== undefined) {
+var seedUsername = nconf.get('USERNAME')
+var seedPassword = nconf.get('PASSWORD')
+if(seedUsername && seedUsername !== "" && seedPassword && seedPassword !== "") {
     app.use('/login', loginRoutes);
     app.use('/logout', logoutRoutes);
 
@@ -83,7 +85,7 @@ if(nconf.get('USERNAME') !== undefined && nconf.get('PASSWORD') !== undefined) {
         }
         else {
             //save the previous page in the session to know where to redirect back to after login
-            req.session.redirect_after_login = req.path;
+            req.session.redirectAfterLogin = req.path;
             res.redirect('/login');
         }
     });

@@ -74,6 +74,10 @@ To run the Node application with a self-signed certificate, first create the cer
 2. `make run HTTPS_KEY_FILE=certs/server.pem HTTPS_CERT_FILE=certs/server.pem`
 3. Visit `http://<external docker IP>:3001/notebooks/simple` to see a simple example notebook as a dashboard.
 
+To run the Node application with basic auth enabled:
+
+1. `make run USERNAME=admin PASSWORD=password`
+
 ### tmpnb options
 
 The `TMPNB_PROXY_AUTH_TOKEN` environment variable sets the value of a token that the tmpnb proxy and orchestration containers use to authenticate requests between them.  To run tmpnb with a unique token:
