@@ -8,7 +8,8 @@
     "start": "node ./bin/www",
     "start-debug": "node-inspector & node --debug-brk ./bin/www",
     "start-logging": "NODE_DEBUG=http DEBUG=express:*,dashboard-proxy:* node ./bin/www",
-    "test": "node_modules/mocha/bin/mocha test/**/*-test.js"
+    "test": "node_modules/mocha/bin/mocha test/base/**/*-test.js",
+    "integration-test": "node_modules/mocha/bin/mocha test/integration/**/*-test.js"
   },
   "dependencies": {
     "body-parser": "^1.13.3",

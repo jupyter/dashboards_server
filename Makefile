@@ -4,7 +4,8 @@
 .PHONY: help build certs \
 	run run-debug run-logging run-kernel-gateway \
 	run-tmpnb run-tmpnb-debug run-tmpnb-logging run-tmpnb-proxy run-tmpnb-pool kill-tmpnb token-check \
-	kill dev-install dev debug dev-install-ipywidgets
+	kill dev-install dev debug dev-install-ipywidgets \
+	test integration-test
 
 DASHBOARD_CONTAINER_NAME=dashboard-proxy
 DASHBOARD_IMAGE_NAME=jupyter-incubator/$(DASHBOARD_CONTAINER_NAME)
@@ -15,8 +16,6 @@ TMPNB_PROXY_CONTAINER_NAME=tmpnb-proxy
 TMPNB_PROXY_AUTH_TOKEN:=devauthtokenonly
 HTTP_PORT?=3000
 HTTPS_PORT?=3001
-
-KG_AUTH_TOKEN?=
 
 help:
 	@echo 'Make commands:'
@@ -30,6 +29,8 @@ help:
 	@echo '   run-tmpnb-debug - run-tmpnb + debugging through node-inspector'
 	@echo ' run-tmpnb-logging - run-tmpnb + node network logging enabled'
 	@echo '        kill-tmpnb - stops tmpnb notebook service'
+	@echo '              test - run unit tests'
+	@echo '  integration-test - run integration tests'
 	@echo
 	@echo 'Dashboard proxy option defaults (via nconf):'
 	@cat config.json
