@@ -1,7 +1,10 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-.PHONY: help build certs run run-debug run-logging run-kernel-gateway kill dev-install dev debug _dev-install-ipywidgets
+.PHONY: help build certs \
+	run run-debug run-logging run-kernel-gateway \
+	run-tmpnb tmpnb-proxy tmpnb-pool kill-tmpnb token-check \
+	kill dev-install dev debug _dev-install-ipywidgets
 
 DASHBOARD_CONTAINER_NAME=dashboard-proxy
 DASHBOARD_IMAGE_NAME=jupyter-incubator/$(DASHBOARD_CONTAINER_NAME)
@@ -16,6 +19,8 @@ help:
 	@echo '               run - runs the dashboard proxy and kernel gateway containers'
 	@echo '         run-debug - run + debugging through node-inspector'
 	@echo '       run-logging - run + node network logging enabled'
+	@echo '         run-tmpnb - run tmpnb notebook service containers'
+	@echo '        kill-tmpnb - stops tmpnb notebook service containers'
 	@echo
 	@echo 'Dashboard proxy option defaults (via nconf):'
 	@cat config.json
@@ -75,7 +80,66 @@ run-kernel-gateway:
 			$(KG_IMAGE_NAME); \
 	fi;
 
-kill:
+###### tmpnb
+
+MAX_LOG_SIZE:=50m
+MAX_LOG_ROLLOVER:=10
+
+token-check:
+	@test -n "$(TMPNB_PROXY_AUTH_TOKEN)" || \
+		(echo "ERROR: TMPNB_PROXY_AUTH_TOKEN not defined (make help)"; exit 1)
+
+tmpnb-proxy: PROXY_IMAGE?=jupyter/configurable-http-proxy@sha256:f84940db7ddf324e35f1a5935070e36832cc5c1f498efba4d69d7b962eec5d08
+tmpnb-proxy: token-check
+	@docker run -d \
+		--name=tmpnb-proxy \
+		--log-driver=json-file \
+		--log-opt max-size=$(MAX_LOG_SIZE) \
+		--log-opt max-file=$(MAX_LOG_ROLLOVER) \
+		-p 8080:8000 \
+		-e CONFIGPROXY_AUTH_TOKEN=$(TMPNB_PROXY_AUTH_TOKEN) \
+		$(PROXY_IMAGE) \
+			--default-target http://127.0.0.1:9999
+
+tmpnb-pool: TMPNB_IMAGE?=jupyter/tmpnb@sha256:54c39158eb83085bc6f445772b70d975f8b747af4159474f5407cfa2e0f390c7
+tmpnb-pool: POOL_SIZE?=2
+tmpnb-pool: MEMORY_LIMIT?=512m
+tmpnb-pool: IMAGE?=$(KG_IMAGE_NAME)
+tmpnb-pool: BRIDGE_IP=$(shell docker inspect --format='{{.NetworkSettings.Networks.bridge.Gateway}}' tmpnb-proxy)
+tmpnb-pool: token-check
+	@docker run -d \
+		--name=tmpnb-pool \
+		--log-driver=json-file \
+		--log-opt max-size=$(MAX_LOG_SIZE) \
+		--log-opt max-file=$(MAX_LOG_ROLLOVER) \
+		--net=container:tmpnb-proxy \
+		-e CONFIGPROXY_AUTH_TOKEN=$(TMPNB_PROXY_AUTH_TOKEN) \
+		-v /var/run/docker.sock:/docker.sock \
+		$(TMPNB_IMAGE) \
+		python orchestrate.py --image='$(IMAGE)' \
+			--container_ip=$(BRIDGE_IP) \
+			--pool_size=$(POOL_SIZE) \
+			--pool_name=tmpnb \
+			--cull_period=30 \
+			--cull_timeout=600 \
+			--max_dock_workers=16 \
+			--mem_limit=$(MEMORY_LIMIT) \
+			--redirect_uri=/api \
+			--command='jupyter kernelgateway \
+				--KernelGatewayApp.log_level=DEBUG \
+				--KernelGatewayApp.ip=0.0.0.0 \
+				--KernelGatewayApp.port={port} \
+				--KernelGatewayApp.base_url={base_path}'
+
+run-tmpnb: tmpnb-proxy tmpnb-pool
+
+kill-tmpnb:
+	@-docker rm -f tmpnb-pool tmpnb-proxy
+	@-docker rm -f $$(docker ps -a | grep 'tmp.' | awk '{print $$1}') 2> /dev/null
+
+###### end tmpnb
+
+kill: kill-tmpnb
 	-@docker rm -f $(DASHBOARD_CONTAINER_NAME) $(KG_CONTAINER_NAME)
 
 test: build

@@ -29,29 +29,57 @@ For more details, including use cases and alternative deployments, see the [dash
 
 The demo requires Docker. A simple way to run [Docker](https://www.docker.com/) is to use [docker-machine](https://docs.docker.com/machine/get-started/).
 
-If you want to do a basic run with minimal HTTP traffic logging:
+### NodeJS application
 
-1. Run `make run` to build and launch two containers:
-    * kernel gateway container
-    * deployed dashboard container
+Choose one of the following ways to run both the node application container and a single kernel gateway container.
+
+To run with minimal HTTP logging:
+
+1. `make run`
 2. Visit `http://<external docker IP>:9700/notebooks/simple` to see a simple example notebook as a dashboard.
 3. To see another notebook as a dashboard:
     * Copy the `*.ipynb` file to the `data/` directory in the project root.
     * Run `make run` again -- this should rebuild the Docker image.
 
-If you want to enable remote debugging:
+To run with remote debugging enabled:
 
-1. Invoke `make run-debug` (instead of `make run`).
+1. `make run-debug`
 2. Open `http://<external docker IP>:9711/?ws=<external docker IP>:9711&port=5858` to access the `node-inspector` and commence debugging.
 
-If you want to enable debug logging:
+To run with debug-level logging enabled:
 
-1. Invoke `make run-logging` (instead `make run`).
+1. `make run-logging`
 2. Look at the server console.
 
-If you want to run with a self-signed certificate:
+To run with a self-signed certificate in the node application container, first create the certificates, then run one of the above commands while setting **both** the `HTTPS_KEY_FILE` and `HTTPS_CERT_FILE` environment variables:
 
 ```bash
 make certs
-HTTPS_KEY_FILE=../certs/server.pem HTTPS_CERT_FILE=../certs/server.pem make run
+make run \
+  HTTPS_KEY_FILE=certs/server.pem \
+  HTTPS_CERT_FILE=certs/server.pem
+```
+
+### tmpnb notebook service
+
+The following command will run the [tmpnb](https://github.com/jupyter/tmpnb) notebook service, including a configurable HTTP proxy container, a tmpnb orchestration container, and a pool of kernel gateway containers.  You must set the `TMPNB_PROXY_AUTH_TOKEN` environment variable.   The proxy and orchestration containers use the value as a token to authenticate requests between them.
+
+```bash
+make run-tmpnb \
+  TMPNB_PROXY_AUTH_TOKEN="$(openssl rand -base64 32)"
+```
+
+To run tmpnb with a pool of 5 kernel gateway containers, each with a memory limit of 1GB:
+
+```bash
+make run-tmpnb \
+  TMPNB_PROXY_AUTH_TOKEN="$(openssl rand -base64 32)" \
+  POOL_SIZE=5 \
+  MEMORY_LIMIT=1G
+```
+
+To stop all tmpnb containers:
+
+```bash
+make kill-tmpnb
 ```
