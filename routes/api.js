@@ -9,15 +9,17 @@ var nbstore = require('../app/notebook-store');
 var config = require('../app/config');
 var Promise = require('es6-promise').Promise;
 var url = require('url');
+var urljoin = require('url-join');
 
 var kgUrl = config.get('KERNEL_GATEWAY_URL');
 var kgAuthToken = config.get('KG_AUTH_TOKEN');
+var kgBaseUrl = config.get('KG_BASE_URL');
 
 var server = null;
 var sessions = {}; // TODO remove old sessions, somehow
 
 var proxy = httpProxy.createProxyServer({
-        target: kgUrl + '/api'
+        target: urljoin(kgUrl, kgBaseUrl, '/api')
     });
 
 function setupWSProxy(_server) {

@@ -1,10 +1,11 @@
 // Hjson format, see http://hjson.org for syntax
 {
-    // The URL of the kernel gateway / jupyter notebook server to contact for
-    // kernels
+    // URL of the kernel gateway / jupyter notebook server to contact for kernels
     KERNEL_GATEWAY_URL: http://192.168.99.100:8888
     // Authorization token required for kernel gateway requests
     KG_AUTH_TOKEN: null
+    // Kernel gateway base URL (gets appended to KERNEL_GATEWAY_URL)
+    KG_BASE_URL: ""
     // Port on which the dashboard server listens
     PORT: 3000
     // HTTPS_PORT, HTTPS Port on which the dashboard server listens
