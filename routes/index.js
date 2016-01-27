@@ -39,7 +39,8 @@ router.get('/notebooks/*', function(req, res) {
                 res.status(200);
                 res.render('dashboard', {
                     title: 'Dashboard',
-                    notebook: notebook
+                    notebook: notebook,
+                    username: req.session.username
                 });
             },
             function error(err) {

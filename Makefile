@@ -62,10 +62,13 @@ define DOCKER_APP
 	-p $(HTTP_PORT):$(HTTP_PORT) \
 	-p $(HTTPS_PORT):$(HTTPS_PORT) \
 	-p 9711:8080 \
+	-e USERNAME=$(USERNAME) \
+	-e PASSWORD=$(PASSWORD) \
 	-e PORT=$(HTTP_PORT) \
 	-e HTTPS_PORT=$(HTTPS_PORT) \
 	-e HTTPS_KEY_FILE=$(HTTPS_KEY_FILE) \
-	-e HTTPS_CERT_FILE=$(HTTPS_CERT_FILE)
+	-e HTTPS_CERT_FILE=$(HTTPS_CERT_FILE) \
+	-e SESSION_SECRET_TOKEN=$(SESSION_SECRET_TOKEN)
 endef
 
 # targets for running nodejs app and kernel gateway containers
