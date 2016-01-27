@@ -9,9 +9,16 @@
 {{> nav}}
 
 <div class="container">
+  {{#if autherror}}
+  <div class="alert alert-danger" role="alert">
+    <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+    <span class="sr-only">Error:</span>
+    Invalid login credentials.
+  </div>
+  {{/if}}
   {{#if username}}
   <center>
-    <h1>Logged in as, {{username}}.  Please Log Out first.</h1>
+    <h1>Logged in as, {{username}}.  Please log out first.</h1>
   </center>
   {{else}}
   <form action="/login" method="post" class="form-signin">

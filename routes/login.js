@@ -2,18 +2,18 @@
  * Copyright (c) Jupyter Development Team.
  * Distributed under the terms of the Modified BSD License.
  */
-var nconf = require('nconf');
+var config = require('../app/config');
 var express = require('express');
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser');
 var router = express.Router();
 
 // create application/json parser
-var jsonParser = bodyParser.json()
+var jsonParser = bodyParser.json();
 // create application/x-www-form-urlencoded parser
-var urlencodedParser = bodyParser.urlencoded({ extended: false })
+var urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 var redirectBack = function(req, res) {
-    var redirectAfterLogin = req.session.redirectAfterLogin ? req.session.redirectAfterLogin : '/';
+    var redirectAfterLogin = req.session.redirectAfterLogin || '/';
     delete req.session.redirectAfterLogin;
     res.redirect(redirectAfterLogin);
 };
@@ -26,9 +26,11 @@ router.get('/', function(req, res) {
 });
 
 router.post('/', urlencodedParser, function(req, res) {
-    if (!req.body) return res.sendStatus(400)
-    var seedUsername = nconf.get('USERNAME');
-    var seedPassword = nconf.get('PASSWORD');
+    if (!req.body) {
+        return res.sendStatus(400);
+    }
+    var seedUsername = config.get('USERNAME');
+    var seedPassword = config.get('PASSWORD');
 
     //if not logged in already
     if(!req.session.username) {
@@ -38,7 +40,10 @@ router.post('/', urlencodedParser, function(req, res) {
             redirectBack(req, res);
         }
         else {
-            return res.redirect(401, '/login');
+            res.render('login', {
+                username: req.session.username,
+                autherror: true
+            });
         }
     }
     //already logged in

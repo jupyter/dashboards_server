@@ -74,7 +74,7 @@ To run the Node application with a self-signed certificate, first create the cer
 2. `make run HTTPS_KEY_FILE=certs/server.pem HTTPS_CERT_FILE=certs/server.pem`
 3. Visit `http://<external docker IP>:3001/notebooks/simple` to see a simple example notebook as a dashboard.
 
-To run the Node application with basic auth enabled:
+To run the Node application with form-based auth enabled:
 
 1. `make run USERNAME=admin PASSWORD=password`
 

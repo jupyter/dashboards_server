@@ -3,11 +3,11 @@
  * Distributed under the terms of the Modified BSD License.
  */
 var express = require('express');
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser');
 var router = express.Router();
 
 // create application/json parser
-var jsonParser = bodyParser.json()
+var jsonParser = bodyParser.json();
 
 router.post('/', jsonParser, function(req, res) {
     req.session.destroy();

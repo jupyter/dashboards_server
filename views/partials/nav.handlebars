@@ -8,7 +8,7 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="/">Jupyter Dashboards Server</a>
+      <a class="navbar-brand" href="/">Jupyter Dashboard</a>
     </div>
 
     <!-- Collect the nav links, forms, and other content for toggling -->
@@ -16,7 +16,7 @@
       <ul class="nav navbar-nav navbar-right">
         {{#if username}}
           <form action="/logout" method="post">
-            <button type="submit" class="btn btn-default">Log Out, {{username}}</button>
+            <button type="submit" class="btn btn-link">Log Out, {{username}}</button>
           </form>
         {{else}}
           <li><a href="/login">Sign In</a></li>
