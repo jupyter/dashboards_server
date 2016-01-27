@@ -72,6 +72,7 @@ endef
 run: | build run-kernel-gateway
 	$(DOCKER_APP) -it --rm \
 	-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
+	-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
 	--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
 	$(DASHBOARD_IMAGE_NAME) $(CMD)
 
@@ -101,7 +102,7 @@ run-kernel-gateway:
 	if [ -n "$$kg_is_running" ] ; then \
 		echo "$(KG_CONTAINER_NAME) is already running."; \
 	else \
-		docker rm $(KG_CONTAINER_NAME); \
+		docker rm $(KG_CONTAINER_NAME) 2> /dev/null; \
 		docker run -d \
 			--name $(KG_CONTAINER_NAME) \
 			-p 8888:8888 \
@@ -190,11 +191,14 @@ test: build
 
 integration-test: SERVER_NAME?=integration-test-server
 integration-test: IP?=$$(docker-machine ip $$(docker-machine active))
-integration-test: HTTP_PORT?=3000
 integration-test: KG_PORT?=8888
 integration-test: KG_AUTH_TOKEN?=1a2b3c4d5e6f
 integration-test: | kill build run-kernel-gateway
-	@HTTP_PORT=$(HTTP_PORT) $(DOCKER_APP) -d
+	$(DOCKER_APP) -d \
+		-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
+		-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
+		--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
+		$(DASHBOARD_IMAGE_NAME)
 	@echo 'Waiting 30 seconds for server to start...'
 	@sleep 30
 	@echo 'Running system integration tests...'

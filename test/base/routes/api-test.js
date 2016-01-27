@@ -57,7 +57,7 @@ var nbstoreStub = {
     }
 };
 
-var api = proxyquire('../../routes/api', {
+var api = proxyquire('../../../routes/api', {
     'http-proxy': httpProxyStub,
     '../app/ws-utils': wsutilsStub,
     '../app/notebook-store': nbstoreStub
