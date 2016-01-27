@@ -4,20 +4,10 @@
  */
 var debug = require('debug')('dashboard-proxy:server');
 var express = require('express');
-var multer = require('multer');
 var nbstore = require('../app/notebook-store');
-var uploadNb = require('../app/upload-notebook');
+var upload = require('../app/upload-notebook');
 
 var router = express.Router();
-
-// multer setup
-var storage = multer.diskStorage({
-    destination: uploadNb.destination,
-    filename: uploadNb.filename
-});
-var upload = multer({
-    storage: storage
-});
 
 /* GET / - redirect to notebook list page */
 router.get('/', function(req, res) {
