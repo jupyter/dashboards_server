@@ -39,6 +39,7 @@ clean:
 	@rm -rf certs/
 
 build:
+	@echo '-- Building Docker containers'
 	@docker build -f Dockerfile.kernel -t $(KG_IMAGE_NAME) .
 	@docker build -f Dockerfile.proxy -t $(DASHBOARD_IMAGE_NAME) .
 
@@ -73,6 +74,7 @@ endef
 
 # targets for running nodejs app and kernel gateway containers
 run: | build run-kernel-gateway
+	@echo '-- Starting proxy container'
 	$(DOCKER_APP) -it --rm \
 	-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
 	-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
@@ -105,8 +107,9 @@ run-kernel-gateway: KG_BASE_URL?=
 run-kernel-gateway:
 	@kg_is_running=`docker ps -q --filter="name=$(KG_CONTAINER_NAME)"`; \
 	if [ -n "$$kg_is_running" ] ; then \
-		echo "$(KG_CONTAINER_NAME) is already running."; \
+		echo "-- $(KG_CONTAINER_NAME) is already running."; \
 	else \
+		echo "-- Starting kernel gateway container"; \
 		docker rm $(KG_CONTAINER_NAME) 2> /dev/null; \
 		docker run -d \
 			--name $(KG_CONTAINER_NAME) \
@@ -129,7 +132,7 @@ run-tmpnb-proxy: PROXY_IMAGE?=jupyter/configurable-http-proxy@sha256:f84940db7dd
 run-tmpnb-proxy: token-check
 	@tmpnb_proxy_is_running=`docker ps -q --filter="name=$(TMPNB_PROXY_CONTAINER_NAME)"`; \
 	if [ -n "$$tmpnb_proxy_is_running" ] ; then \
-		echo "$(TMPNB_PROXY_CONTAINER_NAME) is already running."; \
+		echo "-- $(TMPNB_PROXY_CONTAINER_NAME) is already running."; \
 	else \
 		docker run -d \
 			--name=$(TMPNB_PROXY_CONTAINER_NAME) \
@@ -150,7 +153,7 @@ run-tmpnb-pool: BRIDGE_IP=$(shell docker inspect --format='{{.NetworkSettings.Ne
 run-tmpnb-pool: token-check
 	@tmpnb_pool_is_running=`docker ps -q --filter="name=$(TMPNB_POOL_CONTAINER_NAME)"`; \
 	if [ -n "$$tmpnb_pool_is_running" ] ; then \
-		echo "$(TMPNB_POOL_CONTAINER_NAME) is already running."; \
+		echo "-- $(TMPNB_POOL_CONTAINER_NAME) is already running."; \
 	else \
 		docker run -d \
 			--name=$(TMPNB_POOL_CONTAINER_NAME) \
@@ -184,31 +187,36 @@ kill-tmpnb:
 ###### end tmpnb
 
 kill: kill-tmpnb
+	@echo '-- Removing Docker containers'
 	@-docker rm -f $(DASHBOARD_CONTAINER_NAME) $(KG_CONTAINER_NAME) 2> /dev/null || true
 
-test: CMD?=test
-test: SERVER_NAME?=$(DASHBOARD_CONTAINER_NAME)
-test: DOCKER_OPTIONS?=
-test: build
+_run_test_in_docker: CMD?=test
+_run_test_in_docker: SERVER_NAME?=$(DASHBOARD_CONTAINER_NAME)
+_run_test_in_docker: DOCKER_OPTIONS?=
+_run_test_in_docker:
 	@docker run -it --rm \
 		--name $(SERVER_NAME) \
 		$(DOCKER_OPTIONS) \
 		$(DASHBOARD_IMAGE_NAME) $(CMD)
+
+test: | build _run_test_in_docker
 
 integration-test: SERVER_NAME?=integration-test-server
 integration-test: IP?=$$(docker-machine ip $$(docker-machine active))
 integration-test: KG_PORT?=8888
 integration-test: KG_AUTH_TOKEN?=1a2b3c4d5e6f
 integration-test: | kill build run-kernel-gateway
+	@echo '-- Starting proxy container'
 	$(DOCKER_APP) -d \
 		-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
 		-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
 		--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
 		$(DASHBOARD_IMAGE_NAME)
-	@echo 'Waiting 30 seconds for server to start...'
-	@sleep 30
-	@echo 'Running system integration tests...'
-	@$(MAKE) test CMD=integration-test \
+	@echo '-- Waiting 10 seconds for servers to start...'
+	@sleep 10
+	@echo '-- Running system integration tests...'
+	@$(MAKE) _run_test_in_docker \
+		CMD=integration-test \
 		SERVER_NAME=$(SERVER_NAME) \
 		DOCKER_OPTIONS="-e APP_URL=http://$(IP):$(HTTP_PORT) -e KERNEL_GATEWAY_URL=http://$(IP):$(KG_PORT) -e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN)"
 	@$(MAKE) kill
