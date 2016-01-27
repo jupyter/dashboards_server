@@ -10,13 +10,14 @@ var config = require('../app/config');
 var Promise = require('es6-promise').Promise;
 var url = require('url');
 
-var KERNEL_GATEWAY_URL = config.get('KERNEL_GATEWAY_URL');
+var kgUrl = config.get('KERNEL_GATEWAY_URL');
+var kgAuthToken = config.get('KG_AUTH_TOKEN');
 
 var server = null;
 var sessions = {}; // TODO remove old sessions, somehow
 
 var proxy = httpProxy.createProxyServer({
-        target: KERNEL_GATEWAY_URL + '/api'
+        target: kgUrl + '/api'
     });
 
 function setupWSProxy(_server) {
@@ -105,11 +106,16 @@ var proxyRoute = function(req, res, next) {
 };
 
 proxy.on('proxyReq', function(proxyReq, req, res, options) {
+    if (kgAuthToken) {
+        proxyReq.setHeader('Authorization', 'token ' + kgAuthToken);
+    }
     debug('PROXY: ' + proxyReq.method + ' ' + proxyReq.path);
 });
 
 proxy.on('proxyReqWs', function(proxyReq, req, socket, options, head) {
-    // TODO add API key auth header
+    if (kgAuthToken) {
+        proxyReq.setHeader('Authorization', 'token ' + kgAuthToken);
+    }
     debug('PROXY: WebSocket: ' + req.method + ' ' + proxyReq.path);
 });
 
@@ -140,7 +146,7 @@ proxy.on('error', function(err, req, res) {
     debug('PROXY: Error with proxy server ' + err);
 });
 
-proxy.on('open', function(proxySocket) {
+// proxy.on('open', function(proxySocket) {
     // listen for messages coming FROM the target here
     // proxySocket.on('data', function(data) {
     //     var decodedData = wsutils.decodeWebSocket(data);
@@ -149,7 +155,7 @@ proxy.on('open', function(proxySocket) {
     //     }
     //     debug('PROXY: received message from target WS: ' + decodedData.payload);
     // });
-});
+// });
 
 proxy.on('close', function (req, socket, head) {
     // view disconnected websocket connections

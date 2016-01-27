@@ -4,7 +4,8 @@
 .PHONY: help build certs \
 	run run-debug run-logging run-kernel-gateway \
 	run-tmpnb run-tmpnb-debug run-tmpnb-logging run-tmpnb-proxy run-tmpnb-pool kill-tmpnb token-check \
-	kill dev-install dev debug _dev-install-ipywidgets
+	kill dev-install dev debug dev-install-ipywidgets \
+	test integration-test
 
 DASHBOARD_CONTAINER_NAME=dashboard-proxy
 DASHBOARD_IMAGE_NAME=jupyter-incubator/$(DASHBOARD_CONTAINER_NAME)
@@ -28,6 +29,8 @@ help:
 	@echo '   run-tmpnb-debug - run-tmpnb + debugging through node-inspector'
 	@echo ' run-tmpnb-logging - run-tmpnb + node network logging enabled'
 	@echo '        kill-tmpnb - stops tmpnb notebook service'
+	@echo '              test - run unit tests'
+	@echo '  integration-test - run integration tests'
 	@echo
 	@echo 'Dashboard proxy option defaults (via nconf):'
 	@cat config.json
@@ -54,7 +57,7 @@ certs: certs/server.pem
 
 # command to run the nodejs app container
 define DOCKER_APP
-@docker run -it --rm \
+@docker run \
 	--name $(DASHBOARD_CONTAINER_NAME) \
 	-p $(HTTP_PORT):$(HTTP_PORT) \
 	-p $(HTTPS_PORT):$(HTTPS_PORT) \
@@ -67,8 +70,9 @@ endef
 
 # targets for running nodejs app and kernel gateway containers
 run: | build run-kernel-gateway
-	$(DOCKER_APP) \
+	$(DOCKER_APP) -it --rm \
 	-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
+	-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
 	--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
 	$(DASHBOARD_IMAGE_NAME) $(CMD)
 
@@ -80,7 +84,7 @@ run-logging: run
 
 # targets for running nodejs app and tmpnb containers
 run-tmpnb: | build run-tmpnb-proxy run-tmpnb-pool
-	$(DOCKER_APP) \
+	$(DOCKER_APP) -it --rm \
 	-e KERNEL_CLUSTER_URL=http://$(TMPNB_PROXY_CONTAINER_NAME):8000 \
 	--link $(TMPNB_PROXY_CONTAINER_NAME):$(TMPNB_PROXY_CONTAINER_NAME) \
 	$(DASHBOARD_IMAGE_NAME) $(CMD)
@@ -98,10 +102,11 @@ run-kernel-gateway:
 	if [ -n "$$kg_is_running" ] ; then \
 		echo "$(KG_CONTAINER_NAME) is already running."; \
 	else \
-		docker rm $(KG_CONTAINER_NAME); \
-		docker run -d -it \
+		docker rm $(KG_CONTAINER_NAME) 2> /dev/null; \
+		docker run -d \
 			--name $(KG_CONTAINER_NAME) \
 			-p 8888:8888 \
+			-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
 			$(KG_IMAGE_NAME); \
 	fi;
 
@@ -167,21 +172,43 @@ run-tmpnb-pool: token-check
 	fi;
 
 kill-tmpnb:
-	@-docker rm -f $(TMPNB_PROXY_CONTAINER_NAME) $(TMPNB_POOL_CONTAINER_NAME)
-	@-docker rm -f $$(docker ps -a | grep 'tmp.' | awk '{print $$1}') 2> /dev/null
+	@-docker rm -f $(TMPNB_PROXY_CONTAINER_NAME) $(TMPNB_POOL_CONTAINER_NAME) 2> /dev/null || true
+	@-docker rm -f $$(docker ps -a | grep 'tmp.' | awk '{print $$1}') 2> /dev/null || true
 
 ###### end tmpnb
 
 kill: kill-tmpnb
-	-@docker rm -f $(DASHBOARD_CONTAINER_NAME) $(KG_CONTAINER_NAME)
+	@-docker rm -f $(DASHBOARD_CONTAINER_NAME) $(KG_CONTAINER_NAME) 2> /dev/null || true
 
+test: CMD?=test
+test: SERVER_NAME?=$(DASHBOARD_CONTAINER_NAME)
+test: DOCKER_OPTIONS?=
 test: build
-		@docker run -it --rm \
-			--name $(DASHBOARD_CONTAINER_NAME) \
-			$(DASHBOARD_IMAGE_NAME) test
+	@docker run -it --rm \
+		--name $(SERVER_NAME) \
+		$(DOCKER_OPTIONS) \
+		$(DASHBOARD_IMAGE_NAME) $(CMD)
+
+integration-test: SERVER_NAME?=integration-test-server
+integration-test: IP?=$$(docker-machine ip $$(docker-machine active))
+integration-test: KG_PORT?=8888
+integration-test: KG_AUTH_TOKEN?=1a2b3c4d5e6f
+integration-test: | kill build run-kernel-gateway
+	$(DOCKER_APP) -d \
+		-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
+		-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
+		--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
+		$(DASHBOARD_IMAGE_NAME)
+	@echo 'Waiting 30 seconds for server to start...'
+	@sleep 30
+	@echo 'Running system integration tests...'
+	@$(MAKE) test CMD=integration-test \
+		SERVER_NAME=$(SERVER_NAME) \
+		DOCKER_OPTIONS="-e APP_URL=http://$(IP):$(HTTP_PORT) -e KERNEL_GATEWAY_URL=http://$(IP):$(KG_PORT) -e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN)"
+	@$(MAKE) kill
 
 # Targets for running the nodejs app on the host
-_dev-install-ipywidgets:
+dev-install-ipywidgets:
 	-npm uninstall jupyter-js-widgets
 	-rm -rf ext/ipywidgets
 	@mkdir -p ext ; \
@@ -192,13 +219,18 @@ _dev-install-ipywidgets:
 		cd ipywidgets ; \
 		npm install
 
-dev-install: _dev-install-ipywidgets
+dev-install: dev-install-ipywidgets
 	npm install
 	npm run bower
 
 dev: KG_IP?=$$(docker-machine ip $$(docker-machine active))
 dev: run-kernel-gateway
 	KERNEL_GATEWAY_URL=http://$(KG_IP):8888 gulp
+
+dev-logging: KG_IP?=$$(docker-machine ip $$(docker-machine active))
+dev-logging: run-kernel-gateway
+	gulp build
+	KERNEL_GATEWAY_URL=http://$(KG_IP):8888 npm run start-logging
 
 debug: KG_IP?=$$(docker-machine ip $$(docker-machine active))
 debug: run-kernel-gateway
