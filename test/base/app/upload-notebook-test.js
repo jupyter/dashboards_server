@@ -19,7 +19,7 @@ var fsStub = {
     mkdirSync: function(){}
 };
 
-var uploadNb = proxyquire('../../app/upload-notebook', {
+var uploadNb = proxyquire('../../../app/upload-notebook', {
     './config': configStub,
     fs: fsStub
 });
@@ -32,11 +32,11 @@ describe('app: upload-notebook', function() {
             params: ['bar/name']
         };
         var cbSpy = sinon.spy();
-        uploadNb.destination(req, null, cbSpy);
+        uploadNb.storage.getDestination(req, null, cbSpy);
 
         expect(cbSpy).calledOnce;
         var destDir = cbSpy.firstCall.args[1];
-        var expectedDir = path.join(__dirname, '../../app/', 'foo/bar');
+        var expectedDir = path.join(__dirname, '../../../app/', 'foo/bar');
         expect(destDir).to.equal(expectedDir);
     });
     it('should use the correct filename and add extension', function() {
@@ -44,7 +44,7 @@ describe('app: upload-notebook', function() {
             params: ['bar/name']
         };
         var cbSpy = sinon.spy();
-        uploadNb.filename(req, null, cbSpy);
+        uploadNb.storage.getFilename(req, null, cbSpy);
 
         expect(cbSpy).calledOnce;
         var filename = cbSpy.firstCall.args[1];
@@ -55,7 +55,7 @@ describe('app: upload-notebook', function() {
             params: ['bar/name.ipynb']
         };
         var cbSpy = sinon.spy();
-        uploadNb.filename(req, null, cbSpy);
+        uploadNb.storage.getFilename(req, null, cbSpy);
 
         expect(cbSpy).calledOnce;
         var filename = cbSpy.firstCall.args[1];
