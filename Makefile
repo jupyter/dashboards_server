@@ -73,6 +73,7 @@ run: | build run-kernel-gateway
 	$(DOCKER_APP) -it --rm \
 	-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
 	-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
+	-e KG_BASE_URL=$(KG_BASE_URL) \
 	--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
 	$(DASHBOARD_IMAGE_NAME) $(CMD)
 
@@ -97,6 +98,7 @@ run-tmpnb-logging: run-tmpnb
 
 ###### kernel gateway
 
+run-kernel-gateway: KG_BASE_URL?=
 run-kernel-gateway:
 	@kg_is_running=`docker ps -q --filter="name=$(KG_CONTAINER_NAME)"`; \
 	if [ -n "$$kg_is_running" ] ; then \
@@ -107,6 +109,7 @@ run-kernel-gateway:
 			--name $(KG_CONTAINER_NAME) \
 			-p 8888:8888 \
 			-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
+			-e KG_BASE_URL=$(KG_BASE_URL) \
 			$(KG_IMAGE_NAME); \
 	fi;
 
@@ -225,7 +228,7 @@ dev-install: dev-install-ipywidgets
 
 dev: KG_IP?=$$(docker-machine ip $$(docker-machine active))
 dev: run-kernel-gateway
-	KERNEL_GATEWAY_URL=http://$(KG_IP):8888 gulp
+	KG_BASE_URL=$(KG_BASE_URL) KERNEL_GATEWAY_URL=http://$(KG_IP):8888 gulp
 
 dev-logging: KG_IP?=$$(docker-machine ip $$(docker-machine active))
 dev-logging: run-kernel-gateway
@@ -234,4 +237,4 @@ dev-logging: run-kernel-gateway
 
 debug: KG_IP?=$$(docker-machine ip $$(docker-machine active))
 debug: run-kernel-gateway
-	KERNEL_GATEWAY_URL=http://$(KG_IP):8888 gulp debug
+	KG_BASE_URL=$(KG_BASE_URL) KERNEL_GATEWAY_URL=http://$(KG_IP):8888 gulp debug
