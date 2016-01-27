@@ -27,42 +27,56 @@ For more details, including use cases and alternative deployments, see the [dash
 
 ## Develop It
 
-The demo requires Docker. A simple way to run [Docker](https://www.docker.com/) is to use [docker-machine](https://docs.docker.com/machine/get-started/).
+Running the Node application requires Docker. A simple way to run [Docker](https://www.docker.com/) is to use [docker-machine](https://docs.docker.com/machine/get-started/).
 
-### NodeJS application
+You can run the Node application with your choice of backend kernel provider.
 
-Choose one of the following ways to run both the node application container and a single kernel gateway container.
+### Run Node app with kernel gateway
 
-To run with minimal HTTP logging:
+To run the Node application container and a single kernel gateway container:
 
-1. `make run`
-2. Visit `http://<external docker IP>:9700/notebooks/simple` to see a simple example notebook as a dashboard.
-3. To see another notebook as a dashboard:
-    * Copy the `*.ipynb` file to the `data/` directory in the project root.
-    * Run `make run` again -- this should rebuild the Docker image.
+```bash
+make run
+```
 
-To run with remote debugging enabled:
+### Run Node app with tmpnb notebook service
+
+To run the Node application container and the [tmpnb](https://github.com/jupyter/tmpnb) notebook service, which includes a configurable HTTP proxy container, an orchestration server container, and a pool of kernel gateway containers:
+
+```bash
+make run-tmpnb
+```
+
+### Access Node app
+
+Once the Node application and backend containers are running, visit `http://<external docker IP>:3000/notebooks/simple` to see a simple example notebook as a dashboard.
+
+To see another notebook as a dashboard:
+
+1. Copy the `*.ipynb` file to the `data/` directory in the project root.
+2. Run `make run` (or `make run-tmpnb`) again -- this will rebuild the Docker image and restart the Node application container.
+
+### Options
+
+The Node application container runs with minimal HTTP logging by default.  To run the Node application with debug-level logging enabled:
+
+1. `make run-logging`
+2. Logs will print to the server console.
+
+To run the Node application with remote debugging enabled:
 
 1. `make run-debug`
 2. Open `http://<external docker IP>:9711/?ws=<external docker IP>:9711&port=5858` to access the `node-inspector` and commence debugging.
 
-To run with debug-level logging enabled:
+To run the Node application with a self-signed certificate, first create the certificate, then run one of the above commands while setting **both** the `HTTPS_KEY_FILE` and `HTTPS_CERT_FILE` environment variables:
 
-1. `make run-logging`
-2. Look at the server console.
+1. `make certs`
+2. `make run HTTPS_KEY_FILE=certs/server.pem HTTPS_CERT_FILE=certs/server.pem`
+3. Visit `http://<external docker IP>:3001/notebooks/simple` to see a simple example notebook as a dashboard.
 
-To run with a self-signed certificate in the node application container, first create the certificates, then run one of the above commands while setting **both** the `HTTPS_KEY_FILE` and `HTTPS_CERT_FILE` environment variables:
+### tmpnb options
 
-```bash
-make certs
-make run \
-  HTTPS_KEY_FILE=certs/server.pem \
-  HTTPS_CERT_FILE=certs/server.pem
-```
-
-### tmpnb notebook service
-
-The following command will run the [tmpnb](https://github.com/jupyter/tmpnb) notebook service, including a configurable HTTP proxy container, a tmpnb orchestration container, and a pool of kernel gateway containers.  You must set the `TMPNB_PROXY_AUTH_TOKEN` environment variable.   The proxy and orchestration containers use the value as a token to authenticate requests between them.
+The `TMPNB_PROXY_AUTH_TOKEN` environment variable sets the value of a token that the tmpnb proxy and orchestration containers use to authenticate requests between them.  To run tmpnb with a unique token:
 
 ```bash
 make run-tmpnb \
@@ -73,7 +87,6 @@ To run tmpnb with a pool of 5 kernel gateway containers, each with a memory limi
 
 ```bash
 make run-tmpnb \
-  TMPNB_PROXY_AUTH_TOKEN="$(openssl rand -base64 32)" \
   POOL_SIZE=5 \
   MEMORY_LIMIT=1G
 ```
