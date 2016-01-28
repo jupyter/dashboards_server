@@ -107,30 +107,38 @@ app.use(function(req, res, next) {
     next(err);
 });
 
-/// error handlers
-
-// development error handler
-// will print stacktrace
-if (app.get('env') === 'development') {
-    app.use(function(err, req, res, next) {
-        res.status(err.status || 500);
-        res.render('error', {
-            message: err.message,
-            error: err,
-            title: 'error'
-        });
-    });
-}
-
-// production error handler
-// no stacktraces leaked to user
+// error handling
 app.use(function(err, req, res, next) {
-    res.status(err.status || 500);
-    res.render('error', {
-        message: err.message,
-        error: {},
-        title: 'error'
-    });
+    var stacktrace = '';
+    if (app.get('env') === 'development') {
+        // send stacktrace in development mode
+        stacktrace = err.stack;
+        console.log("STACK:",err.stack);
+    }
+
+    var status = err.status || 500;
+    res.status(status);
+
+    // default to json, only send html if explicity requested
+    if (req.accepts('html') &&
+        !(req.accepts().length === 1 && req.accepts('*/*'))) {
+        res.render('error', {
+            title: 'error',
+            status: status,
+            message: err.message,
+            stacktrace: stacktrace
+        });
+    } else {
+        var body = {
+            message: err.message,
+            status: status,
+            error: err
+        };
+        if (stacktrace) {
+            body.stacktrace = stacktrace;
+        }
+        res.send(body);
+    }
 });
 
 module.exports = app;

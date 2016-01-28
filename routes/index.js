@@ -2,9 +2,10 @@
  * Copyright (c) Jupyter Development Team.
  * Distributed under the terms of the Modified BSD License.
  */
+var debug = require('debug')('dashboard-proxy:server');
 var express = require('express');
 var nbstore = require('../app/notebook-store');
-var debug = require('debug')('dashboard-proxy:server');
+var upload = require('../app/upload-notebook');
 
 var router = express.Router();
 
@@ -54,6 +55,15 @@ router.get('/notebooks/*', function(req, res) {
         // redirect to home page when no path specified
         res.redirect('/');
     }
+});
+
+/* POST /notebooks/* - upload a notebook */
+router.post('/notebooks/*', upload.single('file'), function(req, res) {
+    res.status(201).json({
+        url: req.url,
+        status: 201,
+        message: 'Notebook successfully uploaded.'
+    });
 });
 
 module.exports = router;
