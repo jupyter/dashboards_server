@@ -22,7 +22,7 @@
 {{> nav}}
 
 <div id="outer-dashboard">
-    <div id="dashboard-container" class="grid-stack">
+    <div id="dashboard-container" class="grid-stack invisible">
         {{#each notebook.cells}}
             {{#if metadata.urth.dashboard.layout}}
                 {{#with metadata.urth.dashboard.layout}}

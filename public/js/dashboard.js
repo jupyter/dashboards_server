@@ -40,6 +40,9 @@ require(['main'], function() {
                 }
             ];
             gridstack.generateStylesheet(styleRules);
+
+            // show dashboard
+            $container.removeClass('invisible');
         }
 
         function _consumeMessage(msg, outputArea) {
