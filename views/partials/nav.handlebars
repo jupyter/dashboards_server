@@ -15,7 +15,7 @@
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
       <ul class="nav navbar-nav navbar-right">
         {{#if username}}
-          <form action="/logout" method="post">
+          <form class="navbar-form navbar-right" action="/logout" method="post">
             <button type="submit" class="btn btn-link">Log Out, {{username}}</button>
           </form>
         {{else}}
