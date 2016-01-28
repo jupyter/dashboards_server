@@ -16,9 +16,26 @@ router.get('/', function(req, res) {
 
 /* GET /notebooks - list of notebooks */
 router.get('/notebooks', function(req, res) {
-    res.render('index', {
-        title: 'Notebooks'
-    });
+    nbstore.getNotebooks().then(
+        function success(notebooks) {
+            //if notebook index exists redirect to it immediately
+            var notebookIndex = "index.ipynb"
+            if(notebooks.indexOf(notebookIndex) > -1) {
+                res.redirect('/notebooks/' + notebookIndex);
+            }
+            else {
+                //render a list of all notebooks
+                res.render('index', {
+                    username: req.session.username,
+                    notebooks: notebooks
+                });
+            }
+        },
+        function error(err) {
+            console.error('Error loading list of notebooks',err);
+            handleNotebookError(res, 500, err);
+        }
+    );
 });
 
 function handleNotebookError(res, status, err) {

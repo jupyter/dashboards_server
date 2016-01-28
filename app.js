@@ -3,7 +3,7 @@
  * Distributed under the terms of the Modified BSD License.
  */
 var express = require('express');
-var session = require('express-session')
+var session = require('express-session');
 var path = require('path');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');

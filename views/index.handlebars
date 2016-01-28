@@ -2,4 +2,27 @@
     Copyright (c) Jupyter Development Team.
     Distributed under the terms of the Modified BSD License.
 }}
-<div>List of notebooks.</div>
+{{! Required for index }}
+<link rel='stylesheet' href='/components/bootstrap/css/bootstrap.min.css'>
+<link rel="stylesheet" href="/css/style.css">
+
+{{> nav}}
+
+<div class="container">
+  <div class="col-md-4 col-md-offset-4">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th class="text-center">Available Notebooks</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each notebooks}}
+        <tr>
+          <td><a href="notebooks/{{this}}">{{this}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+</div> <!-- /container -->

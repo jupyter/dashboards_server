@@ -42,6 +42,20 @@ function _loadNb(nbpath) {
     });
 }
 
+function getNotebooks() {
+    return new Promise(function(resolve, reject) {
+        var nbDirPath = path.join(__dirname, config.get('NOTEBOOKS_DIR'));
+        fs.readdir(nbDirPath, function(err, files) {
+          if (err) {
+            reject(new Error('Error getting list of notebooks'));
+          }
+          else {
+            resolve(files);
+          }
+        });
+    });
+}
+
 function get(nbpath) {
     return new Promise(function(resolve, reject) {
         if (store.hasOwnProperty(nbpath)) {
@@ -186,5 +200,6 @@ module.exports = {
      */
     get: get,
     remove: remove,
-    upload: upload
+    upload: upload,
+    getNotebooks: getNotebooks
 };
