@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "gulp build",
-    "bower": "bower install",
+    "bower": "bower install --quiet",
     "start": "node ./bin/www",
     "start-debug": "node-inspector & node --debug-brk ./bin/www",
     "start-logging": "NODE_DEBUG=http DEBUG=express:*,dashboard-proxy:* node ./bin/www",
@@ -43,7 +43,6 @@
     "gulp-nodemon": "^2.0.2",
     "gulp-open": "^1.0.0",
     "gulp-plumber": "^1.0.0",
-    "gulp-webpack": "^1.5.0",
     "json-loader": "^0.5.4",
     "merge-stream": "^1.0.0",
     "mocha": "^2.3.4",
@@ -52,6 +51,6 @@
     "sinon": "^1.17.2",
     "sinon-chai": "^2.8.0",
     "style-loader": "^0.13.0",
-    "vinyl-source-stream": "^1.1.0"
+    "webpack": "^1.12.12"
   }
 }

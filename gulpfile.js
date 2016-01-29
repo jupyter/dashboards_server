@@ -8,37 +8,65 @@ var gulp = require('gulp'),
     livereload = require('gulp-livereload'),
     less = require('gulp-less'),
     open = require('gulp-open'),
-    webpack = require('gulp-webpack'),
-    source = require('vinyl-source-stream'),
+    webpack = require('webpack'),
+    gutil = require('gulp-util'),
     merge = require('merge-stream');
 
-gulp.task('webpack:components', function() {
-    var components = [
-        'jupyter-js-services',
-        'jupyter-js-output-area'
-    ];
-    var tasks = components.map(function(compName) {
-        return gulp.src('node_modules/' + compName + '/lib/index.js')
-            .pipe(webpack({
-                module: {
-                    loaders: [
-                        { test: /\.css$/, loader: "style-loader!css-loader" },
-                        { test: /\.json$/, loader: "json-loader" }
-                    ]
-                },
-                output: {
-                    filename: compName + '.js',
-                    libraryTarget: 'umd'
-                },
-            }))
-            .pipe(gulp.dest('./public/components'));
-    });
+var webpackStatsOptions = {
+    colors: gutil.colors.supportsColor,
+    hash: false,
+    timings: false,
+    chunks: false,
+    chunkModules: false,
+    modules: false,
+    children: true,
+    version: false,
+    cached: false,
+    cachedAssets: false,
+    reasons: false,
+    source: false,
+    errorDetails: false
+};
 
-    var widgets_task = gulp.src('node_modules/jupyter-js-widgets/index.js')
-        .pipe(webpack( require('./webpack.config.js') ))
-        .pipe(gulp.dest('./public/components'));
+gulp.task('webpack:components', function(done) {
+    webpack({
+            entry: {
+                'jupyter-js-services': './node_modules/jupyter-js-services/lib/index.js',
+                'jupyter-js-output-area': './node_modules/jupyter-js-output-area/lib/index.js',
+                'jupyter-js-widgets': './node_modules/jupyter-js-widgets/index.js'
+            },
+            module: {
+                loaders: [
+                    { test: /\.css$/, loader: 'style-loader!css-loader' },
+                    { test: /\.json$/, loader: 'json-loader' }
+                ],
 
-    return merge(tasks, widgets_task);
+                // NOTE: This is required when building `widgets` from src
+                // Disable handling of unknown requires
+                unknownContextRegExp: /$^/,
+                unknownContextCritical: false
+            },
+            resolve: {
+                alias: {
+                    requirejs: 'requirejs/require'
+                }
+            },
+            output: {
+                libraryTarget: 'amd',
+                filename: '[name].js',
+                path: './public/components'
+            },
+        }, function(err, stats) {
+            if (err) {
+                throw new gutil.PluginError('webpack', err);
+            }
+            gutil.log("[webpack]", stats.toString(webpackStatsOptions));
+            if (stats.hasErrors && stats.toJson().errors.length) {
+                done(new Error('during webpack compilation'));
+            } else {
+                done();
+            }
+        });
 });
 
 // copy source into `public/components`

@@ -21,12 +21,12 @@ RUN cd ext && \
     cd ipywidgets && \
     git checkout 38218351c9dc4196419f6c8f0129df7d0f4cd24c && \
     cd ipywidgets && \
-    npm install
+    npm install --quiet
 
 # npm & bower install separately, so these are properly cached by docker and not affected by
 # changes in rest of source
 ADD package.json package.json
-RUN npm install
+RUN npm install --quiet
 
 ADD bower.json bower.json
 RUN npm run bower

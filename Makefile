@@ -223,7 +223,7 @@ integration-test: | kill build run-kernel-gateway
 
 # Targets for running the nodejs app on the host
 dev-install-ipywidgets:
-	-npm uninstall jupyter-js-widgets
+	-npm uninstall --quiet jupyter-js-widgets
 	-rm -rf ext/ipywidgets
 	@mkdir -p ext ; \
 		cd ext ; \
@@ -231,10 +231,10 @@ dev-install-ipywidgets:
 		cd ipywidgets ; \
 		git checkout 38218351c9dc4196419f6c8f0129df7d0f4cd24c ; \
 		cd ipywidgets ; \
-		npm install
+		npm install --quiet
 
 dev-install: dev-install-ipywidgets
-	npm install
+	npm install --quiet
 	npm run bower
 
 dev: KG_IP?=$$(docker-machine ip $$(docker-machine active))
