@@ -9,44 +9,40 @@ var gulp = require('gulp'),
     less = require('gulp-less'),
     open = require('gulp-open'),
     webpack = require('gulp-webpack'),
-    browserify = require('browserify'),
     source = require('vinyl-source-stream'),
     merge = require('merge-stream');
 
-// browserify & copy components to `public/components`
-gulp.task('browserify:components', function() {
+gulp.task('webpack:components', function() {
     var components = [
         'jupyter-js-services',
         'jupyter-js-output-area'
     ];
-
     var tasks = components.map(function(compName) {
-        var b = browserify({
-                standalone: compName
-            });
-
-        b.require(compName);
-
-        b.transform('node-lessify', { global: true }); // required by jupyter-js-widgets
-
-        return b.bundle()
-            //Pass desired output filename to vinyl-source-stream
-            .pipe(source(compName + '.js'))
-            // Start piping stream to tasks!
+        return gulp.src('node_modules/' + compName + '/lib/index.js')
+            .pipe(webpack({
+                module: {
+                    loaders: [
+                        { test: /\.css$/, loader: "style-loader!css-loader" },
+                        { test: /\.json$/, loader: "json-loader" }
+                    ]
+                },
+                output: {
+                    filename: compName + '.js',
+                    libraryTarget: 'umd'
+                },
+            }))
             .pipe(gulp.dest('./public/components'));
     });
 
-    return merge(tasks);
-});
+    var widgets_task = gulp.src('node_modules/jupyter-js-widgets/index.js')
+        .pipe(webpack( require('./webpack.config.js') ))
+        .pipe(gulp.dest('./public/components'));
 
-gulp.task('webpack:components', function() {
-    return gulp.src('node_modules/jupyter-js-widgets/index.js')
-       .pipe(webpack( require('./webpack.config.js') ))
-       .pipe(gulp.dest('./public/components'));
+    return merge(tasks, widgets_task);
 });
 
 // copy source into `public/components`
-gulp.task('copy:components', ['browserify:components'], function() {
+gulp.task('copy:components', function() {
     var c1 = gulp.src([
             './node_modules/requirejs/require.js',
             './node_modules/jupyter-js-widgets/static/widgets/css/widgets.min.css',
@@ -114,7 +110,6 @@ gulp.task('open-debug-tab', function() {
 });
 
 gulp.task('components', [
-    'browserify:components',
     'webpack:components',
     'copy:components'
 ]);
