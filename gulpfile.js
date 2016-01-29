@@ -46,10 +46,8 @@ gulp.task('webpack:components', function(done) {
                 unknownContextRegExp: /$^/,
                 unknownContextCritical: false
             },
-            resolve: {
-                alias: {
-                    requirejs: 'requirejs/require'
-                }
+            externals: {
+                'requirejs': 'require' // loaded from `-services`
             },
             output: {
                 libraryTarget: 'amd',
