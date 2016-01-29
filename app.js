@@ -81,11 +81,12 @@ if(seedPassword && seedPassword !== "" && (!seedUsername || seedUsername === "")
 }
 //if username and password supplied, enable auth
 else if(seedUsername && seedUsername !== "" && seedPassword && seedPassword !== "") {
+    config.set('AUTH_ENABLED', true);
     app.use('/login', loginRoutes);
     app.use('/logout', logoutRoutes);
 
     //routes registered below this filter will require a valid session value/user
-    app.all('*',function(req,res,next){
+    app.all('*',function(req,res,next) {
         if(req.session.username) {
             next();
         }

@@ -6,6 +6,7 @@ var debug = require('debug')('dashboard-proxy:server');
 var express = require('express');
 var nbstore = require('../app/notebook-store');
 var upload = require('../app/upload-notebook');
+var config = require('../app/config');
 
 var router = express.Router();
 
@@ -41,7 +42,8 @@ router.get('/notebooks/*', function(req, res) {
                 res.render('dashboard', {
                     title: 'Dashboard',
                     notebook: notebook,
-                    username: req.session.username
+                    username: req.session.username,
+                    authEnabled: config.get('AUTH_ENABLED')
                 });
             },
             function error(err) {
