@@ -8,45 +8,67 @@ var gulp = require('gulp'),
     livereload = require('gulp-livereload'),
     less = require('gulp-less'),
     open = require('gulp-open'),
-    webpack = require('gulp-webpack'),
-    browserify = require('browserify'),
-    source = require('vinyl-source-stream'),
+    webpack = require('webpack'),
+    gutil = require('gulp-util'),
     merge = require('merge-stream');
 
-// browserify & copy components to `public/components`
-gulp.task('browserify:components', function() {
-    var components = [
-        'jupyter-js-services',
-        'jupyter-js-output-area'
-    ];
+var webpackStatsOptions = {
+    colors: gutil.colors.supportsColor,
+    hash: false,
+    timings: false,
+    chunks: false,
+    chunkModules: false,
+    modules: false,
+    children: true,
+    version: false,
+    cached: false,
+    cachedAssets: false,
+    reasons: false,
+    source: false,
+    errorDetails: false
+};
 
-    var tasks = components.map(function(compName) {
-        var b = browserify({
-                standalone: compName
-            });
+gulp.task('webpack:components', function(done) {
+    webpack({
+            entry: {
+                'jupyter-js-services': './node_modules/jupyter-js-services/lib/index.js',
+                'jupyter-js-output-area': './node_modules/jupyter-js-output-area/lib/index.js',
+                'jupyter-js-widgets': './node_modules/jupyter-js-widgets/index.js'
+            },
+            module: {
+                loaders: [
+                    { test: /\.css$/, loader: 'style-loader!css-loader' },
+                    { test: /\.json$/, loader: 'json-loader' }
+                ],
 
-        b.require(compName);
-
-        b.transform('node-lessify', { global: true }); // required by jupyter-js-widgets
-
-        return b.bundle()
-            //Pass desired output filename to vinyl-source-stream
-            .pipe(source(compName + '.js'))
-            // Start piping stream to tasks!
-            .pipe(gulp.dest('./public/components'));
-    });
-
-    return merge(tasks);
-});
-
-gulp.task('webpack:components', function() {
-    return gulp.src('node_modules/jupyter-js-widgets/index.js')
-       .pipe(webpack( require('./webpack.config.js') ))
-       .pipe(gulp.dest('./public/components'));
+                // NOTE: This is required when building `widgets` from src
+                // Disable handling of unknown requires
+                unknownContextRegExp: /$^/,
+                unknownContextCritical: false
+            },
+            externals: {
+                'requirejs': 'require' // loaded from `-services`
+            },
+            output: {
+                libraryTarget: 'amd',
+                filename: '[name].js',
+                path: './public/components'
+            },
+        }, function(err, stats) {
+            if (err) {
+                throw new gutil.PluginError('webpack', err);
+            }
+            gutil.log("[webpack]", stats.toString(webpackStatsOptions));
+            if (stats.hasErrors && stats.toJson().errors.length) {
+                done(new Error('during webpack compilation'));
+            } else {
+                done();
+            }
+        });
 });
 
 // copy source into `public/components`
-gulp.task('copy:components', ['browserify:components'], function() {
+gulp.task('copy:components', function() {
     var c1 = gulp.src([
             './node_modules/requirejs/require.js',
             './node_modules/jupyter-js-widgets/static/widgets/css/widgets.min.css',
@@ -114,7 +136,6 @@ gulp.task('open-debug-tab', function() {
 });
 
 gulp.task('components', [
-    'browserify:components',
     'webpack:components',
     'copy:components'
 ]);
