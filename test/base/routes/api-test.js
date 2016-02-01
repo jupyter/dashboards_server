@@ -7,6 +7,15 @@ var chai = require('chai').use(require('sinon-chai'));
 var expect = chai.expect;
 var proxyquire = require('proxyquire');
 var Promise = require('es6-promise').Promise;
+var http = require('http');
+var urljoin = require('url-join');
+
+// Environment variables
+var config = require('../../../app/config');
+var kgUrl = config.get('KERNEL_GATEWAY_URL');
+var kgAuthToken = config.get('KG_AUTH_TOKEN');
+var kgBaseUrl = config.get('KG_BASE_URL');
+
 
 ///////////////////
 // MODULE STUBS
@@ -69,6 +78,8 @@ var api = proxyquire('../../../routes/api', {
 //////////
 
 describe('routes: api', function() {
+
+    // Get a handle to the server.on('upgrade', cb) callback function
     var serverUpgradeCallback = null;
     var req = {
         connection: {
@@ -80,18 +91,28 @@ describe('routes: api', function() {
                 }
             }
         },
-        url: '/api/kernel'
+        url: '/api/kernels/12345'
     };
+    // Get a handle to the socket.on('close', cb) callback function
     var emitSpy = sinon.spy();
+    var socketCloseCallback = null;
     var socket = {
-        emit: emitSpy
+        emit: emitSpy,
+        on: function(topic, callback) {
+            if (topic === 'close') {
+                socketCloseCallback = callback;
+            }
+        }
     };
 
     before(function() {
         // initialize state of websocket handling
         api(req, {}, null);
+        // should have added a server upgrade handler
         expect(serverUpgradeCallback).to.not.be.null;
         serverUpgradeCallback(req, socket, null);
+        // should have added a socket close handler
+        expect(socketCloseCallback).to.not.be.null;
     });
 
     beforeEach(function() {
@@ -167,6 +188,32 @@ describe('routes: api', function() {
             expect(emitSpy).calledOnce;
             var emittedData = emitSpy.firstCall.args[1];
             expect(emittedData).to.have.length(1);
+            done();
+        }, 0);
+    });
+
+    it('should emit all socket events', function(done) {
+        socket.emit('close');
+
+        setTimeout(function() {
+            expect(emitSpy).calledOnce;
+            expect(emitSpy).to.have.been.calledWith('close');
+            done();
+        }, 0);
+    });
+
+    it('should kill kernel on close socket event', function(done) {
+        var spy = sinon.spy(http, 'request');
+        var uri = urljoin(kgUrl, kgBaseUrl, '/api/kernels/12345');
+
+        socketCloseCallback();
+
+        setTimeout(function() {
+            expect(spy).calledOnce;
+            expect(spy).to.have.been.calledWith(uri);
+            var request = spy.returnValues[0];
+            expect(request.method).to.equal('DELETE');
+            spy.restore();
             done();
         }, 0);
     });

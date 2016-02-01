@@ -106,8 +106,8 @@ function setupWSProxy(_server) {
         var kernelIdMatched = kernelIdRe.exec(req.url);
         if (kernelIdMatched) {
             var kernelId = kernelIdMatched[1];
-            socket.on('close', function () {
-              debug('PROXY: Ws closed for ' + kernelId);
+            socket.on('close', function() {
+              debug('PROXY: WS closed for ' + kernelId);
               killKernel(kernelId);
             });
         }
@@ -182,17 +182,6 @@ proxy.on('proxyRes', function (proxyRes, req, res) {
 proxy.on('error', function(err, req, res) {
     debug('PROXY: Error with proxy server ' + err);
 });
-
-// proxy.on('open', function(proxySocket) {
-    // listen for messages coming FROM the target here
-    // proxySocket.on('data', function(data) {
-    //     var decodedData = wsutils.decodeWebSocket(data);
-    //     if (!decodedData) {
-    //         decodedData = { payload: '[non text data]' };
-    //     }
-    //     debug('PROXY: received message from target WS: ' + decodedData.payload);
-    // });
-// });
 
 proxy.on('close', function (proxyRes, proxySocket, proxyHead) {
     // view disconnected websocket connections
