@@ -68,7 +68,7 @@ function _getDestination (req) {
     // parse destination directory from request url
     var notebooksDir = config.get('NOTEBOOKS_DIR');
     var nbdir = path.dirname(req.params[0]);
-    var destDir = path.join(__dirname, notebooksDir, nbdir);
+    var destDir = path.join(__dirname, '..', notebooksDir, nbdir);
     return destDir;
 }
 
@@ -152,7 +152,6 @@ function upload(req, res, next) {
     // finish processing form
     busboy.on('finish', function() {
         debug('Finished reading form data');
-
         if (uploadPromise) {
             // a file was uploaded
             uploadPromise.then(

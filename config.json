@@ -15,7 +15,7 @@
     // Mode in which the dashboard server express environment runs
     NODE_ENV: development
     // Directory that contains notebooks to serve as dashboards
-    NOTEBOOKS_DIR: ../data/
+    NOTEBOOKS_DIR: ./data/
     // Optional HTTPS key
     HTTPS_KEY_FILE: null
     // Optional HTTPS certificate
