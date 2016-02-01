@@ -10,6 +10,7 @@ var path = require('path');
 var Promise = require('es6-promise').Promise;
 
 var IPYNB_EXTENSION = '.ipynb';
+var dataDir = path.join(__dirname, '..', config.get('NOTEBOOKS_DIR'));
 
 // cached notebook objects
 var store = {};
@@ -22,8 +23,7 @@ var store = {};
 function _loadNb(nbpath) {
     return new Promise(function(resolve, reject) {
         var ipynb = /\.ipynb$/.test(nbpath) ? '' : '.ipynb';
-        var nbdir = config.get('NOTEBOOKS_DIR');
-        var nbPath = path.join(__dirname, nbdir, nbpath + ipynb);
+        var nbPath = path.join(dataDir, nbpath + ipynb);
         console.info('Attempting to load notebook file:', nbPath);
         fs.readFile(nbPath, 'utf8', function(err, rawData) {
             if (err) {
@@ -66,9 +66,8 @@ function remove(nbpath) {
 
 function _getDestination (req) {
     // parse destination directory from request url
-    var notebooksDir = config.get('NOTEBOOKS_DIR');
     var nbdir = path.dirname(req.params[0]);
-    var destDir = path.join(__dirname, '..', notebooksDir, nbdir);
+    var destDir = path.join(dataDir, nbdir);
     return destDir;
 }
 
