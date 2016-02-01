@@ -17,7 +17,7 @@ var kgAuthToken = config.get('KG_AUTH_TOKEN');
 var kgBaseUrl = config.get('KG_BASE_URL');
 
 var server = null;
-var sessions = {}; // TODO remove old sessions, somehow
+var sessions = {};
 var apiRe = new RegExp('^/api(/.*$)');
 var kernelIdRe = new RegExp('^.*/kernels/([^/]*)');
 
@@ -100,17 +100,23 @@ function setupWSProxy(_server) {
             }
         };
 
-        // Add handler for reaping a kernel if the client socket closes.
-        // Extract kernel ID from request url:
-        //    /api/kernels/008589cb-7b81-48d4-abd8-faef1b3257f9?channel....
+        // Add handler for reaping a kernel and removing sessions if the client
+        // socket closes.
+        //
+        // Assumes kernel ID and session ID are part of request url as follows:
+        //
+        // /api/kernels/8c51e1d7-7a1c-4ceb-a7dd-3a567f1505b9/channels?session_id=448e417f4c9a582bcaed2905541dcff0
         var kernelIdMatched = kernelIdRe.exec(req.url);
-        if (kernelIdMatched) {
-            var kernelId = kernelIdMatched[1];
-            socket.on('close', function() {
-              debug('PROXY: WS closed for ' + kernelId);
-              killKernel(kernelId);
-            });
-        }
+        var query = url.parse(req.url, true).query;
+        var sessionId = query['session_id'];
+        socket.on('close', function() {
+            removeSession(sessionId);
+            if (kernelIdMatched) {
+                var kernelId = kernelIdMatched[1];
+                debug('PROXY: WS closed for ' + kernelId);
+                killKernel(kernelId);
+            }
+        });
 
         // remove '/api', otherwise proxies to '/api/api/...'
         req.url = apiRe.exec(req.url)[1];
@@ -132,6 +138,12 @@ var killKernel = function(kernelId) {
     req.headers = headers;
     req.method = 'DELETE';
     req.end();
+};
+
+// Cleanup session
+var removeSession = function(sessionId) {
+    debug('PROXY: Removing session ' + sessionId);
+    return delete sessions[sessionId];
 };
 
 var proxyRoute = function(req, res, next) {
