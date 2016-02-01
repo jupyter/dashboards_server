@@ -48,6 +48,7 @@
     "mocha": "^2.3.4",
     "node-lessify": "^0.1.1",
     "proxyquire": "^1.7.3",
+    "rimraf": "^2.5.1",
     "sinon": "^1.17.2",
     "sinon-chai": "^2.8.0",
     "style-loader": "^0.13.0",
