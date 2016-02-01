@@ -2,6 +2,7 @@
  * Copyright (c) Jupyter Development Team.
  * Distributed under the terms of the Modified BSD License.
  */
+var http = require('http');
 var httpProxy = require('http-proxy');
 var debug = require('debug')('dashboard-proxy:server');
 var wsutils = require('../app/ws-utils');
@@ -16,88 +17,134 @@ var kgAuthToken = config.get('KG_AUTH_TOKEN');
 var kgBaseUrl = config.get('KG_BASE_URL');
 
 var server = null;
-var sessions = {}; // TODO remove old sessions, somehow
+var sessions = {};
+var apiRe = new RegExp('^/api(/.*$)');
+var kernelIdRe = new RegExp('^.*/kernels/([^/]*)');
 
 var proxy = httpProxy.createProxyServer({
         target: urljoin(kgUrl, kgBaseUrl, '/api')
     });
+
+var substituteCodeCell = function(d) {
+    debug('PROXY: received message from client WS: ' + (d && d.payload));
+    var transformedData = d;
+
+    // substitute in code if necessary
+    // for performance reasons, first do a quick string check before JSON parsing
+    if (d && d.payload.indexOf('execute_request') !== -1) {
+        try {
+            d.payload = JSON.parse(d.payload);
+            if (d.payload.header.msg_type === 'execute_request') {
+                // get notebook data for current session
+                var nbpath = sessions[d.payload.header.session];
+                transformedData = nbstore.get(nbpath).then(
+                  function success(nb) {
+                        // get code string for cell at index and update WS message
+
+                        // code must be an integer corresponding to a cell index
+                        var cellIdx = parseInt(d.payload.content.code, 10);
+
+                        // code must only consist of a non-negative integer
+                        if (cellIdx.toString(10) === d.payload.content.code &&
+                                cellIdx >= 0) {
+
+                            // substitute cell's actual code into the message
+                            var code = nb.cells[cellIdx].source.join('');
+                            d.payload.content.code = code;
+                            d.payload = JSON.stringify(d.payload);
+                        } else {
+                            // throw away execute request that has non-integer code
+                            d = null;
+                        }
+                        return d;
+                    },
+                    function error() {
+                        return d; // data remains unchanged
+                    });
+            }
+        } catch(e) {
+            // TODO better handle parse error in WS message
+            console.error('Failed to parse `data` in WS. Leaving unchanged.', e);
+        }
+    }
+    return transformedData;
+};
 
 function setupWSProxy(_server) {
     debug('setting up WebSocket proxy');
     server = _server;
 
     // Listen to the `upgrade` event and proxy the WebSocket requests as well.
-    var re = new RegExp('^/api(/.*$)');
     _server.on('upgrade', function(req, socket, head) {
         var _emit = socket.emit;
         socket.emit = function(eventName, data) {
-            var codeCellsSubstituted = data;
             if (eventName === 'data') {
+                var codeCellsSubstituted = data;
                 var decodedData = wsutils.decodeWebSocket(data);
 
                 // decodedData is an array of multiple messages
-                codeCellsSubstituted = decodedData.map(function(d) {
-                    debug('PROXY: received message from client WS: ' + (d && d.payload));
-                    var transformedData = d;
+                codeCellsSubstituted = decodedData.map(substituteCodeCell);
 
-                    // substitute in code if necessary
-                    // for performance reasons, first do a quick string check before JSON parsing
-                    if (d && d.payload.indexOf('execute_request') !== -1) {
-                        try {
-                            d.payload = JSON.parse(d.payload);
-                            if (d.payload.header.msg_type === 'execute_request') {
-                                // get notebook data for current session
-                                var nbpath = sessions[d.payload.header.session];
-                                transformedData = nbstore.get(nbpath).then(
-                                    function success(nb) {
-                                        // get code string for cell at index and update WS message
-
-                                        // code must be an integer corresponding to a cell index
-                                        var cellIdx = parseInt(d.payload.content.code, 10);
-
-                                        // code must only consist of a non-negative integer
-                                        if (cellIdx.toString(10) === d.payload.content.code &&
-                                                cellIdx >= 0) {
-
-                                            // substitute cell's actual code into the message
-                                            var code = nb.cells[cellIdx].source.join('');
-                                            d.payload.content.code = code;
-                                            d.payload = JSON.stringify(d.payload);
-                                        } else {
-                                            // throw away execute request that has non-integer code
-                                            d = null;
-                                        }
-                                        return d;
-                                    },
-                                    function error() {
-                                        return d; // data remains unchanged
-                                    });
-                            }
-                        } catch(e) {
-                            // TODO better handle parse error in WS message
-                            console.error('Failed to parse `data` in WS. Leaving unchanged.', e);
-                        }
-                    }
-                    return transformedData;
+                Promise.all(codeCellsSubstituted).then(function(data) {
+                    // data is an array of messages
+                    // filter out null messages (if any)
+                    data = data.filter(function(d) {
+                        return !!d;
+                    });
+                    // re-encode
+                    data = wsutils.encodeWebSocket(data);
+                    _emit.call(socket, eventName, data);
                 });
+            } else {
+              _emit.call(socket, eventName, data);
             }
-            Promise.all(codeCellsSubstituted).then(function(data) {
-                // data is an array of messages
-                // filter out null messages (if any)
-                data = data.filter(function(d) {
-                    return !!d;
-                });
-                // re-encode
-                data = wsutils.encodeWebSocket(data);
-                _emit.call(socket, eventName, data);
-            });
         };
 
+        // Add handler for reaping a kernel and removing sessions if the client
+        // socket closes.
+        //
+        // Assumes kernel ID and session ID are part of request url as follows:
+        //
+        // /api/kernels/8c51e1d7-7a1c-4ceb-a7dd-3a567f1505b9/channels?session_id=448e417f4c9a582bcaed2905541dcff0
+        var kernelIdMatched = kernelIdRe.exec(req.url);
+        var query = url.parse(req.url, true).query;
+        var sessionId = query['session_id'];
+        socket.on('close', function() {
+            removeSession(sessionId);
+            if (kernelIdMatched) {
+                var kernelId = kernelIdMatched[1];
+                debug('PROXY: WS closed for ' + kernelId);
+                killKernel(kernelId);
+            }
+        });
+
         // remove '/api', otherwise proxies to '/api/api/...'
-        req.url = re.exec(req.url)[1];
+        req.url = apiRe.exec(req.url)[1];
         proxy.ws(req, socket, head);
     });
 }
+
+// Kill kernel on backend kernel gateway.
+var killKernel = function(kernelId) {
+    debug('PROXY: killing kernel ' + kernelId);
+    var endpoint = urljoin(kgUrl, kgBaseUrl, '/api/kernels/', kernelId);
+    var headers = {};
+    if (kgAuthToken) {
+        headers['Authorization'] = 'token ' + kgAuthToken;
+    }
+    var req = http.request(endpoint, function(res) {
+        debug('PROXY: kill kernel response: ' + res.statusCode + ' ' + res.statusMessage);
+    });
+    req.headers = headers;
+    req.method = 'DELETE';
+    req.end();
+};
+
+// Cleanup session
+var removeSession = function(sessionId) {
+    debug('PROXY: Removing session ' + sessionId);
+    return delete sessions[sessionId];
+};
 
 var proxyRoute = function(req, res, next) {
     proxy.web(req, res);
@@ -148,18 +195,7 @@ proxy.on('error', function(err, req, res) {
     debug('PROXY: Error with proxy server ' + err);
 });
 
-// proxy.on('open', function(proxySocket) {
-    // listen for messages coming FROM the target here
-    // proxySocket.on('data', function(data) {
-    //     var decodedData = wsutils.decodeWebSocket(data);
-    //     if (!decodedData) {
-    //         decodedData = { payload: '[non text data]' };
-    //     }
-    //     debug('PROXY: received message from target WS: ' + decodedData.payload);
-    // });
-// });
-
-proxy.on('close', function (req, socket, head) {
+proxy.on('close', function (proxyRes, proxySocket, proxyHead) {
     // view disconnected websocket connections
     debug('PROXY: WS client disconnected');
 });
