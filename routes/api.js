@@ -78,9 +78,22 @@ function setupWSProxy(_server) {
     _server.on('upgrade', function(req, socket, head) {
         var _emit = socket.emit;
         socket.emit = function(eventName, data) {
+
+            // Handle TCP data
             if (eventName === 'data') {
                 var codeCellsSubstituted = data;
+                // Decode one or more websocket frames
                 var decodedData = wsutils.decodeWebSocket(data);
+
+                if(!decodedData.length) {
+                    // HACK / TODO: Pass through anything that comes in by
+                    // itself that we don't know how to decode as text data.
+                    // This quickfix does not handle cases where multiple
+                    // messages are in the buffer, and some are text data
+                    // while others are not.
+                    _emit.call(socket, eventName, data);
+                    return;
+                }
 
                 // decodedData is an array of multiple messages
                 codeCellsSubstituted = decodedData.map(substituteCodeCell);
