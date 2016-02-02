@@ -64,6 +64,7 @@ requirejs([
     function _consumeMessage(msg, outputArea) {
         var output = {};
         var content = msg.content;
+        outer:
         switch (msg.header.msg_type) {
             case 'clear_output':
               outputArea.clear(content.wait);
@@ -73,8 +74,9 @@ requirejs([
               output.text = content.text;
               switch(content.name) {
                   case "stderr":
-                    output.name = StreamName.StdErr;
-                    break;
+                    // show stderr in console, no in the dashboard itself
+                    console.error(content.name, content.text);
+                    break outer;
                   case "stdout":
                     output.name = StreamName.StdOut;
                     break;
@@ -97,11 +99,9 @@ requirejs([
               outputArea.add(output);
               break;
             case 'error':
-              output.outputType = OutputType.Error;
-              output.ename = content.ename;
-              output.evalue = content.evalue;
-              output.traceback = content.traceback.join('\n');
-              outputArea.add(output);
+              // show tracebacks in the console, not on the page
+              var traceback = content.traceback.join('\n');
+              console.error(content.ename, content.evalue, traceback);
               break;
             default:
               console.error('Unhandled message', msg);
