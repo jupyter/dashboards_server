@@ -10,44 +10,14 @@ var request = require('request');
 var fs = require('fs');
 var path = require('path');
 var urljoin = require('url-join');
-var rimraf = require('rimraf');
 
 var appUrl = process.env.APP_URL;
-var uploadUrl = urljoin(appUrl, '/notebooks/uploadtest');
-var dataDir = './data';
-var dataDir2 = './data2';
+var uploadUrl;
 
 describe('upload notebook', function() {
-    before(function(done) {
-        // move existing data to preserve it
-        fs.rename(dataDir, dataDir2, function(err) {
-            if (err) { console.error(err); }
-            fs.mkdir(dataDir, function(err) {
-                if (err) { console.error(err); }
-                done();
-            });
-        });
-    });
-
-    after(function(done) {
-        // delete test data and move original data back
-        rimraf(dataDir, function(err) {
-            if (err) { console.error(err); }
-            fs.rename(dataDir2, dataDir, function(err) {
-                if (err) { console.error(err); }
-                done();
-            });
-        });
-    });
-
-    afterEach(function(done) {
-        fs.readdir(dataDir, function(err, files) {
-            // delete all notebooks in data dir
-            rimraf(dataDir+'/*', function(err) {
-                if (err) { console.error(err); }
-                done();
-            });
-        });
+    beforeEach(function() {
+        var uploadName = 'it_' + Math.floor(Math.random() * 100000000);
+        uploadUrl = urljoin(appUrl, '/notebooks', uploadName);
     });
 
     it('should upload a notebook', function(done) {
