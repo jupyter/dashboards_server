@@ -42,10 +42,9 @@ function _loadNb(nbpath) {
     });
 }
 
-function getNotebooks() {
+function list() {
     return new Promise(function(resolve, reject) {
-        var nbDirPath = path.join(__dirname, config.get('NOTEBOOKS_DIR'));
-        fs.readdir(nbDirPath, function(err, files) {
+        fs.readdir(dataDir, function(err, files) {
           if (err) {
             reject(new Error('Error getting list of notebooks'));
           }
@@ -201,5 +200,5 @@ module.exports = {
     get: get,
     remove: remove,
     upload: upload,
-    getNotebooks: getNotebooks
+    list: list
 };

@@ -21,7 +21,7 @@ describe('upload notebook', function() {
     });
 
     it('should upload a notebook', function(done) {
-        var datapath = path.join(__dirname, 'upload-notebook-test.ipynb');
+        var datapath = path.join(__dirname, '../resources/upload-notebook-test.ipynb');
         var formData = {
             file: fs.createReadStream(datapath)
         };
@@ -42,7 +42,7 @@ describe('upload notebook', function() {
     });
 
     it('should return an error when attempting to upload a non-notebook file', function(done) {
-        var datapath = path.join(__dirname, 'upload-notebook-test.notanipynb');
+        var datapath = path.join(__dirname, '../resources/upload-notebook-test.notanipynb');
         var formData = {
             file: fs.createReadStream(datapath)
         };
@@ -57,8 +57,8 @@ describe('upload notebook', function() {
     });
 
     it('should return an error when attempting to upload multiple files', function(done) {
-        var datapath = path.join(__dirname, 'upload-notebook-test.ipynb');
-        var datapath2 = path.join(__dirname, 'upload-notebook-test-2.ipynb');
+        var datapath = path.join(__dirname, '../resources/upload-notebook-test.ipynb');
+        var datapath2 = path.join(__dirname, '../resources/upload-notebook-test-2.ipynb');
         var formData = {
             file: fs.createReadStream(datapath),
             file2: fs.createReadStream(datapath2)
@@ -74,7 +74,7 @@ describe('upload notebook', function() {
     });
 
     it('should not delete the existing file when too many form parts', function(done) {
-        var datapath = path.join(__dirname, 'upload-notebook-test.ipynb');
+        var datapath = path.join(__dirname, '../resources/upload-notebook-test.ipynb');
         var formData = {
             file: fs.createReadStream(datapath)
         };
@@ -106,8 +106,8 @@ describe('upload notebook', function() {
     });
 
     it('should not cache notebook when upload overrides existing file', function(done) {
-        var datapath = path.join(__dirname, 'upload-notebook-test.ipynb');
-        var datapath2 = path.join(__dirname, 'upload-notebook-test-2.ipynb');
+        var datapath = path.join(__dirname, '../resources/upload-notebook-test.ipynb');
+        var datapath2 = path.join(__dirname, '../resources/upload-notebook-test-2.ipynb');
         var formData = {
             file: fs.createReadStream(datapath)
         };

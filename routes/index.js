@@ -11,13 +11,13 @@ var router = express.Router();
 
 /* GET / - index notebook or list of notebooks */
 router.get('/', function(req, res) {
-    nbstore.getNotebooks().then(
+    nbstore.list().then(
         function success(notebooks) {
             //if notebook index exists redirect to it immediately
             var notebookIndex = "index.ipynb"
             //ensure notebook index search is case insensitive
             var indexFound = -1;
-            for(i in notebooks) {
+            for(var i=0; i<notebooks.length; i++) {
                 if(notebooks[i].toLowerCase() === notebookIndex) {
                     indexFound = i;
                     break;
@@ -29,7 +29,7 @@ router.get('/', function(req, res) {
             }
             else {
                 //render a list of all notebooks
-                res.render('index', {
+                res.render('list', {
                     username: req.session.username,
                     authEnabled: config.get('AUTH_ENABLED'),
                     notebooks: notebooks
@@ -45,10 +45,10 @@ router.get('/', function(req, res) {
 
 /* GET /notebooks - list of notebooks */
 router.get('/notebooks', function(req, res) {
-    nbstore.getNotebooks().then(
+    nbstore.list().then(
         function success(notebooks) {
             //render a list of all notebooks
-            res.render('index', {
+            res.render('list', {
                 username: req.session.username,
                 authEnabled: config.get('AUTH_ENABLED'),
                 notebooks: notebooks
