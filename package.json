@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "body-parser": "^1.13.3",
+    "busboy": "^0.2.12",
     "cookie-parser": "^1.3.3",
     "es6-promise": "^3.0.2",
     "express": "^4.13.3",
@@ -24,7 +25,6 @@
     "jupyter-js-services": "^0.3.0",
     "jupyter-js-widgets": "file:./ext/ipywidgets/ipywidgets",
     "morgan": "^1.6.1",
-    "multer": "^1.1.0",
     "nconf": "^0.8.2",
     "request": "^2.67.0",
     "requirejs": "^2.1.21",
