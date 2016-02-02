@@ -64,6 +64,8 @@ function remove(nbpath) {
 // UPLOAD OPERATIONS
 ////////////////////
 
+var _uploadMessage = 'Make sure to upload a single Jupyter Notebook file (*.ipynb).';
+
 function _getDestination (req) {
     // parse destination directory from request url
     var nbdir = path.dirname(req.params[0]);
@@ -83,9 +85,13 @@ function _fileFilter (filename) {
     return /\.ipynb$/.test(filename);
 }
 
+// busboy limits.
+// Busboy will ignore any files past the limit (and not throw an error), so to
+// send a descriptive error message when too many files are sent, lets set the
+// file limit to 2 and return an error if 2 files are sent.
 var _uploadLimits = {
     fields: 0,
-    files: 2, // really a limit of 1, but set to 2 to allow easy error response
+    files: 2,
     parts: 2
 };
 
@@ -104,12 +110,11 @@ function upload(req, res, next) {
     });
 
     // handle file upload
-    var uploadMessage = 'Make sure to upload a single Jupyter Notebook file (*.ipynb).';
     var uploadPromise = null;
     busboy.on('file', function(fieldname, file, originalname, encoding, mimetype) {
         if (++fileCount > 1) {
             // too many files, error
-            uploadPromise = Promise.reject(new Error('Too many files. ' + uploadMessage));
+            uploadPromise = Promise.reject(new Error('Too many files. ' + _uploadMessage));
             file.resume();
         } else {
             uploadPromise = new Promise(function(resolve, reject) {
@@ -142,7 +147,7 @@ function upload(req, res, next) {
                     });
                 } else {
                     file.resume();
-                    reject(new Error('Wrong file extension. ' + uploadMessage));
+                    reject(new Error('Wrong file extension. ' + _uploadMessage));
                 }
             });
         }
@@ -165,7 +170,7 @@ function upload(req, res, next) {
             );
         } else {
             // a file was not uploaded
-            next(new Error('No file provided. ' + uploadMessage));
+            next(new Error('No file provided. ' + _uploadMessage));
         }
     });
 
