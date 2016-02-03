@@ -9,16 +9,56 @@ var config = require('../app/config');
 
 var router = express.Router();
 
-/* GET / - redirect to notebook list page */
+/* GET / - index notebook or list of notebooks */
 router.get('/', function(req, res) {
-    res.redirect('/notebooks');
+    nbstore.list().then(
+        function success(notebooks) {
+            //if notebook index exists redirect to it immediately
+            var notebookIndex = "index.ipynb"
+            //ensure notebook index search is case insensitive
+            var indexFound = -1;
+            for(var i=0; i<notebooks.length; i++) {
+                if(notebooks[i].toLowerCase() === notebookIndex) {
+                    indexFound = i;
+                    break;
+                }
+            }
+            if(indexFound > -1) {
+                //redirect to the index notebook
+                res.redirect('/notebooks/' + notebooks[indexFound]);
+            }
+            else {
+                //render a list of all notebooks
+                res.render('list', {
+                    username: req.session.username,
+                    authEnabled: config.get('AUTH_ENABLED'),
+                    notebooks: notebooks
+                });
+            }
+        },
+        function error(err) {
+            console.error('Error loading list of notebooks',err);
+            handleNotebookError(res, 500, err);
+        }
+    );
 });
 
 /* GET /notebooks - list of notebooks */
 router.get('/notebooks', function(req, res) {
-    res.render('index', {
-        title: 'Notebooks'
-    });
+    nbstore.list().then(
+        function success(notebooks) {
+            //render a list of all notebooks
+            res.render('list', {
+                username: req.session.username,
+                authEnabled: config.get('AUTH_ENABLED'),
+                notebooks: notebooks
+            });
+        },
+        function error(err) {
+            console.error('Error loading list of notebooks',err);
+            handleNotebookError(res, 500, err);
+        }
+    );
 });
 
 function handleNotebookError(res, status, err) {

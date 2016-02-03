@@ -1,0 +1,20 @@
+{{!
+    Copyright (c) Jupyter Development Team.
+    Distributed under the terms of the Modified BSD License.
+}}
+{{! Required for list }}
+<link rel='stylesheet' href='/components/bootstrap/css/bootstrap.min.css'>
+<link rel="stylesheet" href="/css/style.css">
+
+{{> nav}}
+
+<div class="container">
+  <div class="col-md-4 col-md-offset-4">
+    <h2 style="text-align:center">Dashboards</h2>
+    <ul class="list-group">
+      {{#each notebooks}}
+          <li class="list-group-item"><a href="notebooks/{{this}}">{{this}}</a></li>
+      {{/each}}
+    </ul>
+  </div>
+</div> <!-- /container -->

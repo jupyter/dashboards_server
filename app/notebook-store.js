@@ -42,6 +42,19 @@ function _loadNb(nbpath) {
     });
 }
 
+function list() {
+    return new Promise(function(resolve, reject) {
+        fs.readdir(dataDir, function(err, files) {
+          if (err) {
+            reject(new Error('Error getting list of notebooks'));
+          }
+          else {
+            resolve(files);
+          }
+        });
+    });
+}
+
 function get(nbpath) {
     return new Promise(function(resolve, reject) {
         if (store.hasOwnProperty(nbpath)) {
@@ -186,5 +199,6 @@ module.exports = {
      */
     get: get,
     remove: remove,
-    upload: upload
+    upload: upload,
+    list: list
 };
