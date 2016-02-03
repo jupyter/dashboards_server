@@ -77,26 +77,3 @@ To run the Node application with a self-signed certificate, first create the cer
 To run the Node application with form-based auth enabled:
 
 1. `make run USERNAME=admin PASSWORD=password`
-
-### tmpnb options
-
-The `TMPNB_PROXY_AUTH_TOKEN` environment variable sets the value of a token that the tmpnb proxy and orchestration containers use to authenticate requests between them.  To run tmpnb with a unique token:
-
-```bash
-make run-tmpnb \
-  TMPNB_PROXY_AUTH_TOKEN="$(openssl rand -base64 32)"
-```
-
-To run tmpnb with a pool of 5 kernel gateway containers, each with a memory limit of 1GB:
-
-```bash
-make run-tmpnb \
-  POOL_SIZE=5 \
-  MEMORY_LIMIT=1G
-```
-
-To stop all tmpnb containers:
-
-```bash
-make kill-tmpnb
-```
