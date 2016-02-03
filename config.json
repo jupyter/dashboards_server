@@ -1,23 +1,37 @@
 // Hjson format, see http://hjson.org for syntax
 {
+    ///////////////////////////
+    // Dashboard Server options
+    ///////////////////////////
+
+    // Mode in which the dashboard server express environment runs
+    NODE_ENV: development
+    // Interface on which the dashboard server listens
+    IP: 127.0.0.1
+    // Port on which the dashboard server listens
+    PORT: 3000
+    // HTTPS_PORT, HTTPS Port on which the dashboard server listens
+    HTTPS_PORT: 3001
+    // Optional HTTPS key
+    HTTPS_KEY_FILE: null
+    // Optional HTTPS certificate
+    HTTPS_CERT_FILE: null
+    // Directory that contains notebooks to serve as dashboards
+    NOTEBOOKS_DIR: ./data/
+    // Secret for authentication tokens
+    AUTH_TOKEN: null
+    // Login
+    USERNAME: null
+    PASSWORD: null
+
+    /////////////////////////
+    // Kernel Gateway options
+    /////////////////////////
+
     // URL of the kernel gateway / jupyter notebook server to contact for kernels
     KERNEL_GATEWAY_URL: http://192.168.99.100:8888
     // Authorization token required for kernel gateway requests
     KG_AUTH_TOKEN: null
     // Kernel gateway base URL (gets appended to KERNEL_GATEWAY_URL)
     KG_BASE_URL: ""
-    // Port on which the dashboard server listens
-    PORT: 3000
-    // HTTPS_PORT, HTTPS Port on which the dashboard server listens
-    HTTPS_PORT: 3001
-    // Interface on which the dashboard server listens
-    IP: 127.0.0.1
-    // Mode in which the dashboard server express environment runs
-    NODE_ENV: development
-    // Directory that contains notebooks to serve as dashboards
-    NOTEBOOKS_DIR: ./data/
-    // Optional HTTPS key
-    HTTPS_KEY_FILE: null
-    // Optional HTTPS certificate
-    HTTPS_CERT_FILE: null
 }

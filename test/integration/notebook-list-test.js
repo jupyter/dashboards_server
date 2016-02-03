@@ -15,8 +15,7 @@ var urljoin = require('url-join');
 var appUrl = process.env.APP_URL;
 
 describe('Upload and list notebooks', function() {
-
-    it('should successfully render dashboard/notebooks table view', function(done) {
+    it('should successfully render dashboard list', function(done) {
         request.get({
             uri: urljoin(appUrl + '/notebooks')
         }, function(error, response, body) {
@@ -47,50 +46,52 @@ describe('Upload and list notebooks', function() {
                      done();
                  });
          });
-     });
+    });
 
-      it('should render the dashboards list view on the /notebooks path when an index notebook exists (note case insensitive index names are allowed)', function(done) {
-           var datapath = path.join(__dirname, '../resources/InDex.ipynb');
-           var formData = {
-               file: fs.createReadStream(datapath)
-           };
+    it('should render the dashboard list on notebooks path when an index notebook exists', function(done) {
+        // index notebook name is case-insensitive
+        var datapath = path.join(__dirname, '../resources/InDex.ipynb');
+        var formData = {
+            file: fs.createReadStream(datapath)
+        };
 
-           request.post({
-               url: urljoin(appUrl, '/notebooks/InDex'),
-               formData: formData
-           }, function(error, response, body) {
-               expect(response.statusCode).to.equal(201);
-               request.get({
-                   url: urljoin(appUrl, '/notebooks')
-                   }, function(error, response, body) {
-                       expect(response.statusCode).to.equal(200);
-                       expect(body).to.contain('<!doctype html>');
-                       expect(body).to.contain('Dashboards');
-                       expect(body).to.contain('InDex.ipynb');
-                       done();
-                   });
-           });
-       });
+        request.post({
+            url: urljoin(appUrl, '/notebooks/InDex'),
+            formData: formData
+        }, function(error, response, body) {
+            expect(response.statusCode).to.equal(201);
+            request.get({
+                url: urljoin(appUrl, '/notebooks')
+                }, function(error, response, body) {
+                    expect(response.statusCode).to.equal(200);
+                    expect(body).to.contain('<!doctype html>');
+                    expect(body).to.contain('Dashboards');
+                    expect(body).to.contain('InDex.ipynb');
+                    done();
+                });
+        });
+    });
 
-     it('should not render the dashboards list view on the base path when an index notebook exists (note case insensitive index names are allowed)', function(done) {
-          var datapath = path.join(__dirname, '../resources/InDex.ipynb');
-          var formData = {
-              file: fs.createReadStream(datapath)
-          };
+    it('should not render the dashboard list on the base path when an index notebook exists', function(done) {
+        // index notebook name is case-insensitive
+        var datapath = path.join(__dirname, '../resources/InDex.ipynb');
+        var formData = {
+            file: fs.createReadStream(datapath)
+        };
 
-          request.post({
-              url: urljoin(appUrl, '/notebooks/InDex'),
-              formData: formData
-          }, function(error, response, body) {
-              expect(response.statusCode).to.equal(201);
-              request.get({
-                  url: appUrl
-                  }, function(error, response, body) {
-                      expect(response.statusCode).to.equal(200);
-                      expect(body).to.contain('<!doctype html>');
-                      expect(body).to.not.contain('Dashboards');
-                      done();
-                  });
-          });
-      });
+        request.post({
+            url: urljoin(appUrl, '/notebooks/InDex'),
+            formData: formData
+        }, function(error, response, body) {
+            expect(response.statusCode).to.equal(201);
+            request.get({
+                url: appUrl
+            }, function(error, response, body) {
+                expect(response.statusCode).to.equal(200);
+                expect(body).to.contain('<!doctype html>');
+                expect(body).to.not.contain('Dashboards');
+                done();
+            });
+        });
+    });
 });

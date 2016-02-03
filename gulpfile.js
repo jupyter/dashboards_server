@@ -113,7 +113,7 @@ var nodemonOptions = {
     stdout: false
 };
 
-gulp.task('develop', function () {
+gulp.task('develop', ['build'], function () {
     livereload.listen();
     nodemon(nodemonOptions).on('readable', function () {
         this.stdout.on('data', function (chunk) {
