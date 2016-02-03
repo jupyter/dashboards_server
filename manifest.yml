@@ -1,0 +1,12 @@
+applications:
+- name: mydash
+  memory: 256M
+  instances: 1
+  path: .
+  buildpack: nodejs_buildpack
+  command: >
+    IP=0.0.0.0
+    npm run start-logging
+  env:
+    KERNEL_GATEWAY_URL: http://mykg.mybluemix.net
+    NPM_CONFIG_LOGLEVEL: info

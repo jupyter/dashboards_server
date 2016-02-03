@@ -11,20 +11,6 @@ This repo contains a NodeJS application that can display Jupyter notebooks as dy
 
 **Note** that this project is very much a work-in-progress as part of the [dashboards deployment roadmap](https://github.com/jupyter-incubator/dashboards/wiki/Deployment-Roadmap).
 
-## Run It
-
-For the moment, see the *Develop It* section. We'll provide more detail here once we make a stable release on how to run the server outside a development environment.
-
-In the meantime, if you want to get a sense of all the configuration options, run `make help`.
-
-## Deploy It
-
-A minimal deployment of the dashboards server has the following components:
-
-![Minimal dashboard app deployment diagram](etc/simple_deploy.png)
-
-For more details, including use cases and alternative deployments, see the [dashboards deployment roadmap](https://github.com/jupyter-incubator/dashboards/wiki/Deployment-Roadmap).
-
 ## Develop It
 
 Running the Node application requires Docker. A simple way to run [Docker](https://www.docker.com/) is to use [docker-machine](https://docs.docker.com/machine/get-started/).
@@ -37,14 +23,6 @@ To run the Node application container and a single kernel gateway container:
 
 ```bash
 make run
-```
-
-### Run Node app with tmpnb notebook service
-
-To run the Node application container and the [tmpnb](https://github.com/jupyter/tmpnb) notebook service, which includes a configurable HTTP proxy container, an orchestration server container, and a pool of kernel gateway containers:
-
-```bash
-make run-tmpnb
 ```
 
 ### Access Node app
@@ -77,3 +55,83 @@ To run the Node application with a self-signed certificate, first create the cer
 To run the Node application with form-based auth enabled:
 
 1. `make run USERNAME=admin PASSWORD=password`
+
+## Run It
+
+For the moment, see the *Develop It* section. We'll provide more detail here once we make a stable release on how to run the server outside a development environment.
+
+In the meantime, if you want to get a sense of all the configuration options, run `make help`.
+
+## Deploy It
+
+A minimal deployment of the dashboards server has the following components:
+
+![Minimal dashboard app deployment diagram](etc/simple_deploy.png)
+
+For more details, including use cases and alternative deployments, see the [dashboards deployment roadmap](https://github.com/jupyter-incubator/dashboards/wiki/Deployment-Roadmap).
+
+### Deploy to Cloud Foundry (Experimental)
+
+This section is experimental and will change as the application and its dependencies change.  
+
+To push the application to Cloud Foundry, we currently need to install the application resources (e.g., `node_modules`, `bower_components`, etc.) locally, then push the entire application directory.   We use this approach because some Cloud Foundry installations do not support steps like `bower install` during deployment.
+
+#### Pre-requisites
+
+1. Install Cloud Foundry [command-line interface](https://github.com/cloudfoundry/cli/releases).
+
+2. Connect to Cloud Foundry (Bluemix, in this case):
+
+	```
+	cf api https://api.ng.bluemix.net
+	```
+3. Login
+
+	```
+	cf login -u user@email
+	```
+4. Deploy a kernel gateway to a host that is reachable from Cloud Foundry environment.
+
+	```
+	# docker-machine to host with public domain/IP
+	eval "$(docker-machine env myhost)"
+	
+	# build the kernel gateway image on the host machine
+	make build
+	
+	# run kernel gateway container
+	# Note: CORS requests to the API endpoints are disabled by default, 
+	# so be sure to allow them if the dashboard domain is different
+	# from the kernel gateway domain
+	make run-kernel-gateway \
+	  KG_ALLOW_ORIGIN=https://my.dashboard.domain
+	```
+
+#### Build and deploy app
+
+1. Install all frontend and backend components (e.g., `node_modules`, `bower_components`, [jupyter-js-widgets](https://github.com/ipython/ipywidgets)) in local dev environment.
+
+	```
+	make dev-install
+	```
+2. Edit `manifest.yml` file and set the `KERNEL_GATEWAY_URL` to point to the kernel gateway that the application will use.  The URL must be routable from your Cloud Foundry environment.
+	
+	```
+	...
+	  env:
+	    KERNEL_GATEWAY_URL: https://my.kg.domain
+        ...
+	```
+  
+3. Push the app to CF:
+
+  ```
+  cf push mydash 
+  ```
+  
+4. (Optional) To change the kernel gateway URL that the app points to:
+
+	```
+	cf set-env mydash KERNEL_GATEWAY_URL https://new.kg.domain
+	cf restage mydash
+	```

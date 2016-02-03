@@ -243,6 +243,9 @@ dev-install-ipywidgets:
 dev-install: dev-install-ipywidgets
 	npm install --quiet
 	npm run bower
+	# Do the build once now to fully install all application components,
+	# understanding that it will be run again if running `make dev` targets. 
+	npm run build
 
 dev: KG_IP?=$$(docker-machine ip $$(docker-machine active))
 dev: run-kernel-gateway

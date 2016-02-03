@@ -1,0 +1,6 @@
+.dockerignore
+.travis.yml
+.gitignore
+Dockerfile.*
+etc/
+certs/
