@@ -103,7 +103,7 @@ app.use('/api', apiRoutes);
 
 /// catch 404 and forward to error handler
 app.use(function(req, res, next) {
-    var err = new Error('Not Found');
+    var err = new Error('404 Not Found: ' + req.url);
     err.status = 404;
     next(err);
 });
@@ -114,13 +114,15 @@ app.use(function(err, req, res, next) {
     if (app.get('env') === 'development') {
         // send stacktrace in development mode
         stacktrace = err.stack;
-        console.log("STACK:",err.stack);
+        if (err.status >= 500 && err.status < 600) {
+            console.log("STACK:",err.stack);
+        }
     }
 
     var status = err.status || 500;
     res.status(status);
 
-    // default to json, only send html if explicity requested
+    // default to json, only send html if explicitly requested
     if (req.accepts('html') &&
         !(req.accepts().length === 1 && req.accepts('*/*'))) {
         res.render('error', {
