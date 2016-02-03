@@ -80,11 +80,11 @@ requirejs([
                   break;
                 case "stdout":
                   output.name = StreamName.StdOut;
+                  outputArea.add(output);
                   break;
                 default:
                   throw new Error('Unrecognized stream type ' + msg.content.name);
             }
-            outputArea.add(output);
         },
         display_data: function(msg, outputArea) {
             var output = {};
