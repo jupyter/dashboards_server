@@ -101,11 +101,12 @@ else if(seedUsername && seedUsername !== "" && seedPassword && seedPassword !== 
 app.use('/', routes);
 app.use('/api', apiRoutes);
 
-/// catch 404 and forward to error handler
+/// catch 404 errors
 app.use(function(req, res, next) {
     var err = new Error('404 Not Found: ' + req.url);
     err.status = 404;
-    next(err);
+    res.status(err.status);
+    res.send(err);
 });
 
 // error handling
