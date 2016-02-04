@@ -61,10 +61,10 @@ requirejs([
         $container.removeClass('invisible');
     }
 
-    // delegates for kernel message handling, keyed by message type
-    // all functions receive the entire response message and a reference to an
-    // outputArea model associated with the code / widget that made the initial
-    // request associated with the received response
+    // This object has delegates for kernel message handling, keyed by message
+    // type. All functions here receive the entire response message and a
+    // reference to an outputArea model associated with the code / widget that
+    // made the initial request.
     var messageHandlers = {
         clear_output: function(msg, outputArea) {
             outputArea.clear(msg.content.wait);
