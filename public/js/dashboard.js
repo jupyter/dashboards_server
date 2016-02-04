@@ -61,50 +61,61 @@ requirejs([
         $container.removeClass('invisible');
     }
 
+    // This object has delegates for kernel message handling, keyed by message
+    // type. All functions here receive the entire response message and a
+    // reference to an outputArea model associated with the code / widget that
+    // made the initial request.
+    var messageHandlers = {
+        clear_output: function(msg, outputArea) {
+            outputArea.clear(msg.content.wait);
+        },
+        stream: function(msg, outputArea) {
+            var output = {};
+            output.outputType = OutputType.Stream;
+            output.text = msg.content.text;
+            switch(msg.content.name) {
+                case "stderr":
+                  // show stderr in console, not in the dashboard itself
+                  console.error(msg.content.name, msg.content.text);
+                  break;
+                case "stdout":
+                  output.name = StreamName.StdOut;
+                  outputArea.add(output);
+                  break;
+                default:
+                  throw new Error('Unrecognized stream type ' + msg.content.name);
+            }
+        },
+        display_data: function(msg, outputArea) {
+            var output = {};
+            output.outputType = OutputType.DisplayData;
+            output.data = msg.content.data;
+            output.metadata = msg.content.metadata;
+            outputArea.add(output);
+        },
+        execute_result: function(msg, outputArea) {
+            var output = {};
+            output.outputType = OutputType.ExecuteResult;
+            output.data = msg.content.data;
+            output.metadata = msg.content.metadata;
+            output.execution_count = msg.content.execution_count;
+            outputArea.add(output);
+        },
+        error: function(msg, outputArea) {
+            // show tracebacks in the console, not on the page
+            var traceback = msg.content.traceback.join('\n');
+            console.error(msg.content.ename, msg.content.evalue, traceback);
+        }
+    };
+
+    // process kernel messages by delegating to handlers based on message type
     function _consumeMessage(msg, outputArea) {
         var output = {};
-        var content = msg.content;
-        switch (msg.header.msg_type) {
-            case 'clear_output':
-              outputArea.clear(content.wait);
-              break;
-            case 'stream':
-              output.outputType = OutputType.Stream;
-              output.text = content.text;
-              switch(content.name) {
-                  case "stderr":
-                    output.name = StreamName.StdErr;
-                    break;
-                  case "stdout":
-                    output.name = StreamName.StdOut;
-                    break;
-                  default:
-                    throw new Error('Unrecognized stream type ' + content.name);
-              }
-              outputArea.add(output);
-              break;
-            case 'display_data':
-              output.outputType = OutputType.DisplayData;
-              output.data = content.data;
-              output.metadata = content.metadata;
-              outputArea.add(output);
-              break;
-            case 'execute_result':
-              output.outputType = OutputType.ExecuteResult;
-              output.data = content.data;
-              output.metadata = content.metadata;
-              output.execution_count = content.execution_count;
-              outputArea.add(output);
-              break;
-            case 'error':
-              output.outputType = OutputType.Error;
-              output.ename = content.ename;
-              output.evalue = content.evalue;
-              output.traceback = content.traceback.join('\n');
-              outputArea.add(output);
-              break;
-            default:
-              console.error('Unhandled message', msg);
+        var handler = messageHandlers[msg.header.msg_type];
+        if(handler) {
+            handler(msg, outputArea);
+        } else {
+            console.error('Unhandled message', msg);
         }
     }
 
