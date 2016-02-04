@@ -14,6 +14,9 @@ var urljoin = require('url-join');
 // env vars
 var appUrl = process.env.APP_URL;
 
+var indexNotebook = '../../resources/InDex.ipynb';
+var notebookFile = '../../resources/upload-notebook-test.ipynb';
+
 describe('Upload and list notebooks', function() {
     it('should successfully render dashboard list', function(done) {
         request.get({
@@ -27,7 +30,7 @@ describe('Upload and list notebooks', function() {
     });
 
     it('should list the uploaded notebook', function(done) {
-         var datapath = path.join(__dirname, '../resources/upload-notebook-test.ipynb');
+         var datapath = path.join(__dirname, notebookFile);
          var formData = {
              file: fs.createReadStream(datapath)
          };
@@ -50,7 +53,7 @@ describe('Upload and list notebooks', function() {
 
     it('should render the dashboard list on notebooks path when an index notebook exists', function(done) {
         // index notebook name is case-insensitive
-        var datapath = path.join(__dirname, '../resources/InDex.ipynb');
+        var datapath = path.join(__dirname, indexNotebook);
         var formData = {
             file: fs.createReadStream(datapath)
         };
@@ -74,7 +77,7 @@ describe('Upload and list notebooks', function() {
 
     it('should not render the dashboard list on the base path when an index notebook exists', function(done) {
         // index notebook name is case-insensitive
-        var datapath = path.join(__dirname, '../resources/InDex.ipynb');
+        var datapath = path.join(__dirname, indexNotebook);
         var formData = {
             file: fs.createReadStream(datapath)
         };
