@@ -78,10 +78,11 @@ define DOCKER_APP
 endef
 
 # targets for running nodejs app and kernel gateway containers
+run: KERNEL_GATEWAY_URL?=http://$(KG_CONTAINER_NAME):8888
 run: | build run-kernel-gateway
 	@echo '-- Starting proxy container'
 	$(DOCKER_APP) -it --rm \
-	-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
+	-e KERNEL_GATEWAY_URL=$(KERNEL_GATEWAY_URL) \
 	-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
 	-e KG_BASE_URL=$(KG_BASE_URL) \
 	--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
@@ -94,9 +95,10 @@ run-logging: CMD=start-logging
 run-logging: run
 
 # targets for running nodejs app and tmpnb containers
+run-tmpnb: KERNEL_GATEWAY_URL?=http://$(TMPNB_PROXY_CONTAINER_NAME):8000
 run-tmpnb: | build run-tmpnb-proxy run-tmpnb-pool
 	$(DOCKER_APP) -it --rm \
-	-e KERNEL_CLUSTER_URL=http://$(TMPNB_PROXY_CONTAINER_NAME):8000 \
+	-e KERNEL_GATEWAY_URL=$(KERNEL_GATEWAY_URL) \
 	--link $(TMPNB_PROXY_CONTAINER_NAME):$(TMPNB_PROXY_CONTAINER_NAME) \
 	$(DASHBOARD_IMAGE_NAME) $(CMD)
 
