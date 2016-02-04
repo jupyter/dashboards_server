@@ -36,7 +36,12 @@ help:
 	@cat config.json
 
 clean:
-	@rm -rf certs/
+	@-rm -r bower_components
+	@-rm -r ext
+	@-rm -r node_modules
+	@-rm -r public/components
+	@-rm -r public/css
+	@-rm -r certs
 
 build:
 	@echo '-- Building Docker containers'
