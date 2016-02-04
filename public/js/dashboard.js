@@ -127,23 +127,29 @@ requirejs([
     Kernel.start().then(function(kernel) {
         var widgetManager = new WidgetManager(kernel);
 
-        // create an output area for each dashboard code cell
         $('.dashboard-cell.code-cell').each(function() {
             var $cell = $(this);
 
+            // create a jupyter output area mode and widget view for each
+            // dashbard code cell
             var model = new OutputAreaModel();
             var view = new OutputAreaWidget(model);
+            // attach the view to the cell dom node
             view.attach(this);
 
+            // create a separate widget dom node and append it to the output
+            // area view
             var widgetArea = $('<div class="widget-area">').get(0);
             $cell.append(widgetArea, view.node);
 
+            // request execution of the code associated with the dashboard cell
             var kernelFuture = Kernel.execute($cell.index(), function(msg) {
+                // handle the response to the execution request
                 if (model) {
                     _consumeMessage(msg, model);
                 }
             });
-
+            // track output area and widget  for future
             widgetManager.addWidget(widgetArea, kernelFuture.msg.header.msg_id);
         });
     });
