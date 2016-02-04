@@ -30,9 +30,10 @@ var webpackStatsOptions = {
 gulp.task('webpack:components', function(done) {
     webpack({
             entry: {
-                'jupyter-js-services': './node_modules/jupyter-js-services/lib/index.js',
                 'jupyter-js-output-area': './node_modules/jupyter-js-output-area/lib/index.js',
-                'jupyter-js-widgets': './node_modules/jupyter-js-widgets/index.js'
+                'jupyter-js-services': './node_modules/jupyter-js-services/lib/index.js',
+                'jupyter-js-widgets': './node_modules/jupyter-js-widgets/index.js',
+                'urth-widgets': './node_modules/urth-widgets/index.js'
             },
             module: {
                 loaders: [
@@ -45,9 +46,14 @@ gulp.task('webpack:components', function(done) {
                 unknownContextRegExp: /$^/,
                 unknownContextCritical: false
             },
-            externals: {
-                'requirejs': 'require' // loaded from `-services`
-            },
+            externals: [
+                'jupyter-js-output-area',
+                'jupyter-js-services',
+                'jupyter-js-widgets',
+                {
+                    'requirejs': 'require' // loaded from `-services`
+                }
+            ],
             output: {
                 libraryTarget: 'amd',
                 filename: '[name].js',
@@ -89,7 +95,10 @@ gulp.task('copy:components', function() {
     var c3 = gulp.src([
             './bower_components/jquery-ui/themes/smoothness/images/**/*'
         ]).pipe(gulp.dest('./public/components/jquery-ui/images'));
-    return merge(c1, c2, c3);
+    var c4 = gulp.src([
+            './node_modules/urth-widgets/dist/urth_widgets/bower_components/**/*'
+        ]).pipe(gulp.dest('./public/urth_components'));
+    return merge(c1, c2, c3, c4);
 });
 
 gulp.task('less', function () {

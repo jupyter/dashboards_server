@@ -5,7 +5,17 @@
 
 // Adapted from example code at:
 //   https://github.com/ipython/ipywidgets/blob/fc6844f8210761ff5ad1c9ffc25a70b379fc5191/examples/development/web3/src/manager.js
-define(['jupyter-js-widgets'], function(Widgets) {
+define([
+    'jquery',
+    'jupyter-js-widgets',
+    'jupyter-js-services'
+], function(
+    $,
+    Widgets,
+    Services
+) {
+
+    var KernelStatus = Services.KernelStatus;
 
     var WidgetManager  = function(kernel, msgHandler) {
         //  Call the base class.
@@ -32,6 +42,8 @@ define(['jupyter-js-widgets'], function(Widgets) {
             });
         }).bind(this);
         validate();
+
+        this._shimDeclarativeWidgets(kernel);
     };
     WidgetManager.prototype = Object.create(Widgets.ManagerBase.prototype);
 
@@ -93,9 +105,9 @@ define(['jupyter-js-widgets'], function(Widgets) {
                 output: function(msg) {
                     mgr.msgHandler(msg, options.outputAreaModel);
                 }
-            }
+            };
         } else {
-            console.warn('No OutputAreaModel for widget view:', view)
+            console.warn('No OutputAreaModel for widget view:', view);
         }
 
         return callbacks;
@@ -133,11 +145,39 @@ define(['jupyter-js-widgets'], function(Widgets) {
      * widgetNode: DOM node where the widget should render
      * outputAreaModel: OutputArea that contains the widget
      */
-    WidgetManager.prototype.trackPending = function(msg_id, widgetNode, outputAreaModel) {
+    WidgetManager.prototype.trackPending = function(kernelFuture, widgetNode, outputAreaModel) {
+        // shim for Declarative Widgets
+        kernelFuture.onReply = function(msg) {
+            window.IPython.notebook.events.trigger('shell_reply.Kernel');
+        };
+
+        var msg_id = kernelFuture.msg.header.msg_id;
         this._pendingExecutions[msg_id] = {
             widgetNode: widgetNode,
             outputAreaModel: outputAreaModel
         };
+    };
+
+    WidgetManager.prototype._shimDeclarativeWidgets= function(kernel) {
+        // NOTE: also see addition to `addWidget()`
+
+        window.IPython = {
+            notebook: {
+                events: $({}),
+                kernel: kernel
+            }
+        };
+
+        var nb = window.IPython.notebook;
+        nb.kernel.is_connected = function() {
+            return kernel.status === KernelStatus.Busy || kernel.status === KernelStatus.Idle;
+        };
+        nb.kernel.widget_manager = this;
+
+        // IPython.notebook.base_url   ?????
+
+        // WidgetManager is instantiated after creation of a kernel, so assume it is ready
+        nb.events.trigger('kernel_ready.Kernel');
     };
 
     return WidgetManager;

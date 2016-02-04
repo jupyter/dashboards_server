@@ -117,13 +117,19 @@ else \
 		-e KG_ALLOW_ORIGIN='*' \
 		-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
 		-e KG_BASE_URL=$(KG_BASE_URL) \
-		$(KG_IMAGE_NAME); \
+		$(KG_DOCKER_OPTS) \
+		$(KG_IMAGE_NAME) $(KG_DOCKER_CMD); \
 fi;
 endef
 
 ############### Targets to start Docker containers
 
 kernel-gateway-container:
+	$(RUN_KERNEL_GATEWAY)
+
+kernel-gateway-container-with-widgets: KG_DOCKER_OPTS=-v `pwd`/../declarativewidgets:/declarativewidgets
+kernel-gateway-container-with-widgets: KG_DOCKER_CMD=bash -c 'pip install --no-binary :all: $$(ls -1 /declarativewidgets/dist/*.tar.gz | tail -n 1) && jupyter kernelgateway --KernelGatewayApp.ip=0.0.0.0'
+kernel-gateway-container-with-widgets:
 	$(RUN_KERNEL_GATEWAY)
 
 # targets for running nodejs app and kernel gateway containers

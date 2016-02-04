@@ -19,5 +19,10 @@ RUN pip install jupyter_kernel_gateway==0.3.1
 RUN pip uninstall -y ipywidgets && \
     pip install git+https://github.com/ipython/ipywidgets.git@38218351c9dc4196419f6c8f0129df7d0f4cd24c
 
+# TODO: DeclWidgets install wants to install into this dir, need to change permissions
+USER root
+RUN chown -R jovyan /usr/local
+USER jovyan
+
 # run kernel gateway, not notebook server
 CMD ["jupyter", "kernelgateway", "--KernelGatewayApp.ip=0.0.0.0"]

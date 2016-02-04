@@ -32,6 +32,7 @@
     "requirejs": "^2.1.21",
     "serve-favicon": "^2.3.0",
     "url-join": "0.0.1",
+    "urth-widgets": "file:../declarativewidgets",
     "ws": "^0.8.0",
     "xmlhttprequest": "^1.8.0"
   },

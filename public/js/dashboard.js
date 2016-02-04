@@ -15,7 +15,8 @@ requirejs.config({
         'jquery-ui/draggable': require.toUrl('/components/jquery-ui/draggable.min'),
         'jupyter-js-output-area': require.toUrl('/components/jupyter-js-output-area'),
         'jupyter-js-services': require.toUrl('/components/jupyter-js-services'),
-        'jupyter-js-widgets': require.toUrl('/components/jupyter-js-widgets')
+        'jupyter-js-widgets': require.toUrl('/components/jupyter-js-widgets'),
+        'urth-widgets': require.toUrl('/components/urth-widgets')
     }
 });
 
@@ -24,9 +25,10 @@ requirejs([
     'gridstack-custom',
     'jupyter-js-output-area',
     'jupyter-js-widgets',
+    'urth-widgets',
     'widget-manager',
     './kernel'
-], function($, Gridstack, OutputArea, Widgets, WidgetManager, Kernel) {
+], function($, Gridstack, OutputArea, Widgets, DeclWidgets, WidgetManager, Kernel) {
     'use strict';
 
     var OutputType = OutputArea.OutputType;
@@ -126,6 +128,11 @@ requirejs([
     // initialize Gridstack
     _initGrid();
 
+    // initialize Declarative Widgets
+    // NOTE: DeclWidgets adds 'urth_components/...' to this path
+    DeclWidgets.init('/');
+
+
     // start a kernel
     Kernel.start().then(function(kernel) {
         // initialize an ipywidgets manager
@@ -159,8 +166,7 @@ requirejs([
             });
             // track execution replies in order to associate the newly created
             // widget *subarea* with its output areas and DOM container
-            widgetManager.trackPending(kernelFuture.msg.header.msg_id,
-                $widgetSubArea.get(0), model);
+            widgetManager.trackPending(kernelFuture, $widgetSubArea.get(0), model);
         });
     });
 });
