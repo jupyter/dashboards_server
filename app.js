@@ -101,26 +101,25 @@ else if(seedUsername && seedUsername !== "" && seedPassword && seedPassword !== 
 app.use('/', routes);
 app.use('/api', apiRoutes);
 
-/// catch 404 errors
+/// catch 404 and forward to error handler
 app.use(function(req, res, next) {
     var err = new Error('404 Not Found: ' + req.url);
     err.status = 404;
-    res.status(err.status);
-    res.send(err);
+    next(err);
 });
 
 // error handling
 app.use(function(err, req, res, next) {
     var stacktrace = '';
+    var status = err.status || 500;
     if (app.get('env') === 'development') {
         // send stacktrace in development mode
         stacktrace = err.stack;
-        if (err.status >= 500 && err.status < 600) {
+        if (status >= 500 && status < 600) {
             console.log("STACK:",err.stack);
         }
     }
 
-    var status = err.status || 500;
     res.status(status);
 
     // default to json, only send html if explicitly requested
