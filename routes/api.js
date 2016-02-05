@@ -22,7 +22,11 @@ var apiRe = new RegExp('^/api(/.*$)');
 var kernelIdRe = new RegExp('^.*/kernels/([^/]*)');
 
 var proxy = httpProxy.createProxyServer({
-        target: urljoin(kgUrl, kgBaseUrl, '/api')
+        target: urljoin(kgUrl, kgBaseUrl, '/api'),
+        changeOrigin: true,
+        hostRewrite: true,
+        autoRewrite: true,
+        protocolRewrite: true
     });
 
 var substituteCodeCell = function(d) {
