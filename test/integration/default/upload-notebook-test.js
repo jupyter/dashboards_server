@@ -12,7 +12,7 @@ var path = require('path');
 var urljoin = require('url-join');
 
 var appUrl = process.env.APP_URL;
-var uploadUrl;
+var uploadUrl, getUrl;
 
 var notebookFile = '../../resources/upload-notebook-test.ipynb';
 var notebookFile2 = '../../resources/upload-notebook-test-2.ipynb';
@@ -22,7 +22,8 @@ var badNotebookFile = '../../resources/upload-notebook-test.notanipynb';
 describe('upload notebook', function() {
     beforeEach(function() {
         var uploadName = 'it_' + Math.floor(Math.random() * 100000000);
-        uploadUrl = urljoin(appUrl, '/notebooks', uploadName);
+        uploadUrl = urljoin(appUrl, '/_api/notebooks', uploadName);
+        getUrl = urljoin(appUrl, '/dashboards', uploadName);
     });
 
     it('should upload a notebook', function(done) {
@@ -38,7 +39,7 @@ describe('upload notebook', function() {
             expect(res.statusCode).to.equal(201);
 
             request.get({
-                url: uploadUrl
+                url: getUrl
             }, function(err, res, body) {
                 expect(res.statusCode).to.equal(200);
                 done();
@@ -101,7 +102,7 @@ describe('upload notebook', function() {
                 expect(res.statusCode).to.equal(201);
 
                 request.get({
-                    url: uploadUrl
+                    url: getUrl
                 }, function(err, res, body) {
                     expect(res.statusCode).to.equal(200);
                     done();
@@ -133,7 +134,7 @@ describe('upload notebook', function() {
                 expect(res.statusCode).to.equal(201);
 
                 request.get({
-                    url:uploadUrl
+                    url:getUrl
                 }, function(err, res, body) {
                     expect(res.statusCode).to.equal(200);
                     expect(body.indexOf('2nd Upload notebook test')).to.be.above(-1);

@@ -71,7 +71,7 @@ app.use(session({
 // PUBLIC ROUTES (auth token, no login)
 ///////////////////////////////////////
 
-app.use('/', authRoutes);
+app.use('/_api', authRoutes);
 
 ////////
 // LOGIN
@@ -132,7 +132,7 @@ app.use(function(err, req, res, next) {
         // send stacktrace in development mode
         stacktrace = err.stack;
         if (status >= 500 && status < 600) {
-            console.log("STACK:",err.stack);
+            console.log('STACK:', err.stack);
         }
     }
 

@@ -13,7 +13,7 @@ var urljoin = require('url-join');
 
 var appUrl = process.env.APP_URL;
 var authToken = process.env.AUTH_TOKEN;
-var uploadUrl;
+var uploadUrl, getUrl;
 
 var notebookFile = '../../resources/upload-notebook-test.ipynb';
 
@@ -31,7 +31,7 @@ function upload(headers, expectedUploadResStatus, expectedGetResStatus, done) {
         expect(res.statusCode).to.equal(expectedUploadResStatus);
 
         request.get({
-            url: uploadUrl
+            url: getUrl
         }, function(err, res, body) {
             expect(res.statusCode).to.equal(expectedGetResStatus);
             done();
@@ -45,10 +45,11 @@ describe('upload notebook auth token', function() {
 
     beforeEach(function() {
         var uploadName = 'it_' + Math.floor(Math.random() * 100000000);
-        uploadUrl = urljoin(appUrl, '/notebooks', uploadName);
+        uploadUrl = urljoin(appUrl, '/_api/notebooks', uploadName);
+        getUrl = urljoin(appUrl, '/dashboards', uploadName);
     });
 
-    it('should upload a notebook with valid auth token', function(done) {
+    it('should upload a `notebook` with valid auth token', function(done) {
         upload({ Authorization: authToken }, 201, 200, done);
     });
     it('should not upload a notebook with invalid auth token', function(done) {

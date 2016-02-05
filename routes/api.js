@@ -200,7 +200,7 @@ proxy.on('proxyRes', function (proxyRes, req, res) {
             console.error('Missing notebook path or session ID headers');
             return;
         }
-        var matches = notebookPathHeader.match(/^\/notebooks\/(.*)$/);
+        var matches = notebookPathHeader.match(/^\/dashboards\/(.*)$/);
         if (!matches) {
             // TODO error handling
             console.error('Invalid notebook path header');
