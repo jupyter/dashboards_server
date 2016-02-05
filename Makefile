@@ -121,6 +121,7 @@ run-kernel-gateway:
 		docker run -d \
 			--name $(KG_CONTAINER_NAME) \
 			-p 8888:8888 \
+			-e KG_ALLOW_ORIGIN='*' \
 			-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
 			-e KG_BASE_URL=$(KG_BASE_URL) \
 			$(KG_IMAGE_NAME); \
