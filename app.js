@@ -103,7 +103,7 @@ app.use('/api', apiRoutes);
 
 /// catch 404 and forward to error handler
 app.use(function(req, res, next) {
-    var err = new Error('404 Not Found: ' + req.url);
+    var err = new Error('Not Found');
     err.status = 404;
     next(err);
 });
@@ -135,7 +135,8 @@ app.use(function(err, req, res, next) {
         var body = {
             message: err.message,
             status: status,
-            error: err
+            error: err,
+            url: req.url
         };
         if (stacktrace) {
             body.stacktrace = stacktrace;
