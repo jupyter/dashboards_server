@@ -2,13 +2,13 @@
  * Copyright (c) Jupyter Development Team.
  * Distributed under the terms of the Modified BSD License.
  */
-var http = require('http');
 var httpProxy = require('http-proxy');
 var debug = require('debug')('dashboard-proxy:server');
 var wsutils = require('../app/ws-utils');
 var nbstore = require('../app/notebook-store');
 var config = require('../app/config');
 var Promise = require('es6-promise').Promise;
+var request = require('request');
 var url = require('url');
 var urljoin = require('url-join');
 
@@ -149,12 +149,14 @@ var killKernel = function(kernelId) {
     if (kgAuthToken) {
         headers['Authorization'] = 'token ' + kgAuthToken;
     }
-    var req = http.request(endpoint, function(res) {
-        debug('PROXY: kill kernel response: ' + res.statusCode + ' ' + res.statusMessage);
+    request({
+        url: endpoint,
+        method: 'DELETE',
+        headers: headers
+    }, function(error, response, body) {
+        debug('PROXY: kill kernel response: ' +
+            response.statusCode + ' ' + response.statusMessage);
     });
-    req.headers = headers;
-    req.method = 'DELETE';
-    req.end();
 };
 
 // Cleanup session

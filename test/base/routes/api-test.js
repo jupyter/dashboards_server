@@ -7,7 +7,8 @@ var chai = require('chai').use(require('sinon-chai'));
 var expect = chai.expect;
 var proxyquire = require('proxyquire');
 var Promise = require('es6-promise').Promise;
-var http = require('http');
+var request = require('request');
+var url = require('url');
 var urljoin = require('url-join');
 
 // Environment variables
@@ -203,16 +204,19 @@ describe('routes: api', function() {
     });
 
     it('should kill kernel on close socket event', function(done) {
-        var spy = sinon.spy(http, 'request');
+        var spy = sinon.spy(request, 'Request');
         var uri = urljoin(kgUrl, kgBaseUrl, '/api/kernels/12345');
 
         socketCloseCallback();
 
         setTimeout(function() {
             expect(spy).calledOnce;
-            expect(spy).to.have.been.calledWith(uri);
-            var request = spy.returnValues[0];
-            expect(request.method).to.equal('DELETE');
+            var options = spy.firstCall.args[0];
+            expect(options.url).to.equal(uri);
+            expect(options.method).to.equal('DELETE');
+            if (kgAuthToken) {
+                expect(options.headers.Authorization).to.equal('token ' + kgAuthToken);
+            }
             spy.restore();
             done();
         }, 0);
