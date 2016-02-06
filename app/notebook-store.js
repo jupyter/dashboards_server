@@ -27,7 +27,7 @@ function _loadNb(nbpath) {
         console.info('Attempting to load notebook file:', nbPath);
         fs.readFile(nbPath, 'utf8', function(err, rawData) {
             if (err) {
-                reject(new Error('Error loading notebook file'));
+                reject(new Error('Error loading notebook'));
             } else {
                 try {
                     var nb = JSON.parse(rawData);
@@ -35,7 +35,7 @@ function _loadNb(nbpath) {
                     resolve(nb);
                     debug('Resolving nb load:', nbpath);
                 } catch(e) {
-                    reject(new Error('Error parsing notebook file'));
+                    reject(new Error('Error parsing notebook JSON'));
                 }
             }
         });
@@ -45,12 +45,11 @@ function _loadNb(nbpath) {
 function list() {
     return new Promise(function(resolve, reject) {
         fs.readdir(dataDir, function(err, files) {
-          if (err) {
-            reject(new Error('Error getting list of notebooks'));
-          }
-          else {
-            resolve(files);
-          }
+            if (err) {
+                reject(new Error('Error getting list of notebooks'));
+            } else {
+                resolve(files);
+            }
         });
     });
 }
@@ -198,7 +197,7 @@ module.exports = {
      * @return {Promise} ES6 Promise resolved with notebook JSON or error string
      */
     get: get,
+    list: list,
     remove: remove,
-    upload: upload,
-    list: list
+    upload: upload
 };

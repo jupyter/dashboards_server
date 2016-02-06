@@ -7,27 +7,33 @@ var session = require('express-session');
 var path = require('path');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
 var exphbs  = require('express-handlebars');
 var debug = require('debug')('dashboard-proxy:server');
 
 var hbsHelpers = require('./app/handlebars-helpers');
 var config = require('./app/config');
 
-var routes = require('./routes/index');
+var routes = require('./routes/routes');
+var authRoutes = require('./routes/auth-routes');
 var apiRoutes = require('./routes/api');
 var loginRoutes = require('./routes/login');
 var logoutRoutes = require('./routes/logout');
 
 var app = express();
-var router = express.Router();
+
+//////////////
+// ENVIRONMENT
+//////////////
 
 var env = config.get('NODE_ENV') || 'development';
 app.locals.ENV = env;
 app.locals.ENV_DEVELOPMENT = env == 'development';
 debug('Using environment ' + env);
 
-// view engine setup
+//////////////
+// VIEW ENGINE
+//////////////
+
 app.engine('handlebars', exphbs({
     defaultLayout: 'main',
     partialsDir: ['views/partials/'],
@@ -36,16 +42,11 @@ app.engine('handlebars', exphbs({
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'handlebars');
 
-app.use(logger('dev'));
+//////////////////
+// MISC MIDDLEWARE
+//////////////////
 
-// DON'T USE THESE when proxying.
-// The bodyParser changes the request, but we need to pass as is when proxying.
-// // TODO: For some reason, XHR calls from jupyter-js-services are called with
-// // content type of `text/plain;charset=UTF-8` instead of a JSON type. Normally,
-// // we would use `bodyParser.json()` here, but instead we have to use `text()`
-// // because of this and parse ourselves.
-// app.use(bodyParser.text());
-// app.use(bodyParser.urlencoded({ extended: false }));
+app.use(logger('dev'));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -58,16 +59,23 @@ app.use(function(req, res, next) {
    }
 });
 
-app.use(cookieParser());
-
-var secret_token = config.get('SESSION_SECRET_TOKEN') || 'secret_token';
-
+var sessionSecret = config.get('SESSION_SECRET_TOKEN') || 'secret_token';
 app.use(session({
-        secret: secret_token,
-        cookie: {maxAge: 24*3600*1000},//cookie max age set to one day
-        resave: true,
-        saveUninitialized: true
-        }));
+    secret: sessionSecret,
+    cookie: {maxAge: 24*3600*1000},//cookie max age set to one day
+    resave: true,
+    saveUninitialized: true
+}));
+
+///////////////////////////////////////
+// PUBLIC ROUTES (auth token, no login)
+///////////////////////////////////////
+
+app.use('/', authRoutes);
+
+////////
+// LOGIN
+////////
 
 var seedUsername = config.get('USERNAME');
 var seedPassword = config.get('PASSWORD');
@@ -98,17 +106,25 @@ else if(seedUsername && seedUsername !== "" && seedPassword && seedPassword !== 
     });
 }
 
+///////////////////////
+// AUTHENTICATED ROUTES
+///////////////////////
+
 app.use('/', routes);
 app.use('/api', apiRoutes);
 
-/// catch 404 and forward to error handler
+/////////////////
+// ERROR HANDLING
+/////////////////
+
+// forward 404 to error handler
 app.use(function(req, res, next) {
     var err = new Error('Not Found');
     err.status = 404;
     next(err);
 });
 
-// error handling
+// general error handling
 app.use(function(err, req, res, next) {
     var stacktrace = '';
     var status = err.status || 500;

@@ -2,19 +2,21 @@
  * Copyright (c) Jupyter Development Team.
  * Distributed under the terms of the Modified BSD License.
  */
-var debug = require('debug')('dashboard-proxy:router');
-var express = require('express');
-var nbstore = require('../app/notebook-store');
+/**
+ * Normal routes that require login (if enabled)
+ */
+var authToken = require('../app/auth-token');
 var config = require('../app/config');
-
-var router = express.Router();
+var debug = require('debug')('dashboard-proxy:router');
+var nbstore = require('../app/notebook-store');
+var router = require('express').Router();
 
 /* GET / - index notebook or list of notebooks */
-router.get('/', function(req, res) {
+router.get('/', function(req, res, next) {
     nbstore.list().then(
         function success(notebooks) {
             //if notebook index exists redirect to it immediately
-            var notebookIndex = "index.ipynb"
+            var notebookIndex = "index.ipynb";
             //ensure notebook index search is case insensitive
             var indexFound = -1;
             for(var i=0; i<notebooks.length; i++) {
@@ -38,13 +40,13 @@ router.get('/', function(req, res) {
         },
         function error(err) {
             console.error('Error loading list of notebooks',err);
-            handleNotebookError(res, 500, err);
+            next(err);
         }
     );
 });
 
 /* GET /notebooks - list of notebooks */
-router.get('/notebooks', function(req, res) {
+router.get('/notebooks', function(req, res, next) {
     nbstore.list().then(
         function success(notebooks) {
             //render a list of all notebooks
@@ -56,22 +58,13 @@ router.get('/notebooks', function(req, res) {
         },
         function error(err) {
             console.error('Error loading list of notebooks',err);
-            handleNotebookError(res, 500, err);
+            next(err);
         }
     );
 });
 
-function handleNotebookError(res, status, err) {
-    res.status(status);
-    res.render('error', {
-        message: err.message,
-        error: err,
-        title: 'error'
-    });
-}
-
 /* GET /notebooks/* - a single notebook. */
-router.get('/notebooks/*', function(req, res) {
+router.get('/notebooks/*', function(req, res, next) {
     var path = req.params[0];
     if (path) {
         nbstore.get(path).then(
@@ -88,23 +81,14 @@ router.get('/notebooks/*', function(req, res) {
             function error(err) {
                 console.error('error loading nb',err);
                 // TODO better way of determing the error
-                var status = err.message.indexOf('loading') === -1 ? 500 : 404;
-                handleNotebookError(res, status, err);
+                err.status = err.message.indexOf('loading') === -1 ? 500 : 404;
+                next(err);
             }
         );
     } else {
         // redirect to home page when no path specified
         res.redirect('/');
     }
-});
-
-/* POST /notebooks/* - upload a notebook */
-router.post('/notebooks/*', nbstore.upload, function(req, res) {
-    res.status(201).json({
-        url: req.url,
-        status: 201,
-        message: 'Notebook successfully uploaded.'
-    });
 });
 
 module.exports = router;

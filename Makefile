@@ -110,22 +110,25 @@ run-tmpnb-logging: run-tmpnb
 
 ###### kernel gateway
 
-run-kernel-gateway: KG_BASE_URL?=
+define RUN_KERNEL_GATEWAY
+@kg_is_running=`docker ps -q --filter="name=$(KG_CONTAINER_NAME)"`; \
+if [ -n "$$kg_is_running" ] ; then \
+	echo "-- $(KG_CONTAINER_NAME) is already running."; \
+else \
+	echo "-- Starting kernel gateway container"; \
+	docker rm $(KG_CONTAINER_NAME) 2> /dev/null; \
+	docker run -d \
+		--name $(KG_CONTAINER_NAME) \
+		-p 8888:8888 \
+		-e KG_ALLOW_ORIGIN='*' \
+		-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
+		-e KG_BASE_URL=$(KG_BASE_URL) \
+		$(KG_IMAGE_NAME); \
+fi;
+endef
+
 run-kernel-gateway:
-	@kg_is_running=`docker ps -q --filter="name=$(KG_CONTAINER_NAME)"`; \
-	if [ -n "$$kg_is_running" ] ; then \
-		echo "-- $(KG_CONTAINER_NAME) is already running."; \
-	else \
-		echo "-- Starting kernel gateway container"; \
-		docker rm $(KG_CONTAINER_NAME) 2> /dev/null; \
-		docker run -d \
-			--name $(KG_CONTAINER_NAME) \
-			-p 8888:8888 \
-			-e KG_ALLOW_ORIGIN='*' \
-			-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
-			-e KG_BASE_URL=$(KG_BASE_URL) \
-			$(KG_IMAGE_NAME); \
-	fi;
+	$(RUN_KERNEL_GATEWAY)
 
 ###### tmpnb
 
@@ -198,6 +201,8 @@ kill: kill-tmpnb
 	@echo '-- Removing Docker containers'
 	@-docker rm -f $(DASHBOARD_CONTAINER_NAME) $(KG_CONTAINER_NAME) 2> /dev/null || true
 
+###### test
+
 _run_test_in_docker: CMD?=test
 _run_test_in_docker: SERVER_NAME?=$(DASHBOARD_CONTAINER_NAME)
 _run_test_in_docker: DOCKER_OPTIONS?=
@@ -209,25 +214,42 @@ _run_test_in_docker:
 
 test: | build _run_test_in_docker
 
-integration-test: SERVER_NAME?=integration-test-server
-integration-test: IP?=$$(docker-machine ip $$(docker-machine active))
-integration-test: KG_PORT?=8888
-integration-test: KG_AUTH_TOKEN?=1a2b3c4d5e6f
-integration-test: | kill build run-kernel-gateway
-	@echo '-- Starting proxy container'
-	$(DOCKER_APP) -d \
-		-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
-		-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
-		--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
-		$(DASHBOARD_IMAGE_NAME)
-	@echo '-- Waiting 10 seconds for servers to start...'
-	@sleep 10
+define RUN_INTEGRATION_TEST
+@$(MAKE) kill
+$(RUN_KERNEL_GATEWAY)
+@echo '-- Starting proxy container'
+$(DOCKER_APP) -d \
+	-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
+	-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
+	-e AUTH_TOKEN=$(AUTH_TOKEN) \
+	--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
+	$(DASHBOARD_IMAGE_NAME)
+@echo '-- Waiting 10 seconds for servers to start...'
+@sleep 10
+@$(MAKE) _run_test_in_docker \
+	CMD=$(CMD) \
+	SERVER_NAME=$(IT_SERVER_NAME) \
+	DOCKER_OPTIONS="-e APP_URL=http://$(IT_IP):$(HTTP_PORT) -e KERNEL_GATEWAY_URL=http://$(IT_IP):$(IT_KG_PORT) -e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) -e AUTH_TOKEN=$(AUTH_TOKEN)";
+@$(MAKE) kill
+endef
+
+IT_SERVER_NAME?=integration-test-server
+IT_IP?=$$(docker-machine ip $$(docker-machine active))
+IT_KG_PORT?=8888
+
+integration-test: | kill build integration-test-default integration-test-auth-token
+
+integration-test-default: CMD=integration-test
+integration-test-default: | kill build
 	@echo '-- Running system integration tests...'
-	@$(MAKE) _run_test_in_docker \
-		CMD=integration-test \
-		SERVER_NAME=$(SERVER_NAME) \
-		DOCKER_OPTIONS="-e APP_URL=http://$(IP):$(HTTP_PORT) -e KERNEL_GATEWAY_URL=http://$(IP):$(KG_PORT) -e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN)"
-	@$(MAKE) kill
+	$(RUN_INTEGRATION_TEST)
+
+integration-test-auth-token: CMD=integration-test-auth-token
+integration-test-auth-token: KG_AUTH_TOKEN=1a2b3c4d5e6f
+integration-test-auth-token: AUTH_TOKEN=7g8h9i0j
+integration-test-auth-token: | kill build
+	@echo '-- Running system integration tests using auth tokens...'
+	$(RUN_INTEGRATION_TEST)
 
 # Targets for running the nodejs app on the host
 dev-install-ipywidgets:

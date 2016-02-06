@@ -14,6 +14,11 @@ var urljoin = require('url-join');
 var appUrl = process.env.APP_URL;
 var uploadUrl;
 
+var notebookFile = '../../resources/upload-notebook-test.ipynb';
+var notebookFile2 = '../../resources/upload-notebook-test-2.ipynb';
+var badNotebookFile = '../../resources/upload-notebook-test.notanipynb';
+
+
 describe('upload notebook', function() {
     beforeEach(function() {
         var uploadName = 'it_' + Math.floor(Math.random() * 100000000);
@@ -21,7 +26,7 @@ describe('upload notebook', function() {
     });
 
     it('should upload a notebook', function(done) {
-        var datapath = path.join(__dirname, '../resources/upload-notebook-test.ipynb');
+        var datapath = path.join(__dirname, notebookFile);
         var formData = {
             file: fs.createReadStream(datapath)
         };
@@ -42,7 +47,7 @@ describe('upload notebook', function() {
     });
 
     it('should return an error when attempting to upload a non-notebook file', function(done) {
-        var datapath = path.join(__dirname, '../resources/upload-notebook-test.notanipynb');
+        var datapath = path.join(__dirname, badNotebookFile);
         var formData = {
             file: fs.createReadStream(datapath)
         };
@@ -57,8 +62,8 @@ describe('upload notebook', function() {
     });
 
     it('should return an error when attempting to upload multiple files', function(done) {
-        var datapath = path.join(__dirname, '../resources/upload-notebook-test.ipynb');
-        var datapath2 = path.join(__dirname, '../resources/upload-notebook-test-2.ipynb');
+        var datapath = path.join(__dirname, notebookFile);
+        var datapath2 = path.join(__dirname, notebookFile2);
         var formData = {
             file: fs.createReadStream(datapath),
             file2: fs.createReadStream(datapath2)
@@ -74,7 +79,7 @@ describe('upload notebook', function() {
     });
 
     it('should not delete the existing file when too many form parts', function(done) {
-        var datapath = path.join(__dirname, '../resources/upload-notebook-test.ipynb');
+        var datapath = path.join(__dirname, notebookFile);
         var formData = {
             file: fs.createReadStream(datapath)
         };
@@ -106,8 +111,8 @@ describe('upload notebook', function() {
     });
 
     it('should not cache notebook when upload overrides existing file', function(done) {
-        var datapath = path.join(__dirname, '../resources/upload-notebook-test.ipynb');
-        var datapath2 = path.join(__dirname, '../resources/upload-notebook-test-2.ipynb');
+        var datapath = path.join(__dirname, notebookFile);
+        var datapath2 = path.join(__dirname, notebookFile2);
         var formData = {
             file: fs.createReadStream(datapath)
         };
