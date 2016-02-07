@@ -11,11 +11,24 @@ This repo contains a NodeJS application that can display Jupyter notebooks as dy
 
 **Note** that this project is very much a work-in-progress as part of the [dashboards deployment roadmap](https://github.com/jupyter-incubator/dashboards/wiki/Deployment-Roadmap).
 
-## Run It
+## Try It
 
-For the moment, see the *Develop It* section. We'll provide more detail here once we make a stable release on how to run the server outside a development environment.
+Running the demos in this repository requires Docker. A simple way to run [Docker](https://www.docker.com/) is to use [docker-machine](https://docs.docker.com/machine/get-started/). After setting up Docker, do the following:
 
-In the meantime, if you want to get a sense of all the configuration options, run `make help`.
+```
+make build
+make demo-container
+```
+
+Open your web browser and point it to the dashboards server running on your Docker host at `http://<docker host ip>:3000/`.
+
+To see another notebook as a dashboard:
+
+1. Create a dashboard layout in Jupyter Notebook using the `jupyter_dashboards` extension.
+2. Copy the `*.ipynb` file to the `data/` directory in the project root.
+3. Run `make run` again -- this will rebuild the Docker image and restart the Node application container.
+
+**Note again** that this project is a work in progress and so many notebooks with dashboard layouts and interactive widgets will not work here yet.
 
 ## Deploy It
 
@@ -27,53 +40,63 @@ For more details, including use cases and alternative deployments, see the [dash
 
 ## Develop It
 
-Running the Node application requires Docker. A simple way to run [Docker](https://www.docker.com/) is to use [docker-machine](https://docs.docker.com/machine/get-started/).
+You can use the Try It setup above for development, but any change you make to the source will require a restart of the dashboard server container. A better approach is to install the following on your host machine:
 
-You can run the Node application with your choice of backend kernel provider.
+* Node 5.5.0
+* npm 3.5.3
+* gulp 3.9.0
+* Docker 1.9.1
+* Docker Machine 0.5.6
 
-### Run Node app with kernel gateway
+With these installed, you can use the `make dev-*` targets. Under the covers, these targets use `gulp` to automatically rebuild and restart the dashboard server any time you make a code change. Run `make help` to see the full gamut of targets and options. See the next few sections for the most common patterns. Of course, you can mix and match.
 
-To run the Node application container and a single kernel gateway container:
-
-```bash
-make run
-```
-
-### Run Node app with tmpnb notebook service
-
-To run the Node application container and the [tmpnb](https://github.com/jupyter/tmpnb) notebook service, which includes a configurable HTTP proxy container, an orchestration server container, and a pool of kernel gateway containers:
+### Dashboard Server w/ Auto Restart
 
 ```bash
-make run-tmpnb
+make dev
+# mac shortcut for visiting URL in a browser
+open http://127.0.0.1:3000
 ```
 
-### Access Node app
+### Dashboard Server w/ Auto Restart and Debug Console Logging
 
-Once the Node application and backend containers are running, visit `http://<external docker IP>:3000/notebooks/simple` to see a simple example notebook as a dashboard.
+```bash
+make dev-logging
+# mac shortcut for visiting URL in a browser
+open http://127.0.0.1:3000
+```
 
-To see another notebook as a dashboard:
+### Dashboard Server w/ Auto Restart and Remote Debugging
 
-1. Copy the `*.ipynb` file to the `data/` directory in the project root.
-2. Run `make run` (or `make run-tmpnb`) again -- this will rebuild the Docker image and restart the Node application container.
+```bash
+npm install -g node-inspector
+make dev-debug
+# a browser tab should open with the debugger visible
+# refresh if it errors: the server might not be running yet
+```
 
-### Options
+### Dashboard Server w/ Auto Restart and Form Auth
 
-The Node application container runs with minimal HTTP logging by default.  To run the Node application with debug-level logging enabled:
+```bash
+make dev USERNAME=admin PASSWORD=password
+# mac shortcut for visiting URL in a browser
+open http://127.0.0.1:3000
+```
 
-1. `make run-logging`
-2. Logs will print to the server console.
+### Dashboard Server w/ Auto Restart and Self-Signed HTTPS Certificate
 
-To run the Node application with remote debugging enabled:
+```bash
+make certs
+make run HTTPS_KEY_FILE=certs/server.pem HTTPS_CERT_FILE=certs/server.pem
+# mac shortcut for visiting URL in a browser
+open https://127.0.0.1:3001
+```
 
-1. `make run-debug`
-2. Open `http://<external docker IP>:9711/?ws=<external docker IP>:9711&port=5858` to access the `node-inspector` and commence debugging.
+### Dashboard Server Tests
 
-To run the Node application with a self-signed certificate, first create the certificate, then run one of the above commands while setting **both** the `HTTPS_KEY_FILE` and `HTTPS_CERT_FILE` environment variables:
-
-1. `make certs`
-2. `make run HTTPS_KEY_FILE=certs/server.pem HTTPS_CERT_FILE=certs/server.pem`
-3. Visit `http://<external docker IP>:3001/notebooks/simple` to see a simple example notebook as a dashboard.
-
-To run the Node application with form-based auth enabled:
-
-1. `make run USERNAME=admin PASSWORD=password`
+```bash
+# unit tests
+make test
+# backend integration tests
+make integration-test
+```
