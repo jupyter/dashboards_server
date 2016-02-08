@@ -42,10 +42,10 @@ describe('kernel gateway auth token', function() {
         });
     });
 
-    it('should successfully load notebook (node app & gateway configured with token)', function(done) {
+    it('should successfully load dashboard (node app & gateway configured with token)', function(done) {
         request({
             method: 'GET',
-            uri: appUrl + '/notebooks/simple'
+            uri: appUrl + '/dashboards/simple'
         }, function(error, response, body) {
             expect(response.statusCode).to.equal(200);
             expect(body).to.contain('<!doctype html>');

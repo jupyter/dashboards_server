@@ -71,25 +71,14 @@ app.use(session({
 // PUBLIC ROUTES (auth token, no login)
 ///////////////////////////////////////
 
-app.use('/', authRoutes);
+app.use('/_api', authRoutes);
 
 ////////
 // LOGIN
 ////////
 
-var seedUsername = config.get('USERNAME');
-var seedPassword = config.get('PASSWORD');
-//if username supplied but not password throw error
-if(seedUsername && seedUsername !== "" && (!seedPassword || seedPassword === "")) {
-    throw new Error('Error, Username exists but Password is missing');
-}
-//if password supplied but not user throw error
-if(seedPassword && seedPassword !== "" && (!seedUsername || seedUsername === "")) {
-    throw new Error('Error, Password exists but Username is missing');
-}
-//if username and password supplied, enable auth
-else if(seedUsername && seedUsername !== "" && seedPassword && seedPassword !== "") {
-    config.set('AUTH_ENABLED', true);
+if (config.get('AUTH_ENABLED')) {
+    // if username and password supplied, enable auth
     app.use('/login', loginRoutes);
     app.use('/logout', logoutRoutes);
 
@@ -132,7 +121,7 @@ app.use(function(err, req, res, next) {
         // send stacktrace in development mode
         stacktrace = err.stack;
         if (status >= 500 && status < 600) {
-            console.log("STACK:",err.stack);
+            console.log('STACK:', err.stack);
         }
     }
 

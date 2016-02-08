@@ -9,7 +9,7 @@ var authToken = require('../app/auth-token');
 var nbstore = require('../app/notebook-store');
 var router = require('express').Router();
 
-/* POST /notebooks/* - upload a notebook */
+/* POST /notebooks/* - upload a dashboard notebook */
 router.post('/notebooks/*', authToken, nbstore.upload, function(req, res) {
     res.status(201).json({
         url: req.url,
