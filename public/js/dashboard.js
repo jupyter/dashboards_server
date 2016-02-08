@@ -34,13 +34,11 @@ requirejs([
     var OutputAreaWidget = OutputArea.OutputAreaWidget;
     var StreamName = OutputArea.StreamName;
 
-    var CONTAINER_URL = 'urth_container_url';
-    var SESSION_URL = 'urth_session_url';
-
     var $container = $('#dashboard-container');
 
     function _initGrid() {
-        // enable gridstack
+        // enable gridstack with parameters set by JS in the HTML page by
+        // the backend
         var gridstack = $container.gridstack({
             vertical_margin: Urth.cellMargin,
             cell_height: Urth.defaultCellHeight,
@@ -63,13 +61,13 @@ requirejs([
 
     // This object has delegates for kernel message handling, keyed by message
     // type. All functions here receive the entire response message and a
-    // reference to an outputArea model associated with the code / widget that
+    // reference to an OutputAreaModel associated with the code / widget that
     // made the initial request.
     var messageHandlers = {
-        clear_output: function(msg, outputArea) {
-            outputArea.clear(msg.content.wait);
+        clear_output: function(msg, outputAreaModel) {
+            outputAreaModel.clear(msg.content.wait);
         },
-        stream: function(msg, outputArea) {
+        stream: function(msg, outputAreaModel) {
             var output = {};
             output.outputType = OutputType.Stream;
             output.text = msg.content.text;
@@ -80,71 +78,82 @@ requirejs([
                   break;
                 case "stdout":
                   output.name = StreamName.StdOut;
-                  outputArea.add(output);
+                  outputAreaModel.add(output);
                   break;
                 default:
                   throw new Error('Unrecognized stream type ' + msg.content.name);
             }
         },
-        display_data: function(msg, outputArea) {
+        display_data: function(msg, outputAreaModel) {
             var output = {};
             output.outputType = OutputType.DisplayData;
             output.data = msg.content.data;
             output.metadata = msg.content.metadata;
-            outputArea.add(output);
+            outputAreaModel.add(output);
         },
-        execute_result: function(msg, outputArea) {
+        execute_result: function(msg, outputAreaModel) {
             var output = {};
             output.outputType = OutputType.ExecuteResult;
             output.data = msg.content.data;
             output.metadata = msg.content.metadata;
             output.execution_count = msg.content.execution_count;
-            outputArea.add(output);
+            outputAreaModel.add(output);
         },
-        error: function(msg, outputArea) {
+        error: function(msg, outputAreaModel) {
             // show tracebacks in the console, not on the page
             var traceback = msg.content.traceback.join('\n');
             console.error(msg.content.ename, msg.content.evalue, traceback);
+        },
+        status: function(msg, outputAreaModel) {
+            // pass
         }
     };
 
     // process kernel messages by delegating to handlers based on message type
-    function _consumeMessage(msg, outputArea) {
+    function _consumeMessage(msg, outputAreaModel) {
         var output = {};
         var handler = messageHandlers[msg.header.msg_type];
         if(handler) {
-            handler(msg, outputArea);
+            handler(msg, outputAreaModel);
         } else {
-            console.error('Unhandled message', msg);
+            console.warn('Unhandled message', msg);
         }
     }
 
     // initialize Gridstack
     _initGrid();
 
-
-    // start kernel
+    // start a kernel
     Kernel.start().then(function(kernel) {
-        var widgetManager = new WidgetManager(kernel);
+        // initialize an ipywidgets manager
+        var widgetManager = new WidgetManager(kernel, _consumeMessage);
 
-        // create an output area for each dashboard code cell
         $('.dashboard-cell.code-cell').each(function() {
             var $cell = $(this);
 
+            // create a jupyter output area mode and widget view for each
+            // dashboard code cell
             var model = new OutputAreaModel();
             var view = new OutputAreaWidget(model);
+            // attach the view to the cell dom node
             view.attach(this);
 
-            var widgetArea = $('<div class="widget-area">').get(0);
-            $cell.append(widgetArea, view.node);
+            // create a separate widget dom node and append it to the output
+            // area view
+            var widgetNode = $('<div class="widget-area">').get(0);
+            $cell.append(widgetNode, view.node);
 
+            // request execution of the code associated with the dashboard cell
             var kernelFuture = Kernel.execute($cell.index(), function(msg) {
+                // handle the response to the initial execution request
                 if (model) {
                     _consumeMessage(msg, model);
                 }
             });
-
-            widgetManager.addWidget(widgetArea, kernelFuture.msg.header.msg_id);
+            // track execution replies in order to associate newly created
+            // widgets with their output areas and DOM containers
+            widgetManager.trackPending(kernelFuture.msg.header.msg_id,
+                widgetNode, model);
         });
     });
 });
