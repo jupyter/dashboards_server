@@ -40,13 +40,13 @@ requirejs([
         // enable gridstack with parameters set by JS in the HTML page by
         // the backend
         var gridstack = $container.gridstack({
-            vertical_margin: Urth.cellMargin,
-            cell_height: Urth.defaultCellHeight,
-            width: Urth.maxColumns,
+            vertical_margin: Config.cellMargin,
+            cell_height: Config.defaultCellHeight,
+            width: Config.maxColumns,
             static_grid: true
         }).data('gridstack');
 
-        var halfMargin = Urth.cellMargin / 2;
+        var halfMargin = Config.cellMargin / 2;
         var styleRules = [
             {
                 selector: '#dashboard-container .grid-stack-item',

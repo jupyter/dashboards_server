@@ -21,8 +21,7 @@ var redirectBack = function(req, res) {
 router.get('/', function(req, res) {
     res.status(200);
     res.render('login', {
-        username: req.session.username,
-        authEnabled: config.get('AUTH_ENABLED')
+        username: req.session.username
     });
 });
 
@@ -36,20 +35,18 @@ router.post('/', urlencodedParser, function(req, res) {
     //if not logged in already
     if(!req.session.username) {
         //if username/password match
-        if(seedUsername === req.body.username && seedPassword === req.body.password) {
+        if (seedUsername === req.body.username &&
+            seedPassword === req.body.password) {
             req.session.username = req.body.username;
             redirectBack(req, res);
-        }
-        else {
+        } else {
             res.render('login', {
                 username: req.session.username,
-                authError: true,
-                authEnabled: config.get('AUTH_ENABLED')
+                authError: true
             });
         }
-    }
-    //already logged in
-    else {
+    } else {
+        //already logged in
         redirectBack(req, res);
     }
 });
