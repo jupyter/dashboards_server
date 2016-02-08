@@ -43,10 +43,9 @@ define(['jupyter-js-widgets'], function(Widgets) {
      * options: object with metadata to be associated with the view
      */
     WidgetManager.prototype.display_view = function(msg, view, options) {
-        console.debug('WidgetManager.display view:', msg, view, options);
-
         var widgetInfo = this._pendingExecutions[msg.parent_header.msg_id];
-        console.debug(widgetInfo);
+        // no longer need to track
+        delete this._pendingExecutions[msg.parent_header.msg_id];
 
         view.options = view.options || {};
         view.options.outputAreaModel = widgetInfo.outputAreaModel;
@@ -76,18 +75,28 @@ define(['jupyter-js-widgets'], function(Widgets) {
      * view: ipywidget view instance
      */
     WidgetManager.prototype.callbacks = function(view) {
-        // TODO: only registering one callback until https://github.com/ipython/ipywidgets/pull/353
-        // is fixed
-        var mgr = this;
-        var callbacks = {
-            iopub : {
+        var options = view.options;
+        // Find the output area model that manages this widget. For now,
+        // we assume widgets cannot change "move" across output areas and so
+        // we can compute this once, not on every callback.
+        while(!options.outputAreaModel && options.parent) {
+            options = options.parent.options;
+        }
+
+        var callbacks = {};
+        if(options.outputAreaModel) {
+            var mgr = this;
+            // TODO: only registering one callback until https://github.com/ipython/ipywidgets/pull/353
+            // is fixed
+            callbacks.iopub = {
                 output: function(msg) {
-                    console.debug(msg.msg_type, view);
-                    // TODO: it's probably not always parent
                     mgr.msgHandler(msg, view.options.parent.options.outputAreaModel);
                 }
             }
-        };
+        } else {
+            console.warn('No OutputAreaModel for widget view:', view)
+        }
+
         return callbacks;
     };
 
