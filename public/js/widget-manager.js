@@ -122,8 +122,10 @@ define([
      * metadata: ???
      */
     WidgetManager.prototype._create_comm = function(targetName, id, metadata) {
+        // TODO Other Jupyter code seems to expect `metadata` to be passed in as `data`. Why?
+        var data = metadata;
         return Promise.resolve(
-            this.commManager.new_comm(targetName, {}, {}, metadata, id)
+            this.commManager.new_comm(targetName, data, null, null, id)
         );
     };
 
