@@ -36,10 +36,10 @@ define(['jupyter-js-widgets'], function(Widgets) {
     WidgetManager.prototype = Object.create(Widgets.ManagerBase.prototype);
 
     /*
-     * Called when a ipywidget is added to the DOM.
+     * Called when a jupyter widget is added to the DOM.
      *
      * msg: iopub channel, comm_msg with display data
-     * view: ipywidget view instance
+     * view: jupyter widget view instance
      * options: object with metadata to be associated with the view
      */
     WidgetManager.prototype.display_view = function(msg, view, options) {
@@ -61,7 +61,7 @@ define(['jupyter-js-widgets'], function(Widgets) {
     };
 
     /*
-     * Returns callbacks to be invoked in response to ipywidget triggered
+     * Returns callbacks to be invoked in response to jupyter widget-triggered
      * comm messages on shell, input, and iopub channels. Each callback takes
      * one parameter: the comm message from the kernel. The return value should
      * be an object with any of the following properties defined as functions.
@@ -72,7 +72,7 @@ define(['jupyter-js-widgets'], function(Widgets) {
      * shell.reply
      * input
      *
-     * view: ipywidget view instance
+     * view: jupyter widget view instance
      */
     WidgetManager.prototype.callbacks = function(view) {
         var options = view.options;
@@ -102,10 +102,10 @@ define(['jupyter-js-widgets'], function(Widgets) {
 
     /*
      * Called to create a new comm channel between frontend and backend
-     * ipywidget models. Returns a promise of a new comm channel.
+     * jupyter widget models. Returns a promise of a new comm channel.
      *
      * targetName: comm channel target name on the backend
-     * id: ipywidget model ID
+     * id: jupyter widget model ID
      * metadata: ???
      */
     WidgetManager.prototype._create_comm = function(targetName, id, metadata) {
@@ -124,8 +124,8 @@ define(['jupyter-js-widgets'], function(Widgets) {
     };
 
     /*
-     * Associates a spot in the DOM with a execute_request so that if the
-     * execution results in the creation of a new ipywidget, the ipywidget
+     * Associates a spot in the DOM with an execute_request so that if the
+     * execution results in the creation of a new jupyter widget, the widget
      * can be linked with its output area and place in the DOM.
      *
      * msg_id: ID of the execute_request to the kernel
