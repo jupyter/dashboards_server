@@ -90,7 +90,7 @@ define(['jupyter-js-widgets'], function(Widgets) {
             // is fixed
             callbacks.iopub = {
                 output: function(msg) {
-                    mgr.msgHandler(msg, view.options.parent.options.outputAreaModel);
+                    mgr.msgHandler(msg, options.outputAreaModel);
                 }
             }
         } else {
