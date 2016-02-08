@@ -161,14 +161,11 @@ define([
     WidgetManager.prototype._shimDeclarativeWidgets= function(kernel) {
         // NOTE: also see addition to `addWidget()`
 
-        window.IPython = {
-            notebook: {
-                events: $({}),
-                kernel: kernel
-            }
-        };
+        var ipy = window.IPython = window.IPython || {};
+        var nb = ipy.notebook = ipy.notebook || {};
+        nb.events = nb.events || $({});
 
-        var nb = window.IPython.notebook;
+        nb.kernel = kernel;
         nb.kernel.is_connected = function() {
             return kernel.status === KernelStatus.Busy || kernel.status === KernelStatus.Idle;
         };
