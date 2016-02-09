@@ -48,6 +48,7 @@ function list() {
             if (err) {
                 reject(new Error('Error getting list of notebooks'));
             } else {
+                files = files.filter(_hiddenFileFilter);
                 resolve(files);
             }
         });
@@ -90,6 +91,11 @@ function _getFilename (req) {
     var name = path.basename(req.params[0]);
     name += path.extname(name) === IPYNB_EXTENSION ? '' : IPYNB_EXTENSION;
     return name;
+}
+
+function _hiddenFileFilter (filename) {
+    //check for hidden files or directories, returns true if file is not hidden
+    return /^[^.]/.test(filename);
 }
 
 function _fileFilter (filename) {
