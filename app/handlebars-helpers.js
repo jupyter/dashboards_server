@@ -2,12 +2,17 @@
  * Copyright (c) Jupyter Development Team.
  * Distributed under the terms of the Modified BSD License.
  */
-commonmark = require('commonmark');
+var commonmark = require('commonmark');
+var config = require('./config');
 
 var reader = new commonmark.Parser();
 var writer = new commonmark.HtmlRenderer();
 
 module.exports = {
+    config: function(name) {
+        return config.get(name);
+    },
+
     mapCellType: function(cellType) {
         return cellType === 'markdown' ? 'text-cell' : 'code-cell';
     },

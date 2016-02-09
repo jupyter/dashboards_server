@@ -46,17 +46,16 @@
 
 <script src="/components/require.js" data-main="/js/dashboard.js"></script>
 <script>
-    var Urth = window.Urth = window.Urth || {};
+    var Config = window.Config = window.Config || {};
     {{#if notebook.metadata.urth.dashboard}}
         {{#with notebook.metadata.urth.dashboard}}
-            Urth.cellMargin = {{cellMargin}};
-            Urth.defaultCellHeight = {{defaultCellHeight}};
-            Urth.maxColumns = {{maxColumns}};
+            Config.cellMargin = {{cellMargin}};
+            Config.defaultCellHeight = {{defaultCellHeight}};
+            Config.maxColumns = {{maxColumns}};
         {{/with}}
     {{else}}
-{{!-- TODO: Read these values from config (put in app.locals) --}}
-        Urth.cellMargin = 10;
-        Urth.defaultCellHeight = 20;
-        Urth.maxColumns = 12;
+        Config.cellMargin = {{{config 'DB_CELL_MARGIN'}}};
+        Config.defaultCellHeight = {{{config 'DB_DEFAULT_CELL_HEIGHT'}}};
+        Config.maxColumns = {{{config 'DB_MAX_COLUMNS'}}};
     {{/if}}
 </script>

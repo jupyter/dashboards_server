@@ -11,7 +11,6 @@ var debug = require('debug')('dashboard-proxy:router');
 var nbstore = require('../app/notebook-store');
 var router = require('express').Router();
 
-var authEnabled = config.get('AUTH_ENABLED');
 var indexRegex = /index\.ipynb/i;
 
 function _renderList(req, res, list) {
@@ -19,7 +18,6 @@ function _renderList(req, res, list) {
     res.status(200);
     res.render('list', {
         username: req.session.username,
-        authEnabled: authEnabled,
         notebooks: list
     });
 }
@@ -74,8 +72,7 @@ router.get('/dashboards/*', function(req, res, next) {
                 res.render('dashboard', {
                     title: 'Dashboard',
                     notebook: notebook,
-                    username: req.session.username,
-                    authEnabled: config.get('AUTH_ENABLED')
+                    username: req.session.username
                 });
             },
             function error(err) {

@@ -34,4 +34,15 @@
     KG_AUTH_TOKEN: null
     // Kernel gateway base URL (gets appended to KERNEL_GATEWAY_URL)
     KG_BASE_URL: ""
+
+    //////////////////////////////
+    // Dashboard rendering options
+    //////////////////////////////
+
+    // Number of pixels between cells
+    DB_CELL_MARGIN: 10
+    // Number of pixels in each row
+    DB_DEFAULT_CELL_HEIGHT: 20
+    //Number of dashboard grid columns
+    DB_MAX_COLUMNS: 12
 }
