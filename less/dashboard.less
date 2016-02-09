@@ -33,6 +33,16 @@ h1 {
         line-height: 1.5em;
 
         .dashboard-cell {
+            &.hidden {
+                display: none;
+            }
+
+            &.text-cell {
+                /* match the notebook text cell overflow */
+                overflow-x: auto;
+                overflow-y: hidden;
+            }
+
             .jp-OutputArea {
                 pre {
                     background-color: transparent;
@@ -45,8 +55,9 @@ h1 {
                 }
             }
 
-            &.hidden {
-                display: none;
+            img {
+                max-width: 100%;
+                height: auto;
             }
         }
 
