@@ -26,7 +26,7 @@ To see another notebook as a dashboard:
 
 1. Create a dashboard layout in Jupyter Notebook using the `jupyter_dashboards` extension.
 2. Copy the `*.ipynb` file to the `data/` directory in the project root.
-3. Run `make run` again -- this will rebuild the Docker image and restart the Node application container.
+3. Run `make demo-container` again -- this will rebuild the Docker image and restart the Node application container.
 
 **Note again** that this project is a work in progress and so many notebooks with dashboard layouts and interactive widgets will not work here yet.
 
@@ -87,7 +87,7 @@ open http://127.0.0.1:3000
 
 ```bash
 make certs
-make run HTTPS_KEY_FILE=certs/server.pem HTTPS_CERT_FILE=certs/server.pem
+make dev HTTPS_KEY_FILE=certs/server.pem HTTPS_CERT_FILE=certs/server.pem
 # mac shortcut for visiting URL in a browser
 open https://127.0.0.1:3001
 ```
