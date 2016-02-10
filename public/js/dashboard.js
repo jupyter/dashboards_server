@@ -105,7 +105,10 @@ requirejs([
             console.error(msg.content.ename, msg.content.evalue, traceback);
         },
         status: function(msg, outputAreaModel) {
-            // pass
+            // pass for now
+        },
+        comm_msg: function(msg, outputAreaModel) {
+            // pass, let widgets deal with it
         }
     };
 
