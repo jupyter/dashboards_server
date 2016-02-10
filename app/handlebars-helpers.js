@@ -14,7 +14,7 @@ module.exports = {
     },
 
     mapCellType: function(cellType) {
-        return cellType === 'markdown' ? 'text-cell' : 'code-cell';
+        return cellType === 'markdown' ? 'text-cell rendered_html' : 'code-cell';
     },
 
     markdownContent: function(cellType, source) {
