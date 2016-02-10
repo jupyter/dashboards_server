@@ -43,7 +43,7 @@ define([
         }).bind(this);
         validate();
 
-        this._shimDeclarativeWidgets(kernel);
+        this._shimDeclWidgets(kernel);
     };
     WidgetManager.prototype = Object.create(Widgets.ManagerBase.prototype);
 
@@ -88,29 +88,37 @@ define([
      * view: jupyter widget view instance
      */
     WidgetManager.prototype.callbacks = function(view) {
-        var options = view.options;
-        // Find the output area model that manages this widget. For now,
-        // we assume widgets cannot change "move" across output areas and so
-        // we can compute this once, not on every callback.
-        while(!options.outputAreaModel && options.parent) {
-            options = options.parent.options;
-        }
-
         var callbacks = {};
-        if(options.outputAreaModel) {
-            var mgr = this;
-            // TODO: only registering one callback until https://github.com/ipython/ipywidgets/pull/353
-            // is fixed
-            callbacks.iopub = {
-                output: function(msg) {
-                    mgr.msgHandler(msg, options.outputAreaModel);
-                }
-            };
-        } else {
-            console.warn('No OutputAreaModel for widget view:', view);
+        if (view) {
+            var options = view.options;
+            // Find the output area model that manages this widget. For now,
+            // we assume widgets cannot change "move" across output areas and so
+            // we can compute this once, not on every callback.
+            while (!options.outputAreaModel && options.parent) {
+                options = options.parent.options;
+            }
+
+            if (options.outputAreaModel) {
+                callbacks = this._get_callbacks(options.outputAreaModel);
+            } else {
+                console.warn('No OutputAreaModel for widget view:', view);
+            }
         }
 
         return callbacks;
+    };
+
+    WidgetManager.prototype._get_callbacks = function(outputAreaModel) {
+        // TODO: only registering one callback until https://github.com/ipython/ipywidgets/pull/353
+        // is fixed
+        var that = this;
+        return {
+            iopub: {
+                output: function(msg) {
+                    that.msgHandler(msg, outputAreaModel);
+                }
+            }
+        };
     };
 
     /*
@@ -148,10 +156,7 @@ define([
      * outputAreaModel: OutputArea that contains the widget
      */
     WidgetManager.prototype.trackPending = function(kernelFuture, widgetNode, outputAreaModel) {
-        // shim for Declarative Widgets
-        kernelFuture.onReply = function(msg) {
-            window.IPython.notebook.events.trigger('shell_reply.Kernel');
-        };
+        this._hookupDeclWidgetsCallbacks(kernelFuture, widgetNode, outputAreaModel);
 
         var msg_id = kernelFuture.msg.header.msg_id;
         this._pendingExecutions[msg_id] = {
@@ -160,9 +165,12 @@ define([
         };
     };
 
-    WidgetManager.prototype._shimDeclarativeWidgets= function(kernel) {
-        // NOTE: also see addition to `addWidget()`
 
+    /**
+     * DECLARATIVE WIDGETS SHIMS
+     **/
+
+    WidgetManager.prototype._shimDeclWidgets = function(kernel) {
         var ipy = window.IPython = window.IPython || {};
         var nb = ipy.notebook = ipy.notebook || {};
         nb.events = nb.events || $({});
@@ -177,6 +185,22 @@ define([
 
         // WidgetManager is instantiated after creation of a kernel, so assume it is ready
         nb.events.trigger('kernel_ready.Kernel');
+    };
+
+    WidgetManager.prototype._hookupDeclWidgetsCallbacks = function(kernelFuture, widgetNode, outputAreaModel) {
+        var that = this;
+
+        kernelFuture.onReply = function(msg) {
+            window.IPython.notebook.events.trigger('shell_reply.Kernel');
+        };
+
+        // Declarative Widgets attempts to get `callbacks` through "cell" data
+        var $cell = $(widgetNode).parents('.cell');
+        var cellData = $cell.data('cell') || {};
+        cellData.get_callbacks = function() {
+            return that._get_callbacks(outputAreaModel);
+        };
+        $cell.data('cell', cellData);
     };
 
     return WidgetManager;
