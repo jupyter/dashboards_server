@@ -47,6 +47,7 @@ gulp.task('webpack:components', function(done) {
                 unknownContextCritical: false
             },
             externals: [
+                'jquery',
                 'jupyter-js-output-area',
                 'jupyter-js-services',
                 'jupyter-js-widgets',
@@ -96,7 +97,7 @@ gulp.task('copy:components', function() {
             './bower_components/jquery-ui/themes/smoothness/images/**/*'
         ]).pipe(gulp.dest('./public/components/jquery-ui/images'));
     var c4 = gulp.src([
-            './node_modules/urth-widgets/dist/urth_widgets/bower_components/**/*'
+            './node_modules/urth-widgets/dist/urth/widgets/ext/notebook/bower_components/**/*'
         ]).pipe(gulp.dest('./public/urth_components'));
     return merge(c1, c2, c3, c4);
 });
