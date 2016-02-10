@@ -44,8 +44,9 @@ define(['jupyter-js-widgets'], function(Widgets) {
      */
     WidgetManager.prototype.display_view = function(msg, view, options) {
         var widgetInfo = this._pendingExecutions[msg.parent_header.msg_id];
-        // no longer need to track
-        delete this._pendingExecutions[msg.parent_header.msg_id];
+
+        // keep tracking the message ID in case more than one widget will reside
+        // in the widget area
 
         view.options = view.options || {};
         view.options.outputAreaModel = widgetInfo.outputAreaModel;
