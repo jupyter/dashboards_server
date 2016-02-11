@@ -1,0 +1,34 @@
+/**
+ * Copyright (c) Jupyter Development Team.
+ * Distributed under the terms of the Modified BSD License.
+ */
+
+/**
+ * Match notebook styles for rendered html
+ */
+
+.rendered_html {
+    // For a 14px base font size this goes as:
+    // font-size = 26, 22, 18, 14, 12, 12
+    // margin-top = 14, 14, 14, 14, 8, 8
+    h1         { font-size: 185.7%; margin: 1.08em 0 0 0; }
+    h2         { font-size: 157.1%; margin: 1.27em 0 0 0; }
+    h3         { font-size: 128.6%; margin: 1.55em 0 0 0; }
+    h4, h5, h6 { font-size: 100%;   margin: 2em    0 0 0; }
+    h1, h2, h3, h4, h5, h6 { font-weight: bold; line-height: 1.0; }
+    h5,h6 {font-style: italic;}
+
+    // Reduce the top margins by 14px compared to above
+    h1:first-child { margin-top: 0.538em; }
+    h2:first-child { margin-top: 0.636em; }
+    h3:first-child { margin-top: 0.777em; }
+    h4, h5, h6 { &:first-child { margin-top: 1em; } }
+
+    p {
+        margin: 0;
+
+        &:not(:first-child) {
+            margin-top: 1em;
+        }
+    }
+}
