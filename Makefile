@@ -67,7 +67,7 @@ ext/ipywidgets:
 		cd ipywidgets ; \
 		npm install --quiet
 
-ext/declwidgets:
+ext/declarativewidgets:
 	@-npm uninstall --quiet urth-widgets
 	@-rm -rf $@
 	@mkdir -p $@ ; \
@@ -75,7 +75,7 @@ ext/declwidgets:
 		cd $@ ; \
 		make init dist NOSCALA=true
 
-dev-install: ext/ipywidgets ext/declwidgets
+dev-install: ext/ipywidgets ext/declarativewidgets
 	npm install --quiet
 	npm run bower
 
