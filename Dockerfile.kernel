@@ -20,15 +20,9 @@ RUN pip uninstall -y ipywidgets && \
     pip install git+https://github.com/ipython/ipywidgets.git@38218351c9dc4196419f6c8f0129df7d0f4cd24c
 
 # install Declarative Widgets
-RUN git clone -b StandaloneExperiment https://github.com/jhpedemonte/declarativewidgets.git ~/declwidgets && \
-    cd ~/declwidgets && \
-    make node_modules ext/ipywidgets dist NOSCALA=true && \
-    cp MANIFEST.in setup.py dist/ && \
-    cd dist && \
-    pip install --no-binary ::all: . && \
-    jupyter declarativewidgets install --user && \
-    jupyter declarativewidgets activate && \
-    cd ~ && rm -rf declwidgets
+RUN pip install jupyter_declarativewidgets && \
+    jupyter declarativewidgets install --user --symlink --overwrite && \
+    jupyter declarativewidgets activate
 
 # run kernel gateway, not notebook server
 CMD ["jupyter", "kernelgateway", "--KernelGatewayApp.ip=0.0.0.0"]
