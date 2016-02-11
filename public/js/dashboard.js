@@ -105,7 +105,10 @@ requirejs([
             console.error(msg.content.ename, msg.content.evalue, traceback);
         },
         status: function(msg, outputAreaModel) {
-            // pass
+            // pass for now
+        },
+        comm_msg: function(msg, outputAreaModel) {
+            // pass, let widgets deal with it
         }
     };
 
@@ -138,10 +141,12 @@ requirejs([
             // attach the view to the cell dom node
             view.attach(this);
 
-            // create a separate widget dom node and append it to the output
-            // area view
-            var widgetNode = $('<div class="widget-area">').get(0);
-            $cell.append(widgetNode, view.node);
+            // create the widget area and widget subarea dom structure used
+            // by ipywidgets in jupyter
+            var $widgetArea = $('<div class="widget-area">');
+            var $widgetSubArea = $('<div class="widget-subarea">').appendTo($widgetArea);
+            // append the widget area and the output area within the grid cell
+            $cell.append($widgetArea, view.node);
 
             // request execution of the code associated with the dashboard cell
             var kernelFuture = Kernel.execute($cell.index(), function(msg) {
@@ -150,10 +155,10 @@ requirejs([
                     _consumeMessage(msg, model);
                 }
             });
-            // track execution replies in order to associate newly created
-            // widgets with their output areas and DOM containers
+            // track execution replies in order to associate the newly created
+            // widget *subarea* with its output areas and DOM container
             widgetManager.trackPending(kernelFuture.msg.header.msg_id,
-                widgetNode, model);
+                $widgetSubArea.get(0), model);
         });
     });
 });
