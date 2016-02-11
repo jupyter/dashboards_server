@@ -147,6 +147,7 @@ requirejs([
             var $widgetSubArea = $('<div class="widget-subarea">').appendTo($widgetArea);
             // append the widget area and the output area within the grid cell
             $cell.append($widgetArea, view.node);
+            $cell.find('.jp-OutputArea').addClass('rendered_html');
 
             // request execution of the code associated with the dashboard cell
             var kernelFuture = Kernel.execute($cell.index(), function(msg) {
