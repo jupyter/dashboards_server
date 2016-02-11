@@ -1,7 +1,8 @@
 bower_components/
+certs/
+data/decl-widgets-taxi-demo.ipynb
 ext/
 node_modules/
 public/components/
 public/css/
 public/urth_components/
-certs/

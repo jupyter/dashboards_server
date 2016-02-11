@@ -214,3 +214,16 @@ certs/server.pem:
 		-out $@
 
 certs: certs/server.pem
+
+############### Examples/demos
+
+# this example requires some additional Polymer elements
+data/decl-widgets-taxi-demo.ipynb: URTH_COMP_DIR=public/urth_components
+data/decl-widgets-taxi-demo.ipynb:
+	@cp examples/$(@F) data/
+	@cd $(URTH_COMP_DIR) && bower --silent --config.interactive=false --config.analytics=false \
+		--config.directory=. install --production \
+		PolymerElements/paper-button PolymerElements/paper-card \
+		PolymerElements/paper-slider GoogleWebComponents/google-map
+
+examples: data/decl-widgets-taxi-demo.ipynb
