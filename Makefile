@@ -30,12 +30,13 @@ help:
 	@cat config.json
 
 clean:
-	@-rm -r bower_components
-	@-rm -r ext
-	@-rm -r node_modules
-	@-rm -r public/components
-	@-rm -r public/css
-	@-rm -r certs
+	@-rm -rf bower_components
+	@-rm -rf ext
+	@-rm -rf node_modules
+	@-rm -rf public/components
+	@-rm -rf public/urth_components
+	@-rm -rf public/css
+	@-rm -rf certs
 
 ############### Docker images
 
@@ -58,16 +59,23 @@ kill:
 
 ext/ipywidgets:
 	@-npm uninstall --quiet jupyter-js-widgets
-	@-rm -rf ext/ipywidgets
-	@mkdir -p ext ; \
-		cd ext ; \
-		git clone https://github.com/ipython/ipywidgets.git ; \
-		cd ipywidgets ; \
+	@-rm -rf $@
+	@mkdir -p $@ ; \
+		git clone https://github.com/ipython/ipywidgets.git $@ ; \
+		cd $@ ; \
 		git checkout 38218351c9dc4196419f6c8f0129df7d0f4cd24c ; \
 		cd ipywidgets ; \
 		npm install --quiet
 
-dev-install: ext/ipywidgets
+ext/declwidgets:
+	@-npm uninstall --quiet urth-widgets
+	@-rm -rf $@
+	@mkdir -p $@ ; \
+		git clone -b StandaloneExperiment https://github.com/jhpedemonte/declarativewidgets.git $@ ; \
+		cd $@ ; \
+		make init dist NOSCALA=true
+
+dev-install: ext/ipywidgets ext/declwidgets
 	npm install --quiet
 	npm run bower
 
