@@ -73,7 +73,7 @@ ext/declarativewidgets:
 	@mkdir -p $@ ; \
 		git clone -b StandaloneExperiment https://github.com/jhpedemonte/declarativewidgets.git $@ ; \
 		cd $@ ; \
-		make init dist NOSCALA=true
+		make node_modules ext/ipywidgets dist NOSCALA=true
 
 dev-install: ext/ipywidgets ext/declarativewidgets
 	npm install --quiet
