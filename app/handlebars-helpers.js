@@ -13,6 +13,18 @@ module.exports = {
         return config.get(name);
     },
 
+    fsIcon: function(type) {
+        var value = '';
+        if (type === 'directory') {
+            value = 'fa fa-folder-o';
+        } else if (type === 'file') {
+            value = 'fa fa-file-o';
+        } else if (type === 'dashboard') {
+            value = 'fa fa-dashboard';
+        }
+        return value;
+    },
+
     mapCellType: function(cellType) {
         return cellType === 'markdown' ? 'text-cell rendered_html' : 'code-cell';
     },
@@ -28,5 +40,9 @@ module.exports = {
 
         var parsed = reader.parse(source);
         return writer.render(parsed);
+    },
+
+    urlBasename: function(url) {
+        return url.split('/').pop();
     }
 };

@@ -99,7 +99,10 @@ gulp.task('copy:components', function() {
     var c4 = gulp.src([
             './node_modules/urth-widgets/dist/urth/widgets/ext/notebook/bower_components/**/*'
         ]).pipe(gulp.dest('./public/urth_components'));
-    return merge(c1, c2, c3, c4);
+    var c5 = gulp.src([
+            './node_modules/font-awesome/fonts/*'
+        ]).pipe(gulp.dest('./public/components/fonts'));
+    return merge(c1, c2, c3, c4, c5);
 });
 
 gulp.task('less', function () {

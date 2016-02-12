@@ -9,7 +9,7 @@ var fs = require('fs');
 var path = require('path');
 var Promise = require('es6-promise').Promise;
 
-var IPYNB_EXTENSION = '.ipynb';
+var dbExt = config.get('DB_FILE_EXT');
 var dataDir = path.join(__dirname, '..', config.get('NOTEBOOKS_DIR'));
 
 // cached notebook objects
@@ -18,6 +18,11 @@ var store = {};
 /////////////////
 // GET OPERATIONS
 /////////////////
+
+// stat the path in the data directory
+function stat(nbpath, cb) {
+    fs.stat(path.join(dataDir, nbpath), cb);
+}
 
 // Read notebook from cache or from file
 function _loadNb(nbpath) {
@@ -33,7 +38,6 @@ function _loadNb(nbpath) {
                     var nb = JSON.parse(rawData);
                     store[nbpath] = nb;
                     resolve(nb);
-                    debug('Resolving nb load:', nbpath);
                 } catch(e) {
                     reject(new Error('Error parsing notebook JSON'));
                 }
@@ -42,13 +46,18 @@ function _loadNb(nbpath) {
     });
 }
 
-function list() {
+function list(dir) {
+    // list all (not hidden) children of the specified directory
+    // (within the data directory)
+    var dbpath = path.join(dataDir, dir || '');
     return new Promise(function(resolve, reject) {
-        fs.readdir(dataDir, function(err, files) {
+        fs.readdir(dbpath, function(err, files) {
             if (err) {
-                reject(new Error('Error getting list of notebooks'));
+                reject(new Error('Error reading path: ' + dbpath));
             } else {
-                files = files.filter(_hiddenFileFilter);
+                files = files.filter(function(f) {
+                        return /^[^.]/.test(f); // not hidden
+                    });
                 resolve(files);
             }
         });
@@ -89,13 +98,8 @@ function _getDestination (req) {
 function _getFilename (req) {
     // get file name from request url, not from uploaded file name
     var name = path.basename(req.params[0]);
-    name += path.extname(name) === IPYNB_EXTENSION ? '' : IPYNB_EXTENSION;
+    name += path.extname(name) === dbExt ? '' : dbExt;
     return name;
-}
-
-function _hiddenFileFilter (filename) {
-    //check for hidden files or directories, returns true if file is not hidden
-    return /^[^.]/.test(filename);
 }
 
 function _fileFilter (filename) {
@@ -205,5 +209,6 @@ module.exports = {
     get: get,
     list: list,
     remove: remove,
+    stat: stat,
     upload: upload
 };
