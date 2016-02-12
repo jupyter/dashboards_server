@@ -89,10 +89,7 @@ gulp.task('copy:components', function() {
     var c3 = gulp.src([
             './bower_components/jquery-ui/themes/smoothness/images/**/*'
         ]).pipe(gulp.dest('./public/components/jquery-ui/images'));
-    var c4 = gulp.src([
-            './node_modules/bootstrap/dist/**/*'
-        ]).pipe(gulp.dest('./public/components/bootstrap'));
-    return merge(c1, c2, c3, c4);
+    return merge(c1, c2, c3);
 });
 
 gulp.task('less', function () {
