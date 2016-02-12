@@ -4,7 +4,10 @@
  */
 var httpProxy = require('http-proxy');
 var debug = require('debug')('dashboard-proxy:server');
-var wsutils = require('../app/ws-utils');
+var error = require('debug')('dashboard-proxy:server:error');
+// var wsutils = require('../app/ws-utils');
+var BufferList = require('../node_modules/websocket/vendor/FastBufferList'); // XXX
+var WebSocketFrame = require('websocket').frame;
 var nbstore = require('../app/notebook-store');
 var config = require('../app/config');
 var Promise = require('es6-promise').Promise;
@@ -74,6 +77,10 @@ var substituteCodeCell = function(d) {
     return transformedData;
 };
 
+var maskBytes = new Buffer(4);
+var frameHeader = new Buffer(10);
+var bufferList = new BufferList();
+
 function setupWSProxy(_server) {
     debug('setting up WebSocket proxy');
     server = _server;
@@ -82,39 +89,58 @@ function setupWSProxy(_server) {
     _server.on('upgrade', function(req, socket, head) {
         var _emit = socket.emit;
         socket.emit = function(eventName, data) {
-
+originalData = data;
             // Handle TCP data
             if (eventName === 'data') {
-                var codeCellsSubstituted = data;
                 // Decode one or more websocket frames
-                var decodedData = wsutils.decodeWebSocket(data);
-
-                if(!decodedData.length) {
-                    // HACK / TODO: Pass through anything that comes in by
-                    // itself that we don't know how to decode as text data.
-                    // This quickfix does not handle cases where multiple
-                    // messages are in the buffer, and some are text data
-                    // while others are not.
-                    _emit.call(socket, eventName, data);
-                    return;
+                var frame = new WebSocketFrame(maskBytes, frameHeader, {});
+                bufferList.write(data);
+                if (!frame.addData(bufferList)) {
+                    error('insufficient data for frame'); // XXX
+                }
+                if (frame.protocolError || frame.frameTooLarge) {
+                    error('an error occurred during parsing of WS data'); // XXX
+                }
+                if (!frame.fin) {
+                    error('NOT IMPLEMENTED: fragmented message');
                 }
 
-                // decodedData is an array of multiple messages
-                codeCellsSubstituted = decodedData.map(substituteCodeCell);
 
-                Promise.all(codeCellsSubstituted).then(function(data) {
-                    // data is an array of messages
-                    // filter out null messages (if any)
-                    data = data.filter(function(d) {
-                        return !!d;
+
+                if (frame.opcode === 0x01) { // TEXT FRAME
+                    // decodedData is an array of multiple messages
+                    // codeCellsSubstituted = decodedData.map(substituteCodeCell);
+                    var codeCellsSubstituted = substituteCodeCell({
+                        payload: frame.binaryPayload.toString('utf8')
                     });
-                    // re-encode
-                    data = wsutils.encodeWebSocket(data);
-                    _emit.call(socket, eventName, data);
-                });
-            } else {
-              _emit.call(socket, eventName, data);
+
+                    data = Promise.resolve(codeCellsSubstituted).then(function(data) {
+                        // // data is an array of messages
+                        // // filter out null messages (if any)
+                        // data = data.filter(function(d) {
+                        //     return !!d;
+                        // });
+
+                        // // re-encode
+                        // return wsutils.encodeWebSocket(data);
+                        data = new Buffer(data.payload, 'utf8');
+                        var outframe = new WebSocketFrame(maskBytes, frameHeader, {});
+                        outframe.opcode = 0x01; // TEXT FRAME
+                        outframe.binaryPayload = data;
+                        outframe.mask = frame.mask;
+                        outframe.fin = true;
+                        data = outframe.toBuffer();
+                        return data;
+
+                        // XXX display error if length is greater than WS limit
+                    });
+                }
             }
+
+            Promise.resolve(data).then(function(data) {
+originalData;
+                _emit.call(socket, eventName, data);
+            });
         };
 
         // Add handler for reaping a kernel and removing sessions if the client
