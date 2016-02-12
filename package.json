@@ -8,9 +8,9 @@
     "start": "node ./bin/www",
     "start-debug": "node-inspector & node --debug-brk ./bin/www",
     "start-logging": "NODE_DEBUG=http DEBUG=express:*,dashboard-proxy:* node ./bin/www",
-    "test": "node_modules/mocha/bin/mocha test/base/**/*-test.js",
-    "integration-test": "node_modules/mocha/bin/mocha test/integration/default/**/*-test.js",
-    "integration-test-auth-token": "node_modules/mocha/bin/mocha test/integration/auth-token/**/*-test.js"
+    "test": "mocha test/base/**/*-test.js",
+    "integration-test": "mocha test/integration/default/**/*-test.js",
+    "integration-test-auth-token": "mocha test/integration/auth-token/**/*-test.js"
   },
   "dependencies": {
     "body-parser": "^1.13.3",
