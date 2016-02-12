@@ -31,12 +31,13 @@ help:
 
 clean:
 	@-rm -rf bower_components
+	@-rm -rf certs
+	@-rm -f data/decl-widgets-taxi-demo.ipynb
 	@-rm -rf ext
 	@-rm -rf node_modules
 	@-rm -rf public/components
-	@-rm -rf public/urth_components
 	@-rm -rf public/css
-	@-rm -rf certs
+	@-rm -rf public/urth_components
 
 ############### Docker images
 
@@ -220,7 +221,8 @@ certs: certs/server.pem
 # this example requires some additional Polymer elements
 data/decl-widgets-taxi-demo.ipynb: URTH_COMP_DIR=public/urth_components
 data/decl-widgets-taxi-demo.ipynb:
-	@cp examples/$(@F) data/
+	@cp etc/notebooks/$(@F) data/
+	@mkdir -p $(URTH_COMP_DIR)
 	@cd $(URTH_COMP_DIR) && bower --silent --config.interactive=false --config.analytics=false \
 		--config.directory=. install --production \
 		PolymerElements/paper-button PolymerElements/paper-card \
