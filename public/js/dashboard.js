@@ -138,6 +138,8 @@ requirejs([
             // dashboard code cell
             var model = new OutputAreaModel();
             var view = new OutputAreaWidget(model);
+            view.addClass('rendered_html');
+
             // attach the view to the cell dom node
             view.attach(this);
 
