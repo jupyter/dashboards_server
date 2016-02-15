@@ -23,6 +23,13 @@ RUN cd ext && \
     cd ipywidgets && \
     npm install --quiet
 
+# 3d1d93d5af7ad7b0679f4c522c0e112c1c2a0b82 is a commit on 'StandaloneExperiment' branch
+RUN cd ext && \
+    git clone https://github.com/jhpedemonte/declarativewidgets.git && \
+    cd declarativewidgets && \
+    git checkout 3d1d93d5af7ad7b0679f4c522c0e112c1c2a0b82 && \
+    make node_modules ext/ipywidgets dist NOSCALA=true
+
 # npm & bower install separately, so these are properly cached by docker and not affected by
 # changes in rest of source
 ADD package.json package.json

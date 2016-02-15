@@ -19,5 +19,10 @@ RUN pip install jupyter_kernel_gateway==0.3.1
 RUN pip uninstall -y ipywidgets && \
     pip install git+https://github.com/ipython/ipywidgets.git@38218351c9dc4196419f6c8f0129df7d0f4cd24c
 
+# install Declarative Widgets
+RUN pip install jupyter_declarativewidgets && \
+    jupyter declarativewidgets install --user --symlink --overwrite && \
+    jupyter declarativewidgets activate
+
 # run kernel gateway, not notebook server
 CMD ["jupyter", "kernelgateway", "--KernelGatewayApp.ip=0.0.0.0"]

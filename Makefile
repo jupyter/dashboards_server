@@ -30,12 +30,14 @@ help:
 	@cat config.json
 
 clean:
-	@-rm -r bower_components
-	@-rm -r ext
-	@-rm -r node_modules
-	@-rm -r public/components
-	@-rm -r public/css
-	@-rm -r certs
+	@-rm -rf bower_components
+	@-rm -rf certs
+	@-rm -f data/decl-widgets-taxi-demo.ipynb
+	@-rm -rf ext
+	@-rm -rf node_modules
+	@-rm -rf public/components
+	@-rm -rf public/css
+	@-rm -rf public/urth_components
 
 ############### Docker images
 
@@ -57,17 +59,24 @@ kill:
 ############### Dashboard server development on host
 
 ext/ipywidgets:
-	-npm uninstall --quiet jupyter-js-widgets
-	-rm -rf ext/ipywidgets
-	@mkdir -p ext ; \
-		cd ext ; \
-		git clone https://github.com/ipython/ipywidgets.git ; \
-		cd ipywidgets ; \
+	@-npm uninstall --quiet jupyter-js-widgets
+	@-rm -rf $@
+	@mkdir -p $@ ; \
+		git clone https://github.com/ipython/ipywidgets.git $@ ; \
+		cd $@ ; \
 		git checkout 38218351c9dc4196419f6c8f0129df7d0f4cd24c ; \
 		cd ipywidgets ; \
 		npm install --quiet
 
-dev-install: ext/ipywidgets
+ext/declarativewidgets:
+	@-npm uninstall --quiet urth-widgets
+	@-rm -rf $@
+	@mkdir -p $@ ; \
+		git clone -b StandaloneExperiment https://github.com/jhpedemonte/declarativewidgets.git $@ ; \
+		cd $@ ; \
+		make node_modules ext/ipywidgets dist NOSCALA=true
+
+dev-install: ext/ipywidgets ext/declarativewidgets
 	npm install --quiet
 	npm run bower
 
@@ -206,3 +215,17 @@ certs/server.pem:
 		-out $@
 
 certs: certs/server.pem
+
+############### Examples/demos
+
+# this example requires some additional Polymer elements
+data/decl-widgets-taxi-demo.ipynb: URTH_COMP_DIR=public/urth_components
+data/decl-widgets-taxi-demo.ipynb:
+	@cp etc/notebooks/$(@F) data/
+	@mkdir -p $(URTH_COMP_DIR)
+	@cd $(URTH_COMP_DIR) && bower --silent --config.interactive=false --config.analytics=false \
+		--config.directory=. install --production \
+		PolymerElements/paper-button PolymerElements/paper-card \
+		PolymerElements/paper-slider GoogleWebComponents/google-map
+
+examples: data/decl-widgets-taxi-demo.ipynb

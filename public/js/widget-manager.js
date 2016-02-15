@@ -5,7 +5,17 @@
 
 // Adapted from example code at:
 //   https://github.com/ipython/ipywidgets/blob/fc6844f8210761ff5ad1c9ffc25a70b379fc5191/examples/development/web3/src/manager.js
-define(['jupyter-js-widgets'], function(Widgets) {
+define([
+    'jquery',
+    'jupyter-js-widgets',
+    'jupyter-js-services'
+], function(
+    $,
+    Widgets,
+    Services
+) {
+
+    var KernelStatus = Services.KernelStatus;
 
     var WidgetManager  = function(kernel, msgHandler) {
         //  Call the base class.
@@ -32,6 +42,8 @@ define(['jupyter-js-widgets'], function(Widgets) {
             });
         }).bind(this);
         validate();
+
+        this._shimDeclWidgets(kernel);
     };
     WidgetManager.prototype = Object.create(Widgets.ManagerBase.prototype);
 
@@ -76,29 +88,37 @@ define(['jupyter-js-widgets'], function(Widgets) {
      * view: jupyter widget view instance
      */
     WidgetManager.prototype.callbacks = function(view) {
-        var options = view.options;
-        // Find the output area model that manages this widget. For now,
-        // we assume widgets cannot change "move" across output areas and so
-        // we can compute this once, not on every callback.
-        while(!options.outputAreaModel && options.parent) {
-            options = options.parent.options;
-        }
-
         var callbacks = {};
-        if(options.outputAreaModel) {
-            var mgr = this;
-            // TODO: only registering one callback until https://github.com/ipython/ipywidgets/pull/353
-            // is fixed
-            callbacks.iopub = {
-                output: function(msg) {
-                    mgr.msgHandler(msg, options.outputAreaModel);
-                }
+        if (view) {
+            var options = view.options;
+            // Find the output area model that manages this widget. For now,
+            // we assume widgets cannot change "move" across output areas and so
+            // we can compute this once, not on every callback.
+            while (!options.outputAreaModel && options.parent) {
+                options = options.parent.options;
             }
-        } else {
-            console.warn('No OutputAreaModel for widget view:', view)
+
+            if (options.outputAreaModel) {
+                callbacks = this._get_callbacks(options.outputAreaModel);
+            } else {
+                console.warn('No OutputAreaModel for widget view:', view);
+            }
         }
 
         return callbacks;
+    };
+
+    WidgetManager.prototype._get_callbacks = function(outputAreaModel) {
+        // TODO: only registering one callback until https://github.com/ipython/ipywidgets/pull/353
+        // is fixed
+        var that = this;
+        return {
+            iopub: {
+                output: function(msg) {
+                    that.msgHandler(msg, outputAreaModel);
+                }
+            }
+        };
     };
 
     /*
@@ -110,8 +130,10 @@ define(['jupyter-js-widgets'], function(Widgets) {
      * metadata: ???
      */
     WidgetManager.prototype._create_comm = function(targetName, id, metadata) {
+        // TODO Other Jupyter code seems to expect `metadata` to be passed in as `data`. Why?
+        var data = metadata;
         return Promise.resolve(
-            this.commManager.new_comm(targetName, {}, {}, metadata, id)
+            this.commManager.new_comm(targetName, data, null, null, id)
         );
     };
 
@@ -133,11 +155,52 @@ define(['jupyter-js-widgets'], function(Widgets) {
      * widgetNode: DOM node where the widget should render
      * outputAreaModel: OutputArea that contains the widget
      */
-    WidgetManager.prototype.trackPending = function(msg_id, widgetNode, outputAreaModel) {
+    WidgetManager.prototype.trackPending = function(kernelFuture, widgetNode, outputAreaModel) {
+        this._hookupDeclWidgetsCallbacks(kernelFuture, widgetNode, outputAreaModel);
+
+        var msg_id = kernelFuture.msg.header.msg_id;
         this._pendingExecutions[msg_id] = {
             widgetNode: widgetNode,
             outputAreaModel: outputAreaModel
         };
+    };
+
+
+    /**
+     * DECLARATIVE WIDGETS SHIMS
+     **/
+
+    WidgetManager.prototype._shimDeclWidgets = function(kernel) {
+        var ipy = window.IPython = window.IPython || {};
+        var nb = ipy.notebook = ipy.notebook || {};
+        nb.events = nb.events || $({});
+
+        nb.kernel = kernel;
+        nb.kernel.is_connected = function() {
+            return kernel.status === KernelStatus.Busy || kernel.status === KernelStatus.Idle;
+        };
+        nb.kernel.widget_manager = this;
+
+        // IPython.notebook.base_url   ?????
+
+        // WidgetManager is instantiated after creation of a kernel, so assume it is ready
+        nb.events.trigger('kernel_ready.Kernel');
+    };
+
+    WidgetManager.prototype._hookupDeclWidgetsCallbacks = function(kernelFuture, widgetNode, outputAreaModel) {
+        var that = this;
+
+        kernelFuture.onReply = function(msg) {
+            window.IPython.notebook.events.trigger('shell_reply.Kernel');
+        };
+
+        // Declarative Widgets attempts to get `callbacks` through "cell" data
+        var $cell = $(widgetNode).parents('.cell');
+        var cellData = $cell.data('cell') || {};
+        cellData.get_callbacks = function() {
+            return that._get_callbacks(outputAreaModel);
+        };
+        $cell.data('cell', cellData);
     };
 
     return WidgetManager;
