@@ -19,17 +19,30 @@ var store = {};
 // GET OPERATIONS
 /////////////////
 
+// Append the notebook file extension if left off
+function _appendExt(nbpath) {
+    var ext = path.extname(nbpath) === dbExt ? '' : dbExt;
+    return nbpath + ext;
+}
+
 // stat the path in the data directory
 function stat(nbpath, cb) {
-    fs.stat(path.join(dataDir, nbpath), cb);
+    // file extension is optional, so first try with the specified nbpath
+    fs.stat(path.join(dataDir, nbpath), function(err, status) {
+        if (err && err.code === 'ENOENT') {
+            // might have left off extension, so try appending the extension
+            fs.stat(path.join(dataDir, _appendExt(nbpath)), cb);
+        } else {
+            cb.apply(null, arguments);
+        }
+    });
 }
 
 // Read notebook from cache or from file
 function _loadNb(nbpath) {
+    nbpath = _appendExt(nbpath);
     return new Promise(function(resolve, reject) {
-        var ipynb = /\.ipynb$/.test(nbpath) ? '' : '.ipynb';
-        var nbPath = path.join(dataDir, nbpath + ipynb);
-        console.info('Attempting to load notebook file:', nbPath);
+        var nbPath = path.join(dataDir, nbpath);
         fs.readFile(nbPath, 'utf8', function(err, rawData) {
             if (err) {
                 reject(new Error('Error loading notebook'));
@@ -95,16 +108,9 @@ function _getDestination (req) {
     return destDir;
 }
 
-function _getFilename (req) {
-    // get file name from request url, not from uploaded file name
-    var name = path.basename(req.params[0]);
-    name += path.extname(name) === dbExt ? '' : dbExt;
-    return name;
-}
-
 function _fileFilter (filename) {
-    // check for *.ipynb extension
-    return /\.ipynb$/.test(filename);
+    // check for file extension
+    return new RegExp('\\'+dbExt+'$').test(filename); // escape the leading dot
 }
 
 // busboy limits.
@@ -121,7 +127,7 @@ function upload(req, res, next) {
     var buffers = [];
     var bufferLength = 0;
     var destination = _getDestination(req);
-    var filename = _getFilename(req);
+    var filename = _appendExt(path.basename(req.params[0]));
     var cachedPath = req.params[0];
     var fileCount = 0;
 

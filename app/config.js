@@ -17,4 +17,10 @@ if (hasUsername !== hasPassword) {
 }
 config.set('AUTH_ENABLED', hasUsername && hasPassword);
 
+// ensure file extension starts with a dot
+var ext = config.get('DB_FILE_EXT');
+if (!/^\./.test(ext)) {
+    config.set('DB_FILE_EXT', '.' + ext);
+}
+
 module.exports = config;
