@@ -5,6 +5,7 @@
 var httpProxy = require('http-proxy');
 var debug = require('debug')('dashboard-proxy:server');
 var error = require('debug')('dashboard-proxy:server:error');
+var Buffer = require('buffer').Buffer;
 var BufferList = require('../node_modules/websocket/vendor/FastBufferList');
 var WebSocketFrame = require('websocket').frame;
 var nbstore = require('../app/notebook-store');

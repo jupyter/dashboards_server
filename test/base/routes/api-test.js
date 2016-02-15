@@ -10,6 +10,7 @@ var Promise = require('es6-promise').Promise;
 var request = require('request');
 var url = require('url');
 var urljoin = require('url-join');
+var Buffer = require('buffer').Buffer;
 
 // Environment variables
 var config = require('../../../app/config');
@@ -32,14 +33,37 @@ var httpProxyStub = {
     }
 };
 
-var wsutilsStub = {
-    decodeWebSocket: function(data) {
-        return data;
-    },
+var wsframeStub = {
+    frame: function(mask, frameheader, config) {
+        this.fin = true;
+        this.protocolError = false;
+        this.frameTooLarge = false;
+        this.opcode = 0x01; // TEXT FRAME
+        this.mask = [1,2,3,4];
 
-    encodeWebSocket: function(data) {
-        return data;
+        this.addData = function(bufferlist) {
+            this.binaryPayload = bufferlist._shift();
+            return true;
+        };
+
+        this.toBuffer = function() {
+            return this.binaryPayload;
+        };
     }
+};
+
+var bufferListStub = function() {
+    this.length = 0;
+    return {
+        write: function(data) {
+            this.data = data;
+            this.length = data.length;
+        },
+        _shift: function() {
+            this.length--;
+            return this.data.shift();
+        }
+    };
 };
 
 var notebookData = {
@@ -69,8 +93,9 @@ var nbstoreStub = {
 
 var api = proxyquire('../../../routes/api', {
     'http-proxy': httpProxyStub,
-    '../app/ws-utils': wsutilsStub,
-    '../app/notebook-store': nbstoreStub
+    'websocket': wsframeStub,
+    '../app/notebook-store': nbstoreStub,
+    '../node_modules/websocket/vendor/FastBufferList': bufferListStub
 });
 
 
@@ -131,18 +156,15 @@ describe('routes: api', function() {
             }
         };
         var data = [
-            {
-                payload: JSON.stringify(payload)
-            }
+            new Buffer(JSON.stringify(payload), 'utf8')
         ];
+
         socket.emit('data', data);
 
         setTimeout(function() {
             expect(emitSpy).calledOnce;
-            var emittedData = emitSpy.firstCall.args[1];
-            expect(emittedData).to.have.length(1);
-            expect(emittedData[0]).to.include.keys('payload');
-            expect(emittedData[0].payload).to.contain('line 1;line 2;');
+            var emittedData = emitSpy.firstCall.args[1].toString('utf8'); // emittedData is a Buffer
+            expect(emittedData).to.contain('line 1;line 2;');
             done();
         }, 0);
     });
@@ -179,16 +201,19 @@ describe('routes: api', function() {
             }
         };
         var data = [
-            { payload: JSON.stringify(payload1) },
-            { payload: JSON.stringify(payload2) },
-            { payload: JSON.stringify(payload3) }
+            new Buffer(JSON.stringify(payload1), 'utf8'),
+            new Buffer(JSON.stringify(payload2), 'utf8'),
+            new Buffer(JSON.stringify(payload3), 'utf8')
         ];
+
         socket.emit('data', data);
 
         setTimeout(function() {
             expect(emitSpy).calledOnce;
-            var emittedData = emitSpy.firstCall.args[1];
-            expect(emittedData).to.have.length(1);
+            var emittedData = emitSpy.firstCall.args[1].toString('utf8'); // emittedData is a Buffer
+            // should only contain `payload1`
+            var payload = JSON.stringify(payload1).replace('"code":"0"', '"code":"line 1;line 2;"');
+            expect(emittedData).to.equal(payload);
             done();
         }, 0);
     });
