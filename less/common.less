@@ -2,9 +2,55 @@
  * Copyright (c) Jupyter Development Team.
  * Distributed under the terms of the Modified BSD License.
  */
+
+// Simplified navbar
+.navbar {
+    border-top: none;
+    border-right: none;
+    border-left: none;
+
+    .center-container {
+        @media (max-width: 768px) {
+            padding: 0 1em;
+        }
+    }
+
+    .logout-btn,
+    .login-btn {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .navbar-form {
+        margin: 0;
+        padding: 0;
+        border: none;
+    }
+
+    .navbar-nav {
+        margin: 0;
+    }
+}
+
+// centered container using media queries
 .center-container {
     margin: 0 auto;
 
+    @media (max-width: 768px) {
+        .list-group-item {
+            border-left: none;
+            border-right: none;
+        }
+
+        .navbar {
+            .navbar-brand {
+                margin-left: 1em;
+            }
+            .navbar-collapse {
+                margin-right: 1em;
+            }
+        }
+    }
     @media (min-width: 768px) {
         width: 768px;
     }

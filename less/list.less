@@ -3,12 +3,40 @@
  * Distributed under the terms of the Modified BSD License.
  */
 #list-container {
+    margin-top: 3em;
+
     .list-title {
         text-align: center;
     }
 
     .list-group {
+        .list-header {
+            background-color: @gray-accent;
+
+            .list-header-label {
+                margin: 0;
+            }
+
+            .breadcrumb {
+                background-color: transparent;
+                display: inline-block;
+                margin: 0;
+                padding: 0;
+
+                .breadcrumb-end {
+                    font-weight: normal;
+                    margin: 0;
+                }
+                .breadcrumb-link {
+                    padding-left: 0;
+                }
+            }
+        }
         .list-group-item {
+            &:hover {
+                background-color: @list-group-hover-bg;
+            }
+
             a {
                 padding-left: 0.5em;
             }

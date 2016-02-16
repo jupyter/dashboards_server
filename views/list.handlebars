@@ -2,16 +2,29 @@
     Copyright (c) Jupyter Development Team.
     Distributed under the terms of the Modified BSD License.
 }}
-<div id="list-container" class="container">
-    <div class="col-md-4 col-md-offset-4">
-        <h2 class="list-title">Dashboards</h2>
-        <ul class="list-group">
-            {{#each items}}
-                <li class="list-group-item">
-                    <i class="list-item-icon {{fsIcon type}}"></i>
-                    <a href="/dashboards/{{url}}">{{urlBasename url}}</a>
-                </li>
-            {{/each}}
-        </ul>
-    </div>
+<div id="list-container" class="center-container">
+    <ul class="list-group">
+        <!-- List title as a special li with path breadcrumbs -->
+        <li class="list-header list-group-item">
+            <label class="list-header-label">Dashboards</label>
+            <ul class="breadcrumb">
+                <li><a href="/dashboards"><i class="fa fa-home"></i></a></li>
+                {{#each (basename url)}}
+                    <li>
+                        {{#if @last}}
+                            <label class="breadcrumb-end">{{urlBasename this}}</label>
+                        {{else}}
+                            <a class="breadcrumb-link" href="/dashboards/{{this}}">{{urlBasename this}}</a>
+                        {{/if}}
+                    </li>
+                {{/each}}
+            </ul>
+        </li>
+        {{#each items}}
+            <li class="list-group-item">
+                <i class="list-item-icon {{fsIcon type}}"></i>
+                <a href="/dashboards/{{url}}">{{urlBasename url}}</a>
+            </li>
+        {{/each}}
+    </ul>
 </div>
