@@ -4,7 +4,10 @@
  */
 var httpProxy = require('http-proxy');
 var debug = require('debug')('dashboard-proxy:server');
-var wsutils = require('../app/ws-utils');
+var error = require('debug')('dashboard-proxy:server:error');
+var Buffer = require('buffer').Buffer;
+var BufferList = require('../node_modules/websocket/vendor/FastBufferList');
+var WebSocketFrame = require('websocket').frame;
 var nbstore = require('../app/notebook-store');
 var config = require('../app/config');
 var Promise = require('es6-promise').Promise;
@@ -29,49 +32,59 @@ var proxy = httpProxy.createProxyServer({
         protocolRewrite: true
     });
 
-var substituteCodeCell = function(d) {
-    debug('PROXY: received message from client WS: ' + (d && d.payload));
-    var transformedData = d;
+var substituteCodeCell = function(payload) {
+    debug('PROXY: received message from client WS: ' + (payload));
+    var transformedData = payload;
 
     // substitute in code if necessary
     // for performance reasons, first do a quick string check before JSON parsing
-    if (d && d.payload.indexOf('execute_request') !== -1) {
+    if (payload.indexOf('execute_request') !== -1) {
         try {
-            d.payload = JSON.parse(d.payload);
-            if (d.payload.header.msg_type === 'execute_request') {
+            payload = JSON.parse(payload);
+            if (payload.header.msg_type === 'execute_request') {
                 // get notebook data for current session
-                var nbpath = sessions[d.payload.header.session];
+                var nbpath = sessions[payload.header.session];
                 transformedData = nbstore.get(nbpath).then(
-                  function success(nb) {
+                    function success(nb) {
                         // get code string for cell at index and update WS message
 
                         // code must be an integer corresponding to a cell index
-                        var cellIdx = parseInt(d.payload.content.code, 10);
+                        var cellIdx = parseInt(payload.content.code, 10);
 
                         // code must only consist of a non-negative integer
-                        if (cellIdx.toString(10) === d.payload.content.code &&
+                        if (cellIdx.toString(10) === payload.content.code &&
                                 cellIdx >= 0) {
 
                             // substitute cell's actual code into the message
                             var code = nb.cells[cellIdx].source.join('');
-                            d.payload.content.code = code;
-                            d.payload = JSON.stringify(d.payload);
+                            payload.content.code = code;
+                            payload = JSON.stringify(payload);
                         } else {
                             // throw away execute request that has non-integer code
-                            d = null;
+                            payload = '';
                         }
-                        return d;
+                        return payload;
                     },
-                    function error() {
-                        return d; // data remains unchanged
+                    function failure(err) {
+                        error('Failed to load notebook data for', nbpath, err);
+                        return ''; // throw away execute request
                     });
             }
         } catch(e) {
             // TODO better handle parse error in WS message
-            console.error('Failed to parse `data` in WS. Leaving unchanged.', e);
+            error('Failed to parse `data` in WS.', e);
+            transformedData = '';
         }
     }
     return transformedData;
+};
+
+// reusable objects required by WebSocketFrame
+var maskBytes = new Buffer(4);
+var frameHeader = new Buffer(10);
+var bufferList = new BufferList();
+var wsconfig = {
+    maxReceivedFrameSize: 0x100000  // 1MiB max frame size.
 };
 
 function setupWSProxy(_server) {
@@ -85,36 +98,67 @@ function setupWSProxy(_server) {
 
             // Handle TCP data
             if (eventName === 'data') {
-                var codeCellsSubstituted = data;
                 // Decode one or more websocket frames
-                var decodedData = wsutils.decodeWebSocket(data);
+                bufferList.write(data);
+                var dataqueue = [];
+                while (bufferList.length > 0) {
+                    // Parse data. `addData` returns false if we are waiting for
+                    // more data to be sent (fragmented frame).
+                    var frame = new WebSocketFrame(maskBytes, frameHeader, wsconfig);
 
-                if(!decodedData.length) {
-                    // HACK / TODO: Pass through anything that comes in by
-                    // itself that we don't know how to decode as text data.
-                    // This quickfix does not handle cases where multiple
-                    // messages are in the buffer, and some are text data
-                    // while others are not.
-                    _emit.call(socket, eventName, data);
-                    return;
+                    var msgProcessed = true;
+                    if (!frame.addData(bufferList) || !frame.fin) {
+                        error('insufficient data for frame');
+                        // TODO handle large data spread across multiple frames
+                        msgProcessed = false;
+                    }
+                    if (frame.protocolError || frame.frameTooLarge) {
+                        error('an error occurred during parsing of WS data', frame.dropReason);
+                        // cannot handle this message -- close socket
+                        this.end();
+                        return;
+                    }
+
+                    var newdata;
+                    if (msgProcessed && frame.opcode === 0x01) { // TEXT FRAME
+                        newdata = Promise.resolve(
+                                substituteCodeCell(frame.binaryPayload.toString('utf8'))
+                            )
+                            .then(function success(data) {
+                                data = new Buffer(data, 'utf8');
+                                if (data.length > wsconfig.maxReceivedFrameSize) {
+                                    // TODO spread large data across multiple frames
+                                    error('buffer is too big after code substitution');
+                                    // don't send data
+                                    data = new Buffer('');
+                                }
+
+                                var outframe = new WebSocketFrame(maskBytes, frameHeader, wsconfig);
+                                outframe.opcode = 0x01; // TEXT FRAME
+                                outframe.binaryPayload = data;
+                                outframe.mask = frame.mask;
+                                outframe.fin = true;
+                                return outframe.toBuffer();
+                            })
+                            .catch(function failure(err) {
+                                error('Failure when substituting code or re-encoding WS msg', err);
+                                return new Buffer('');
+                            });
+                    } else {
+                        newdata = frame.toBuffer();
+                    }
+
+                    dataqueue.push(newdata);
                 }
 
-                // decodedData is an array of multiple messages
-                codeCellsSubstituted = decodedData.map(substituteCodeCell);
-
-                Promise.all(codeCellsSubstituted).then(function(data) {
-                    // data is an array of messages
-                    // filter out null messages (if any)
-                    data = data.filter(function(d) {
-                        return !!d;
-                    });
-                    // re-encode
-                    data = wsutils.encodeWebSocket(data);
-                    _emit.call(socket, eventName, data);
+                data = Promise.all(dataqueue).then(function(arr) {
+                    return Buffer.concat(arr);
                 });
-            } else {
-              _emit.call(socket, eventName, data);
             }
+
+            Promise.resolve(data).then(function(data) {
+                _emit.call(socket, eventName, data);
+            });
         };
 
         // Add handler for reaping a kernel and removing sessions if the client
@@ -153,7 +197,7 @@ var killKernel = function(kernelId) {
         url: endpoint,
         method: 'DELETE',
         headers: headers
-    }, function(error, response, body) {
+    }, function(err, response, body) {
         debug('PROXY: kill kernel response: ' +
             response.statusCode + ' ' + response.statusMessage);
     });
@@ -197,13 +241,13 @@ proxy.on('proxyRes', function (proxyRes, req, res) {
         var sessionId = req.headers['x-jupyter-session-id'];
         if (!notebookPathHeader || !sessionId) {
             // TODO return error status, need notebook path to execute code
-            console.error('Missing notebook path or session ID headers');
+            error('Missing notebook path or session ID headers');
             return;
         }
         var matches = notebookPathHeader.match(/^\/dashboards\/(.*)$/);
         if (!matches) {
             // TODO error handling
-            console.error('Invalid notebook path header');
+            error('Invalid notebook path header');
             return;
         }
         sessions[sessionId] = matches[1]; // store notebook path for later use

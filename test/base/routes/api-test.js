@@ -10,6 +10,9 @@ var Promise = require('es6-promise').Promise;
 var request = require('request');
 var url = require('url');
 var urljoin = require('url-join');
+var Buffer = require('buffer').Buffer;
+var BufferList = require('../../../node_modules/websocket/vendor/FastBufferList');
+var WebSocketFrame = require('websocket').frame;
 
 // Environment variables
 var config = require('../../../app/config');
@@ -29,16 +32,6 @@ var httpProxyStub = {
             web: function() {},
             ws: function() {}
         };
-    }
-};
-
-var wsutilsStub = {
-    decodeWebSocket: function(data) {
-        return data;
-    },
-
-    encodeWebSocket: function(data) {
-        return data;
     }
 };
 
@@ -69,7 +62,6 @@ var nbstoreStub = {
 
 var api = proxyquire('../../../routes/api', {
     'http-proxy': httpProxyStub,
-    '../app/ws-utils': wsutilsStub,
     '../app/notebook-store': nbstoreStub
 });
 
@@ -77,6 +69,7 @@ var api = proxyquire('../../../routes/api', {
 //////////
 // TESTS
 //////////
+
 
 describe('routes: api', function() {
 
@@ -130,19 +123,14 @@ describe('routes: api', function() {
                 "code": "0",
             }
         };
-        var data = [
-            {
-                payload: JSON.stringify(payload)
-            }
-        ];
+        var data = toWsBuffer(JSON.stringify(payload));
+
         socket.emit('data', data);
 
         setTimeout(function() {
             expect(emitSpy).calledOnce;
-            var emittedData = emitSpy.firstCall.args[1];
-            expect(emittedData).to.have.length(1);
-            expect(emittedData[0]).to.include.keys('payload');
-            expect(emittedData[0].payload).to.contain('line 1;line 2;');
+            var newPayload = fromWsBuffer(emitSpy.firstCall.args[1]);
+            expect(newPayload).to.contain('line 1;line 2;');
             done();
         }, 0);
     });
@@ -178,17 +166,21 @@ describe('routes: api', function() {
                 "code": "456; foo = 1; print(foo)",
             }
         };
-        var data = [
-            { payload: JSON.stringify(payload1) },
-            { payload: JSON.stringify(payload2) },
-            { payload: JSON.stringify(payload3) }
-        ];
+        var data = Buffer.concat([
+            toWsBuffer(JSON.stringify(payload1)),
+            toWsBuffer(JSON.stringify(payload2)),
+            toWsBuffer(JSON.stringify(payload3))
+        ]);
+
         socket.emit('data', data);
 
         setTimeout(function() {
             expect(emitSpy).calledOnce;
-            var emittedData = emitSpy.firstCall.args[1];
-            expect(emittedData).to.have.length(1);
+            var newPayload = fromWsBuffer(emitSpy.firstCall.args[1]);
+            expect(newPayload).to.have.length(3);
+            expect(newPayload[0]).to.contain('line 1;line 2;');
+            expect(newPayload[1]).to.be.empty;
+            expect(newPayload[2]).to.be.empty;
             done();
         }, 0);
     });
@@ -222,3 +214,47 @@ describe('routes: api', function() {
         }, 0);
     });
 });
+
+
+///////////////////////
+// UTILITY FUNCTIONS
+///////////////////////
+
+// reusable objects required by WebSocketFrame
+var maskBytes = new Buffer(4);
+var frameHeader = new Buffer(10);
+var wsconfig = {
+    maxReceivedFrameSize: 0x100000  // 1MiB max frame size.
+};
+
+function toWsBuffer(data) {
+    var frame = new WebSocketFrame(maskBytes, frameHeader, wsconfig);
+    frame.opcode = 0x01; // TEXT FRAME
+    frame.binaryPayload = new Buffer(data, 'utf8');
+    frame.mask = frame.mask;
+    frame.fin = true;
+    return frame.toBuffer();
+}
+
+function fromWsBuffer(data) {
+    var bufferList = new BufferList();
+    var res = [];
+
+    bufferList.write(data);
+    while (bufferList.length > 0) {
+        var frame = new WebSocketFrame(maskBytes, frameHeader, wsconfig);
+        if (frame.addData(bufferList) && frame.fin &&
+                !frame.protocolError && !frame.frameTooLarge)
+        {
+            res.push(frame.binaryPayload.toString('utf8'));
+        } else {
+            // error occurred parsing WS msg
+            return null;
+        }
+    }
+
+    if (res.length === 1) {
+        return res[0];
+    }
+    return res;
+}
