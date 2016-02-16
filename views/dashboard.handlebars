@@ -4,35 +4,31 @@
 }}
 
 {{! Required for jupyter-js-widgets }}
-<link rel='stylesheet' href='/components/jquery-ui/jquery-ui.min.css'>
-<link rel='stylesheet' href='/components/widgets.min.css'>
+<link rel="stylesheet" href="/components/jquery-ui/jquery-ui.min.css">
+<link rel="stylesheet" href="/components/widgets.min.css">
 {{! Required for gridstack }}
-<link rel='stylesheet' href='/components/gridstack.min.css'>
-{{! Required for dashboard }}
-<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/components/gridstack.min.css">
 
 <noscript>
-<div id='noscript'>
-    This page requires JavaScript.<br>
-    Please enable it to proceed.
-</div>
+    <div id="noscript">
+        This page requires JavaScript.<br>
+        Please enable it to proceed.
+    </div>
 </noscript>
 
-{{> nav}}
-
 <div id="outer-dashboard">
-    <div id="dashboard-container" class="grid-stack invisible">
+    <div id="dashboard-container" class="grid-stack invisible center-container">
         {{#each notebook.cells}}
             {{#if metadata.urth.dashboard.layout}}
                 {{#with metadata.urth.dashboard.layout}}
-                    <div class='cell dashboard-cell grid-stack-item {{mapCellType ../cell_type}}'
-                        data-gs-x='{{col}}'
+                    <div class="cell dashboard-cell grid-stack-item {{mapCellType ../cell_type}}"
+                        data-gs-x={{col}}
                         data-gs-y={{row}}
                         data-gs-width={{width}}
                         data-gs-height={{height}}>{{{markdownContent ../cell_type ../source}}}</div>
                 {{/with}}
             {{else}}
-                    <div class='cell dashboard-cell hidden {{mapCellType ../cell_type}}'></div>
+                <div class="cell dashboard-cell hidden {{mapCellType ../cell_type}}"></div>
             {{/if}}
         {{/each}}
     </div>
@@ -53,8 +49,8 @@
             Config.maxColumns = {{maxColumns}};
         {{/with}}
     {{else}}
-        Config.cellMargin = {{{config 'DB_CELL_MARGIN'}}};
-        Config.defaultCellHeight = {{{config 'DB_DEFAULT_CELL_HEIGHT'}}};
-        Config.maxColumns = {{{config 'DB_MAX_COLUMNS'}}};
+        Config.cellMargin = {{{config "DB_CELL_MARGIN"}}};
+        Config.defaultCellHeight = {{{config "DB_DEFAULT_CELL_HEIGHT"}}};
+        Config.maxColumns = {{{config "DB_MAX_COLUMNS"}}};
     {{/if}}
 </script>

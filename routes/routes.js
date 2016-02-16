@@ -8,18 +8,54 @@
 var authToken = require('../app/auth-token');
 var config = require('../app/config');
 var debug = require('debug')('dashboard-proxy:router');
+var fs = require('fs');
 var nbstore = require('../app/notebook-store');
+var path = require('path');
+var Promise = require('es6-promise').Promise;
 var router = require('express').Router();
+var urljoin = require('url-join');
 
 var indexRegex = /index\.ipynb/i;
+var dbExt = config.get('DB_FILE_EXT');
 
-function _renderList(req, res, list) {
-    // render a list of all notebooks
-    res.status(200);
-    res.render('list', {
-        username: req.session.username,
-        notebooks: list
+function _renderList(req, res, list, next) {
+    // check all items to determine if a file or directory
+    var statPromises = list.map(function(item) {
+        return new Promise(function(resolve, reject) {
+            nbstore.stat(item, function(err, stats) {
+                if (err) {
+                    reject(err);
+                } else {
+                    var type;
+                    if (stats.isDirectory()) {
+                        type = 'directory';
+                    } else if (stats.isFile()) {
+                        if (path.extname(item) === dbExt) {
+                            type = 'dashboard';
+                        } else {
+                            type = 'file';
+                        }
+                    }
+                    resolve({ type: type, url: item });
+                }
+            });
+        });
     });
+
+    // render the list once all items have a type
+    Promise.all(statPromises).then(
+        function success(values) {
+            res.status(200);
+            res.render('list', {
+                username: req.session.username,
+                items: values,
+                title: 'List of Dashboards'
+            });
+        },
+        function failure(err) {
+            next(err);
+        }
+    );
 }
 
 /* GET / - index notebook or list of notebooks */
@@ -38,7 +74,7 @@ router.get('/', function(req, res, next) {
                 // redirect to the index notebook
                 res.redirect('/dashboards/' + indexFound);
             } else {
-                _renderList(req, res, notebooks);
+                _renderList(req, res, notebooks, next);
             }
         },
         function error(err) {
@@ -52,7 +88,7 @@ router.get('/', function(req, res, next) {
 router.get('/dashboards', function(req, res, next) {
     nbstore.list().then(
         function success(notebooks) {
-            _renderList(req, res, notebooks);
+            _renderList(req, res, notebooks, next);
         },
         function error(err) {
             console.error('Error loading list of notebooks',err);
@@ -61,31 +97,48 @@ router.get('/dashboards', function(req, res, next) {
     );
 });
 
-/* GET /dashboards/* - a single dashboard. */
+/* GET /dashboards/* - a single dashboard or list of files. */
 router.get('/dashboards/*', function(req, res, next) {
-    var path = req.params[0];
-    if (path) {
-        nbstore.get(path).then(
-            function success(notebook) {
-                debug('Success loading nb');
-                res.status(200);
-                res.render('dashboard', {
-                    title: 'Dashboard',
-                    notebook: notebook,
-                    username: req.session.username
-                });
-            },
-            function error(err) {
-                console.error('error loading nb',err);
-                // TODO better way of determing the error
-                err.status = err.message.indexOf('loading') === -1 ? 500 : 404;
-                next(err);
+    var dbpath = req.params[0];
+    nbstore.stat(dbpath, function(err, stats) {
+        if (err) {
+            if (err.code === 'ENOENT') {
+                err.status = 404;
             }
-        );
-    } else {
-        // redirect to list page when no path specified
-        res.redirect('/dashboards');
-    }
+            next(err);
+        } else if (stats.isDirectory()) {
+            nbstore.list(dbpath).then(
+                function success(list) {
+                    var pathList = list.map(function(f) {
+                        return urljoin(dbpath, f);
+                    });
+                    pathList.unshift(urljoin(dbpath, '..'));
+                    _renderList(req, res, pathList, next);
+                },
+                function error(err) {
+                    next(err);
+                }
+            );
+        } else {
+            nbstore.get(dbpath).then(
+                function success(notebook) {
+                    debug('Success loading nb');
+                    res.status(200);
+                    res.render('dashboard', {
+                        title: 'Dashboard',
+                        notebook: notebook,
+                        username: req.session.username
+                    });
+                },
+                function error(err) {
+                    console.error('error loading nb',err);
+                    // TODO better way of determing the error
+                    err.status = err.message.indexOf('loading') === -1 ? 500 : 404;
+                    next(err);
+                }
+            );
+        }
+    });
 });
 
 module.exports = router;

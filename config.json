@@ -45,4 +45,6 @@
     DB_DEFAULT_CELL_HEIGHT: 20
     //Number of dashboard grid columns
     DB_MAX_COLUMNS: 12
+    // Dashboard file extension
+    DB_FILE_EXT: .ipynb
 }

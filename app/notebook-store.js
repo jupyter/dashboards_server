@@ -9,7 +9,7 @@ var fs = require('fs');
 var path = require('path');
 var Promise = require('es6-promise').Promise;
 
-var IPYNB_EXTENSION = '.ipynb';
+var dbExt = config.get('DB_FILE_EXT');
 var dataDir = path.join(__dirname, '..', config.get('NOTEBOOKS_DIR'));
 
 // cached notebook objects
@@ -19,12 +19,30 @@ var store = {};
 // GET OPERATIONS
 /////////////////
 
+// Append the notebook file extension if left off
+function _appendExt(nbpath) {
+    var ext = path.extname(nbpath) === dbExt ? '' : dbExt;
+    return nbpath + ext;
+}
+
+// stat the path in the data directory
+function stat(nbpath, cb) {
+    // file extension is optional, so first try with the specified nbpath
+    fs.stat(path.join(dataDir, nbpath), function(err, status) {
+        if (err && err.code === 'ENOENT') {
+            // might have left off extension, so try appending the extension
+            fs.stat(path.join(dataDir, _appendExt(nbpath)), cb);
+        } else {
+            cb.apply(null, arguments);
+        }
+    });
+}
+
 // Read notebook from cache or from file
 function _loadNb(nbpath) {
+    nbpath = _appendExt(nbpath);
     return new Promise(function(resolve, reject) {
-        var ipynb = /\.ipynb$/.test(nbpath) ? '' : '.ipynb';
-        var nbPath = path.join(dataDir, nbpath + ipynb);
-        console.info('Attempting to load notebook file:', nbPath);
+        var nbPath = path.join(dataDir, nbpath);
         fs.readFile(nbPath, 'utf8', function(err, rawData) {
             if (err) {
                 reject(new Error('Error loading notebook'));
@@ -33,7 +51,6 @@ function _loadNb(nbpath) {
                     var nb = JSON.parse(rawData);
                     store[nbpath] = nb;
                     resolve(nb);
-                    debug('Resolving nb load:', nbpath);
                 } catch(e) {
                     reject(new Error('Error parsing notebook JSON'));
                 }
@@ -42,13 +59,18 @@ function _loadNb(nbpath) {
     });
 }
 
-function list() {
+function list(dir) {
+    // list all (not hidden) children of the specified directory
+    // (within the data directory)
+    var dbpath = path.join(dataDir, dir || '');
     return new Promise(function(resolve, reject) {
-        fs.readdir(dataDir, function(err, files) {
+        fs.readdir(dbpath, function(err, files) {
             if (err) {
-                reject(new Error('Error getting list of notebooks'));
+                reject(new Error('Error reading path: ' + dbpath));
             } else {
-                files = files.filter(_hiddenFileFilter);
+                files = files.filter(function(f) {
+                        return /^[^.]/.test(f); // not hidden
+                    });
                 resolve(files);
             }
         });
@@ -86,21 +108,9 @@ function _getDestination (req) {
     return destDir;
 }
 
-function _getFilename (req) {
-    // get file name from request url, not from uploaded file name
-    var name = path.basename(req.params[0]);
-    name += path.extname(name) === IPYNB_EXTENSION ? '' : IPYNB_EXTENSION;
-    return name;
-}
-
-function _hiddenFileFilter (filename) {
-    //check for hidden files or directories, returns true if file is not hidden
-    return /^[^.]/.test(filename);
-}
-
 function _fileFilter (filename) {
-    // check for *.ipynb extension
-    return /\.ipynb$/.test(filename);
+    // check for file extension
+    return new RegExp('\\'+dbExt+'$').test(filename); // escape the leading dot
 }
 
 // busboy limits.
@@ -117,7 +127,7 @@ function upload(req, res, next) {
     var buffers = [];
     var bufferLength = 0;
     var destination = _getDestination(req);
-    var filename = _getFilename(req);
+    var filename = _appendExt(path.basename(req.params[0]));
     var cachedPath = req.params[0];
     var fileCount = 0;
 
@@ -205,5 +215,6 @@ module.exports = {
     get: get,
     list: list,
     remove: remove,
+    stat: stat,
     upload: upload
 };

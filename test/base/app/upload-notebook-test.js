@@ -12,9 +12,13 @@ var Promise = require('es6-promise').Promise;
 // MODULE STUBS
 
 var notebooksDir = 'nbstore';
+var _config = {
+    DB_FILE_EXT: '.ipynb',
+    NOTEBOOKS_DIR: notebooksDir
+};
 var configStub = {
-    get: function() {
-        return notebooksDir;
+    get: function(v) {
+        return _config[v];
     }
 };
 var fsStub = {
@@ -87,12 +91,12 @@ function uploadFileTest(uploadPath, originalname, finalname) {
         }
         uploadFile(req, originalname, next);
     }).then(function() {
-        expect(fsStub.mkdir).calledOnce
+        expect(fsStub.mkdir).calledOnce;
         var destination = fsStub.mkdir.firstCall.args[0];
         var dest = path.join(__dirname, projectRoot, notebooksDir, dirname);
         expect(destination).to.equal(dest);
 
-        expect(fsStub.writeFile).calledOnce
+        expect(fsStub.writeFile).calledOnce;
         var filename = fsStub.writeFile.firstCall.args[0];
         var fn = path.join(dest, finalname);
         expect(filename).to.equal(fn);
