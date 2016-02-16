@@ -21,8 +21,8 @@
     // Secret for authentication tokens
     AUTH_TOKEN: null
     // Login
-    USERNAME: null
-    PASSWORD: null
+    USERNAME: a
+    PASSWORD: a 
 
     /////////////////////////
     // Kernel Gateway options
