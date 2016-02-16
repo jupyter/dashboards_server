@@ -21,7 +21,8 @@ var redirectBack = function(req, res) {
 router.get('/', function(req, res) {
     res.status(200);
     res.render('login', {
-        username: req.session.username
+        username: req.session.username,
+        title: 'Log in'
     });
 });
 
@@ -42,7 +43,8 @@ router.post('/', urlencodedParser, function(req, res) {
         } else {
             res.render('login', {
                 username: req.session.username,
-                authError: true
+                authError: true,
+                title: 'Invalid credentials'
             });
         }
     } else {
