@@ -11,6 +11,8 @@ var request = require('request');
 var url = require('url');
 var urljoin = require('url-join');
 var Buffer = require('buffer').Buffer;
+var BufferList = require('../../../node_modules/websocket/vendor/FastBufferList');
+var WebSocketFrame = require('websocket').frame;
 
 // Environment variables
 var config = require('../../../app/config');
@@ -31,39 +33,6 @@ var httpProxyStub = {
             ws: function() {}
         };
     }
-};
-
-var wsframeStub = {
-    frame: function(mask, frameheader, config) {
-        this.fin = true;
-        this.protocolError = false;
-        this.frameTooLarge = false;
-        this.opcode = 0x01; // TEXT FRAME
-        this.mask = [1,2,3,4];
-
-        this.addData = function(bufferlist) {
-            this.binaryPayload = bufferlist._shift();
-            return true;
-        };
-
-        this.toBuffer = function() {
-            return this.binaryPayload;
-        };
-    }
-};
-
-var bufferListStub = function() {
-    this.length = 0;
-    return {
-        write: function(data) {
-            this.data = data;
-            this.length = data.length;
-        },
-        _shift: function() {
-            this.length--;
-            return this.data.shift();
-        }
-    };
 };
 
 var notebookData = {
@@ -93,15 +62,14 @@ var nbstoreStub = {
 
 var api = proxyquire('../../../routes/api', {
     'http-proxy': httpProxyStub,
-    'websocket': wsframeStub,
-    '../app/notebook-store': nbstoreStub,
-    '../node_modules/websocket/vendor/FastBufferList': bufferListStub
+    '../app/notebook-store': nbstoreStub
 });
 
 
 //////////
 // TESTS
 //////////
+
 
 describe('routes: api', function() {
 
@@ -155,16 +123,14 @@ describe('routes: api', function() {
                 "code": "0",
             }
         };
-        var data = [
-            new Buffer(JSON.stringify(payload), 'utf8')
-        ];
+        var data = toWsBuffer(JSON.stringify(payload));
 
         socket.emit('data', data);
 
         setTimeout(function() {
             expect(emitSpy).calledOnce;
-            var emittedData = emitSpy.firstCall.args[1].toString('utf8'); // emittedData is a Buffer
-            expect(emittedData).to.contain('line 1;line 2;');
+            var newPayload = fromWsBuffer(emitSpy.firstCall.args[1]);
+            expect(newPayload).to.contain('line 1;line 2;');
             done();
         }, 0);
     });
@@ -200,20 +166,21 @@ describe('routes: api', function() {
                 "code": "456; foo = 1; print(foo)",
             }
         };
-        var data = [
-            new Buffer(JSON.stringify(payload1), 'utf8'),
-            new Buffer(JSON.stringify(payload2), 'utf8'),
-            new Buffer(JSON.stringify(payload3), 'utf8')
-        ];
+        var data = Buffer.concat([
+            toWsBuffer(JSON.stringify(payload1)),
+            toWsBuffer(JSON.stringify(payload2)),
+            toWsBuffer(JSON.stringify(payload3))
+        ]);
 
         socket.emit('data', data);
 
         setTimeout(function() {
             expect(emitSpy).calledOnce;
-            var emittedData = emitSpy.firstCall.args[1].toString('utf8'); // emittedData is a Buffer
-            // should only contain `payload1`
-            var payload = JSON.stringify(payload1).replace('"code":"0"', '"code":"line 1;line 2;"');
-            expect(emittedData).to.equal(payload);
+            var newPayload = fromWsBuffer(emitSpy.firstCall.args[1]);
+            expect(newPayload).to.have.length(3);
+            expect(newPayload[0]).to.contain('line 1;line 2;');
+            expect(newPayload[1]).to.be.empty;
+            expect(newPayload[2]).to.be.empty;
             done();
         }, 0);
     });
@@ -247,3 +214,47 @@ describe('routes: api', function() {
         }, 0);
     });
 });
+
+
+///////////////////////
+// UTILITY FUNCTIONS
+///////////////////////
+
+// reusable objects required by WebSocketFrame
+var maskBytes = new Buffer(4);
+var frameHeader = new Buffer(10);
+var wsconfig = {
+    maxReceivedFrameSize: 0x100000  // 1MiB max frame size.
+};
+
+function toWsBuffer(data) {
+    var frame = new WebSocketFrame(maskBytes, frameHeader, wsconfig);
+    frame.opcode = 0x01; // TEXT FRAME
+    frame.binaryPayload = new Buffer(data, 'utf8');
+    frame.mask = frame.mask;
+    frame.fin = true;
+    return frame.toBuffer();
+}
+
+function fromWsBuffer(data) {
+    var bufferList = new BufferList();
+    var res = [];
+
+    bufferList.write(data);
+    while (bufferList.length > 0) {
+        var frame = new WebSocketFrame(maskBytes, frameHeader, wsconfig);
+        if (frame.addData(bufferList) && frame.fin &&
+                !frame.protocolError && !frame.frameTooLarge)
+        {
+            res.push(frame.binaryPayload.toString('utf8'));
+        } else {
+            // error occurred parsing WS msg
+            return null;
+        }
+    }
+
+    if (res.length === 1) {
+        return res[0];
+    }
+    return res;
+}
