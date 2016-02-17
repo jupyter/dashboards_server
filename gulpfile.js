@@ -9,7 +9,8 @@ var gulp = require('gulp'),
     open = require('gulp-open'),
     webpack = require('webpack'),
     gutil = require('gulp-util'),
-    merge = require('merge-stream');
+    merge = require('merge-stream'),
+    expect = require('gulp-expect-file');
 
 var webpackStatsOptions = {
     colors: gutil.colors.supportsColor,
@@ -75,34 +76,55 @@ gulp.task('webpack:components', function(done) {
 
 // copy source into `public/components`
 gulp.task('copy:components', function() {
-    var c1 = gulp.src([
-            './node_modules/requirejs/require.js',
-            './node_modules/jupyter-js-widgets/static/widgets/css/widgets.min.css',
-            './bower_components/gridstack/dist/gridstack.min.js',
-            './bower_components/gridstack/dist/gridstack.min.css',
-            './bower_components/jquery/dist/jquery.min.js',
-            './bower_components/jquery-ui/jquery-ui.min.js',
-            './bower_components/lodash/lodash.min.js'
-        ])
-        .pipe(gulp.dest('./public/components'));
-    var c2 = gulp.src([
-            './bower_components/jquery-ui/ui/minified/core.min.js',
-            './bower_components/jquery-ui/ui/minified/mouse.min.js',
-            './bower_components/jquery-ui/ui/minified/widget.min.js',
-            './bower_components/jquery-ui/ui/minified/resizable.min.js',
-            './bower_components/jquery-ui/ui/minified/draggable.min.js',
-            './bower_components/jquery-ui/themes/smoothness/jquery-ui.min.css',
-        ]).pipe(gulp.dest('./public/components/jquery-ui'));
-    var c3 = gulp.src([
-            './bower_components/jquery-ui/themes/smoothness/images/**/*'
-        ]).pipe(gulp.dest('./public/components/jquery-ui/images'));
-    var c4 = gulp.src([
-            './node_modules/urth-widgets/dist/urth/widgets/ext/notebook/bower_components/**/*'
-        ]).pipe(gulp.dest('./public/urth_components'));
-    var c5 = gulp.src([
-            './node_modules/font-awesome/fonts/*'
-        ]).pipe(gulp.dest('./public/components/fonts'));
-    return merge(c1, c2, c3, c4, c5);
+    var tasks = [
+        {
+            files: [
+                'node_modules/requirejs/require.js',
+                'node_modules/jupyter-js-widgets/static/widgets/css/widgets.min.css',
+                'bower_components/gridstack/dist/gridstack.min.js',
+                'bower_components/gridstack/dist/gridstack.min.css',
+                'bower_components/jquery/dist/jquery.min.js',
+                'bower_components/jquery-ui/jquery-ui.min.js',
+                'bower_components/lodash/dist/lodash.min.js'
+            ],
+            dest: 'public/components'
+        },
+        {
+            files: [
+                'bower_components/jquery-ui/ui/minified/core.min.js',
+                'bower_components/jquery-ui/ui/minified/mouse.min.js',
+                'bower_components/jquery-ui/ui/minified/widget.min.js',
+                'bower_components/jquery-ui/ui/minified/resizable.min.js',
+                'bower_components/jquery-ui/ui/minified/draggable.min.js',
+                'bower_components/jquery-ui/themes/smoothness/jquery-ui.min.css',
+            ],
+            dest: 'public/components/jquery-ui'
+        },
+        {
+            files: [
+                'bower_components/jquery-ui/themes/smoothness/images/**/*'
+            ],
+            dest: 'public/components/jquery-ui/images'
+        },
+        {
+            files: [
+                'node_modules/urth-widgets/dist/urth/widgets/ext/notebook/bower_components/**/*'
+            ],
+            dest: 'public/urth_components'
+        },
+        {
+            files: [
+                'node_modules/font-awesome/fonts/*'
+            ],
+            dest: 'public/components/fonts'
+        }
+    ]
+    .map(function(list) {
+        return gulp.src(list.files)
+            .pipe(expect({ errorOnFailure: true }, list.files))
+            .pipe(gulp.dest(list.dest));
+    });
+    return merge.apply(this, tasks);
 });
 
 gulp.task('less', function () {
