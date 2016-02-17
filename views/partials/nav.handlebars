@@ -1,14 +1,14 @@
 <nav class="navbar navbar-default">
     <div class="center-container">
         <div class="pull-left">
-            <a class="navbar-brand" href="/">jupyter dashboard</a>
+            <a class="navbar-brand" href="/">Jupyter Dashboard</a>
         </div>
 
         {{#if (config 'AUTH_ENABLED')}}
             <div class="pull-right">
                 {{#if username}}
                     <form class="navbar-form navbar-right" action="/logout" method="post">
-                        <button type="submit" class="navbar-btn logout-btn btn btn-link">Log out, {{username}}</button>
+                        <button type="submit" class="navbar-btn logout-btn btn btn-link">Log out</button>
                     </form>
                 {{else}}
                     <ul class="nav navbar-nav navbar-right">
