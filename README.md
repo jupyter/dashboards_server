@@ -50,6 +50,17 @@ You can use the Try It setup above for development, but any change you make to t
 
 With these installed, you can use the `make dev-*` targets. Under the covers, these targets use `gulp` to automatically rebuild and restart the dashboard server any time you make a code change. Run `make help` to see the full gamut of targets and options. See the next few sections for the most common patterns. Of course, you can mix and match.
 
+### Setup
+
+```bash
+# re-run if the Dockerfile.kernel changes
+make kernel-gateway-image
+# re-run if package.json or bower.json changes
+make dev-install
+# run if you want to try the preliminary jupyter-incubator/declarativewidgets support
+make examples 
+```
+
 ### Dashboard Server w/ Auto Restart
 
 ```bash
