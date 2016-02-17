@@ -82,7 +82,7 @@ gulp.task('copy:components', function() {
             './bower_components/gridstack/dist/gridstack.min.css',
             './bower_components/jquery/dist/jquery.min.js',
             './bower_components/jquery-ui/jquery-ui.min.js',
-            './bower_components/lodash/lodash.min.js'
+            './bower_components/lodash/dist/lodash.min.js'
         ])
         .pipe(gulp.dest('./public/components'));
     var c2 = gulp.src([
