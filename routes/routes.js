@@ -49,7 +49,8 @@ function _renderList(req, res, list, next) {
             res.render('list', {
                 username: req.session.username,
                 items: values,
-                title: 'List of Dashboards'
+                title: 'List of Dashboards',
+                url: req.params[0]
             });
         },
         function failure(err) {

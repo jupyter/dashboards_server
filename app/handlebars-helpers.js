@@ -44,5 +44,16 @@ module.exports = {
 
     urlBasename: function(url) {
         return url.split('/').pop();
+    },
+
+    basename: function(url) {
+        if (!url) {
+            return [];
+        } else {
+            var split = url.replace(/\/+/g, '/').split('/');
+            return split.map(function(d, i) {
+                return split.slice(0, i+1).join('/');
+            });
+        }
     }
 };
