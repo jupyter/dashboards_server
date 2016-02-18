@@ -2,18 +2,28 @@
 
 # Jupyter Dashboards Server
 
-This repo contains a NodeJS application that can display Jupyter notebooks as dynamic dashboards outside of the Jupyter Notebook server. The behavior of the application is similar to that of [Thebe](https://github.com/oreillymedia/thebe), but with some key technical differences:
+A NodeJS application that can display Jupyter notebooks as dynamic dashboards outside of the Jupyter Notebook server.
+
+**Note** that this project is very much a work-in-progress as part of the [dashboards deployment roadmap](https://github.com/jupyter-incubator/dashboards/wiki/Deployment-Roadmap).
+
+## What it Gives You
+
+* Ability to run a Jupyter Notebook with [layout metadata](https://github.com/jupyter-incubator/dashboards) as a standalone dashboard application
+* Ability to navigate a list of multiple notebooks and select one to run as a dashboards
+* Optional shared login to secure access to the dashboard server
+* API for POSTing notebooks to the server at runtime with optional authentication (`/_api/notebooks`)
+
+The behavior of the application is similar to that of [Thebe](https://github.com/oreillymedia/thebe), but with some key technical differences:
 
 * The notebook code is visible only in the NodeJS application backend.
 * The NodeJS backend is the only actor that can send notebook code to a kernel for execution.
 * The browser client can only send [Jupyter comm messages](http://jupyter-client.readthedocs.org/en/latest/messaging.html#opening-a-comm) to kernels (*not* arbitrary code).
 * The application uses the jupyter-js-services and jupyter-js-widgets libraries for communication with kernels.
 
-**Note** that this project is very much a work-in-progress as part of the [dashboards deployment roadmap](https://github.com/jupyter-incubator/dashboards/wiki/Deployment-Roadmap).
 
 ## Try It
 
-Running the demos in this repository requires Docker. A simple way to run [Docker](https://www.docker.com/) is to use [docker-machine](https://docs.docker.com/machine/get-started/). After setting up Docker, do the following:
+We have not yet made a standalone release of this project (e.g., on npm). If you want to try it today, you can run the demos here in Docker. A simple way to run [Docker](https://www.docker.com/) is to use [docker-machine](https://docs.docker.com/machine/get-started/). After setting up Docker, do the following:
 
 ```
 make build
@@ -58,7 +68,7 @@ make kernel-gateway-image
 # re-run if package.json or bower.json changes
 make dev-install
 # run if you want to try the preliminary jupyter-incubator/declarativewidgets support
-make examples 
+make examples
 ```
 
 ### Dashboard Server w/ Auto Restart
