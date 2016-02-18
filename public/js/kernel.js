@@ -27,7 +27,7 @@ define([
             clientId: clientId,
             ajaxSettings: {
                 requestHeaders: {
-                    'X-jupyter-notebook-path': window.location.pathname,
+                    'X-jupyter-notebook-path': decodeURIComponent(loc.pathname),
                     'X-jupyter-session-id': clientId
                 }
             }
