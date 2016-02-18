@@ -7,7 +7,7 @@
 * Fix errors when notebook filenames have spaces
 * Fix support for `%%javascript` in dashboards
 * Support subdirectories on the dashboard list page
-* Enable initial support for declarative widgets in dashboard server
+* Enable initial support for [declarative widgets](https://github.com/jupyter-incubator/declarativewidgets) in dashboard server
 * Fix layout of multiple ipywidgets in the same cell
 * Fix styling discrepancies between dashboard layout in Jupyter Notebook and dashboard server
 * Fix dashboard list so that hidden files do not appear
