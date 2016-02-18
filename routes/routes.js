@@ -49,7 +49,7 @@ function _renderList(req, res, list, next) {
             res.render('list', {
                 username: req.session.username,
                 items: values,
-                title: 'List of Dashboards',
+                title: 'Dashboards',
                 url: req.params[0]
             });
         },
@@ -124,9 +124,12 @@ router.get('/dashboards/*', function(req, res, next) {
             nbstore.get(dbpath).then(
                 function success(notebook) {
                     debug('Success loading nb');
+
+                    var nbname = path.basename(dbpath, dbExt);
+
                     res.status(200);
                     res.render('dashboard', {
-                        title: 'Dashboard',
+                        title: nbname,
                         notebook: notebook,
                         username: req.session.username
                     });
