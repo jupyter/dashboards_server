@@ -198,8 +198,13 @@ var killKernel = function(kernelId) {
         method: 'DELETE',
         headers: headers
     }, function(err, response, body) {
-        debug('PROXY: kill kernel response: ' +
-            response.statusCode + ' ' + response.statusMessage);
+        if (error) {
+          debug('PROXY: kill kernel error: ' + error);
+        }
+        else {
+          debug('PROXY: kill kernel response: ' +
+              response.statusCode + ' ' + response.statusMessage);
+        }
     });
 };
 

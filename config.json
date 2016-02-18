@@ -7,7 +7,7 @@
     // Mode in which the dashboard server express environment runs
     NODE_ENV: development
     // Interface on which the dashboard server listens
-    IP: 127.0.0.1
+    IP: 0.0.0.0
     // Port on which the dashboard server listens
     PORT: 3000
     // HTTPS_PORT, HTTPS Port on which the dashboard server listens

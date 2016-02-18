@@ -25,6 +25,7 @@ help:
 	@echo '   logging-logging - demo + node network logging enabled'
 	@echo '              test - run unit tests'
 	@echo '  integration-test - run integration tests'
+	@echo '             clean - removes built Docker images, bower components, node modules, and certificates'
 	@echo
 	@echo 'Dashboard server option defaults (via nconf):'
 	@cat config.json
@@ -38,6 +39,7 @@ clean:
 	@-rm -rf public/components
 	@-rm -rf public/css
 	@-rm -rf public/urth_components
+	@-docker rmi -f $(KG_IMAGE_NAME) $(DASHBOARD_IMAGE_NAME)
 
 ############### Docker images
 
@@ -50,7 +52,7 @@ dashboard-server-image:
 	@docker build -f Dockerfile.server -t $(DASHBOARD_IMAGE_NAME) .
 
 images: kernel-gateway-image dashboard-server-image
-build: images
+build: images ext/ipywidgets ext/declarativewidgets
 
 kill:
 	@echo '-- Removing Docker containers'

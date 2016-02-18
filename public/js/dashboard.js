@@ -13,7 +13,7 @@ requirejs.config({
         'jquery-ui/widget': require.toUrl('/components/jquery-ui/widget.min'),
         'jquery-ui/resizable': require.toUrl('/components/jquery-ui/resizable.min'),
         'jquery-ui/draggable': require.toUrl('/components/jquery-ui/draggable.min'),
-        'jupyter-js-output-area': require.toUrl('/components/jupyter-js-output-area'),
+        'jupyter-js-notebook': require.toUrl('/components/jupyter-js-notebook'),
         'jupyter-js-services': require.toUrl('/components/jupyter-js-services'),
         'jupyter-js-widgets': require.toUrl('/components/jupyter-js-widgets'),
         'urth-widgets': require.toUrl('/components/urth-widgets')
@@ -23,7 +23,7 @@ requirejs.config({
 requirejs([
     'jquery',
     'gridstack-custom',
-    'jupyter-js-output-area',
+    'jupyter-js-notebook/output-area',
     'jupyter-js-widgets',
     'urth-widgets',
     'widget-manager',
@@ -131,7 +131,6 @@ requirejs([
     // initialize Declarative Widgets
     // NOTE: DeclWidgets adds 'urth_components/...' to this path
     DeclWidgets.init('/');
-
 
     // start a kernel
     Kernel.start().then(function(kernel) {
