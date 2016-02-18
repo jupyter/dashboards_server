@@ -43,6 +43,7 @@
     "chai": "^3.4.1",
     "css-loader": "^0.23.1",
     "gulp": "^3.9.0",
+    "gulp-expect-file": "0.0.7",
     "gulp-less": "^3.0.1",
     "gulp-nodemon": "^2.0.2",
     "gulp-open": "^1.0.0",
