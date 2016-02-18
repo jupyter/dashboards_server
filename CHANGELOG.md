@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 (2016-02-xx)
+## 0.2.0 (2016-02-18)
 
 * Improve the styling on the login and dashboard list pages
 * Use notebook file names as dashboard page titles
