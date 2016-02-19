@@ -25,6 +25,12 @@ define([
         this.kernel = kernel;
         this.msgHandler = msgHandler;
 
+// XXX SHIM for jupyter-js-services/services-shim.js
+kernel.commOpened = {
+    connect: function() {}
+};
+// XXX end shim
+
         // Create a comm manager shim
         this.commManager = new Widgets.shims.services.CommManager(kernel);
 
