@@ -1,6 +1,6 @@
 {
-  "name": "node-deployed-dashboard",
-  "version": "0.2.0-dev",
+  "name": "jupyter-dashboard-server",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "build": "gulp build",
