@@ -4,6 +4,15 @@
             <a class="navbar-brand" href="/">Jupyter Dashboard</a>
         </div>
 
+        {{!
+            Use 'invisible' rather than 'hidden' so font loads eagerly.
+            If server crashes this will be shown but font needs to be loaded.
+        }}
+        <div class="error-container pull-right invisible">
+            <i class="error-indicator fa fa-exclamation-triangle"
+               title="An error has occurred. Check the console for details. Click to dismiss."></i>
+        </div>
+
         {{#if (config 'AUTH_ENABLED')}}
             <div class="pull-right">
                 {{#if username}}
