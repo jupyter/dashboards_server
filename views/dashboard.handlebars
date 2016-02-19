@@ -22,13 +22,14 @@
             {{#if metadata.urth.dashboard.layout}}
                 {{#with metadata.urth.dashboard.layout}}
                     <div class="cell dashboard-cell grid-stack-item {{mapCellType ../cell_type}}"
+                        data-cell-index={{@index}}
                         data-gs-x={{col}}
                         data-gs-y={{row}}
                         data-gs-width={{width}}
                         data-gs-height={{height}}>{{{markdownContent ../cell_type ../source}}}</div>
                 {{/with}}
             {{else}}
-                <div class="cell dashboard-cell hidden {{mapCellType cell_type}}"></div>
+                <div class="cell dashboard-cell hidden {{mapCellType cell_type}}" data-cell-index={{@index}}></div>
             {{/if}}
         {{/each}}
     </div>

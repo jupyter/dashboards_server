@@ -144,6 +144,11 @@ requirejs([
     // NOTE: DeclWidgets adds 'urth_components/...' to this path
     DeclWidgets.init('/');
 
+    function _getCodeCells() {
+        return $('.dashboard-cell.code-cell').sort(function(a, b) {
+            return $(a).attr('data-cell-index') - $(b).attr('data-cell-index');
+        });
+    }
 
     // start a kernel
     Kernel.start().then(function(kernel) {
@@ -151,7 +156,7 @@ requirejs([
         var widgetManager = new WidgetManager(kernel, _consumeMessage);
         _registerKernelErrorHandler(kernel);
 
-        $('.dashboard-cell.code-cell').each(function() {
+        _getCodeCells().each(function() {
             var $cell = $(this);
 
             // create a jupyter output area mode and widget view for each
@@ -176,7 +181,7 @@ requirejs([
             $cell.append($widgetArea, view.node);
 
             // request execution of the code associated with the dashboard cell
-            var kernelFuture = Kernel.execute($cell.index(), function(msg) {
+            var kernelFuture = Kernel.execute($cell.attr('data-cell-index'), function(msg) {
                 // handle the response to the initial execution request
                 if (model) {
                     _consumeMessage(msg, model);
