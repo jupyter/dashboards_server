@@ -33,7 +33,7 @@ gulp.task('webpack:components', function(done) {
             entry: {
                 'jupyter-js-output-area': './node_modules/jupyter-js-notebook/lib/output-area/index.js',
                 'jupyter-js-services': './node_modules/jupyter-js-services/lib/index.js',
-                'jupyter-js-widgets': './node_modules/jupyter-js-widgets/index.js',
+                'jupyter-js-widgets': './node_modules/jupyter-js-widgets/src/index.js',
                 'urth-widgets': './node_modules/urth-widgets/index.js'
             },
             module: {
@@ -80,7 +80,7 @@ gulp.task('copy:components', function() {
         {
             files: [
                 'node_modules/requirejs/require.js',
-                'node_modules/jupyter-js-widgets/static/widgets/css/widgets.min.css',
+                'node_modules/jupyter-js-widgets/css/widgets.min.css',
                 'bower_components/gridstack/dist/gridstack.min.js',
                 'bower_components/gridstack/dist/gridstack.min.css',
                 'bower_components/jquery/dist/jquery.min.js',

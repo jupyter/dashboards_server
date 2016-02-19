@@ -17,10 +17,10 @@ WORKDIR /home/node/app
 
 # 'jupyter-js-widgets' isn't currently published as npm module, so download directly from repo
 RUN cd ext && \
-    git clone https://github.com/ipython/ipywidgets.git && \
+    git clone https://github.com/jhpedemonte/ipywidgets.git && \
     cd ipywidgets && \
-    git checkout 38218351c9dc4196419f6c8f0129df7d0f4cd24c && \
-    cd ipywidgets && \
+    git checkout edd487827ed7b565d2c4471e6c62688de185e365 && \
+    cd jupyter-js-widgets && \
     npm install --quiet
 
 # 3d1d93d5af7ad7b0679f4c522c0e112c1c2a0b82 is a commit on 'StandaloneExperiment' branch
