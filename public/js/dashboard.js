@@ -103,7 +103,6 @@ requirejs([
             output.execution_count = msg.content.execution_count;
             outputAreaModel.add(output);
         },
-
         error: function(msg, outputAreaModel) {
             // show tracebacks in the console, not on the page
             var traceback = msg.content.traceback.join('\n');
