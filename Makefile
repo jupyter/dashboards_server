@@ -14,17 +14,17 @@ HTTPS_PORT?=3001
 
 help:
 	@echo 'Make commands:'
-	@echo '             build - builds Docker images for dashboard server and kernel gateway'
-	@echo '              kill - stops Docker containers'
-	@echo '             certs - generate self-signed HTTPS key and certificate files'
-	@echo '               dev - runs the dashboard server on the host and kernel gateway in Docker'
-	@echo '         dev-debug - dev + debugging through node-inspector'
-	@echo '       dev-logging - dev + node network logging enabled'
-	@echo '    demo-container - runs the dashboard server and a kernel gateway in Docker'
-	@echo '   debug-container - demo + debugging through node-inspector'
-	@echo '   logging-logging - demo + node network logging enabled'
-	@echo '              test - run unit tests'
-	@echo '  integration-test - run integration tests'
+	@echo '               build - builds Docker images for dashboard server and kernel gateway'
+	@echo '                kill - stops Docker containers'
+	@echo '               certs - generate self-signed HTTPS key and certificate files'
+	@echo '                 dev - runs the dashboard server on the host and kernel gateway in Docker'
+	@echo '           dev-debug - dev + debugging through node-inspector'
+	@echo '         dev-logging - dev + node network logging enabled'
+	@echo '      demo-container - runs the dashboard server and a kernel gateway in Docker'
+	@echo '     debug-container - demo + debugging through node-inspector'
+	@echo '   logging-container - demo + node network logging enabled'
+	@echo '                test - run unit tests'
+	@echo '    integration-test - run integration tests'
 	@echo
 	@echo 'Dashboard server option defaults (via nconf):'
 	@cat config.json
