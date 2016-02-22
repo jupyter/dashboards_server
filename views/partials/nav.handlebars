@@ -4,8 +4,17 @@
             <a class="navbar-brand" href="/">Jupyter Dashboard</a>
         </div>
 
-        {{#if (config 'AUTH_ENABLED')}}
-            <div class="pull-right">
+        <div class="pull-right">
+            {{!
+                Use 'invisible' rather than 'hidden' so font loads eagerly.
+                If server crashes this will be shown but font needs to be loaded.
+            }}
+            <span class="error-container invisible">
+                <i class="error-indicator fa fa-exclamation-triangle"
+                title="An error has occurred. Check the console for details. Click to dismiss."></i>
+            </span>
+
+            {{#if (config 'AUTH_ENABLED')}}
                 {{#if username}}
                     <form class="navbar-form navbar-right" action="/logout" method="post">
                         <button type="submit" class="navbar-btn logout-btn btn btn-link">Log out</button>
@@ -15,7 +24,7 @@
                         <li><a class="login-btn" href="/login">Log in</a></li>
                     </ul>
                 {{/if}}
-            </div>
-        {{/if}}
+            {{/if}}
+        </div>
     </div>
 </nav>

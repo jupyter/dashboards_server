@@ -24,11 +24,13 @@ requirejs([
     'jquery',
     'gridstack-custom',
     'jupyter-js-output-area',
+    'jupyter-js-services',
     'jupyter-js-widgets',
     'urth-widgets',
     'widget-manager',
+    './error-indicator',
     './kernel'
-], function($, Gridstack, OutputArea, Widgets, DeclWidgets, WidgetManager, Kernel) {
+], function($, Gridstack, OutputArea, Services, Widgets, DeclWidgets, WidgetManager, ErrorIndicator, Kernel) {
     'use strict';
 
     var OutputType = OutputArea.OutputType;
@@ -105,6 +107,7 @@ requirejs([
             // show tracebacks in the console, not on the page
             var traceback = msg.content.traceback.join('\n');
             console.error(msg.content.ename, msg.content.evalue, traceback);
+            ErrorIndicator.show();
         },
         status: function(msg, outputAreaModel) {
             // pass for now
@@ -125,6 +128,15 @@ requirejs([
         }
     }
 
+    function _registerKernelErrorHandler(kernel) {
+        kernel.statusChanged.connect(function(kernel, status) {
+            if (status === Services.KernelStatus.Dead ||
+                status === Services.KernelStatus.Reconnecting) {
+                ErrorIndicator.show();
+            }
+        });
+    }
+
     // initialize Gridstack
     _initGrid();
 
@@ -137,6 +149,7 @@ requirejs([
     Kernel.start().then(function(kernel) {
         // initialize an ipywidgets manager
         var widgetManager = new WidgetManager(kernel, _consumeMessage);
+        _registerKernelErrorHandler(kernel);
 
         $('.dashboard-cell.code-cell').each(function() {
             var $cell = $(this);
