@@ -15,7 +15,7 @@ var Promise = require('es6-promise').Promise;
 var router = require('express').Router();
 var urljoin = require('url-join');
 
-var indexRegex = /index\.ipynb/i;
+var indexRegex = /^index\.ipynb$/i;
 var dbExt = config.get('DB_FILE_EXT');
 
 function _renderList(req, res, list, next) {
@@ -126,12 +126,14 @@ router.get('/dashboards/*', function(req, res, next) {
                     debug('Success loading nb');
 
                     var nbname = path.basename(dbpath, dbExt);
+                    var isIndex = indexRegex.test(dbpath);
 
                     res.status(200);
                     res.render('dashboard', {
                         title: nbname,
                         notebook: notebook,
-                        username: req.session.username
+                        username: req.session.username,
+                        showAllLink: isIndex
                     });
                 },
                 function error(err) {

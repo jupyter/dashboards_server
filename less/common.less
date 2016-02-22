@@ -3,7 +3,7 @@
  * Distributed under the terms of the Modified BSD License.
  */
 
-// Simplified navbar
+// Customize navbar
 .navbar {
     border-top: none;
     border-right: none;
@@ -30,6 +30,9 @@
         padding-right: 0;
     }
 
+    .navbar-brand {
+        margin-right: 1em;
+    }
     .navbar-form {
         margin: 0;
         padding: 0;
@@ -37,6 +40,33 @@
     }
     .navbar-nav {
         margin: 0;
+    }
+    .navbar-left-container {
+        display: flex;
+        float: left;
+    }
+    .navbar-right-container {
+        display: flex;
+        float: right;
+    }
+}
+
+// 2nd row navbar is for very small width only
+.navbar-row-2 {
+    display: none;
+    text-align: center;
+
+    .view-all-link {
+        display: inline-block;
+    }
+}
+
+@media (max-width: 500px) {
+    .view-all-link {
+        display: none;
+    }
+    .navbar-row-2 {
+        display: block;
     }
 }
 

@@ -1,10 +1,24 @@
+{{!
+    Copyright (c) Jupyter Development Team.
+    Distributed under the terms of the Modified BSD License.
+}}
+
+{{#*inline "viewAllLink"}}
+    <ul class="nav navbar-nav view-all-link">
+        <li><a href="/dashboards">View all dashboards</a></li>
+    </ul>
+{{/inline}}
+
 <nav class="navbar navbar-default">
     <div class="center-container">
-        <div class="pull-left">
-            <a class="navbar-brand" href="/">Jupyter Dashboard</a>
+        <div class="navbar-left-container">
+            <a class="navbar-brand" href="/" title="Home">Jupyter Dashboard</a>
+            {{#if showAllLink}}
+                {{> viewAllLink}}
+            {{/if}}
         </div>
 
-        <div class="pull-right">
+        <div class="navbar-right-container">
             {{!
                 Use 'invisible' rather than 'hidden' so font loads eagerly.
                 If server crashes this will be shown but font needs to be loaded.
@@ -28,3 +42,8 @@
         </div>
     </div>
 </nav>
+{{#if showAllLink}}
+    <nav class="navbar navbar-default navbar-row-2">
+        {{> viewAllLink}}
+    </nav>
+{{/if}}
