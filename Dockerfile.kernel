@@ -17,7 +17,7 @@ USER jovyan
 RUN pip install jupyter_kernel_gateway==0.3.1
 # install ipywidgets from github for now
 RUN pip uninstall -y ipywidgets && \
-    pip install git+https://github.com/jhpedemonte/ipywidgets.git@edd487827ed7b565d2c4471e6c62688de185e365
+    pip install git+https://github.com/ipython/ipywidgets.git@99e60fcffc3950c5d4c53a3854b6ac796d942180
 
 # install Declarative Widgets
 RUN pip install jupyter_declarativewidgets && \

@@ -62,9 +62,9 @@ ext/ipywidgets:
 	@-npm uninstall --quiet jupyter-js-widgets
 	@-rm -rf $@
 	@mkdir -p $@ ; \
-		git clone https://github.com/jhpedemonte/ipywidgets.git $@ ; \
+		git clone https://github.com/ipython/ipywidgets.git $@ ; \
 		cd $@ ; \
-		git checkout edd487827ed7b565d2c4471e6c62688de185e365 ; \
+		git checkout 99e60fcffc3950c5d4c53a3854b6ac796d942180 ; \
 		cd jupyter-js-widgets ; \
 		npm install --quiet
 
