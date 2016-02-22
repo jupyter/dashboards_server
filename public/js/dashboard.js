@@ -128,7 +128,7 @@ requirejs([
         }
     }
 
-    function _handleError(kernel) {
+    function _registerKernelErrorHandler(kernel) {
         kernel.statusChanged.connect(function(kernel, status) {
             if (status === Services.KernelStatus.Dead ||
                 status === Services.KernelStatus.Reconnecting) {
@@ -149,7 +149,7 @@ requirejs([
     Kernel.start().then(function(kernel) {
         // initialize an ipywidgets manager
         var widgetManager = new WidgetManager(kernel, _consumeMessage);
-        _handleError(kernel);
+        _registerKernelErrorHandler(kernel);
 
         $('.dashboard-cell.code-cell').each(function() {
             var $cell = $(this);
