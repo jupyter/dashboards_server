@@ -6,3 +6,4 @@ node_modules/
 public/components/
 public/css/
 public/urth_components/
+.DS_Store
