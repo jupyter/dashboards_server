@@ -244,13 +244,13 @@ proxy.on('proxyRes', function (proxyRes, req, res) {
             error('Missing notebook path or session ID headers');
             return;
         }
-        var matches = notebookPathHeader.match(/^\/dashboards\/(.*)$/);
+        var matches = notebookPathHeader.match(/^\/dashboards(-plain)?\/(.*)$/);
         if (!matches) {
             // TODO error handling
             error('Invalid notebook path header');
             return;
         }
-        sessions[sessionId] = matches[1]; // store notebook path for later use
+        sessions[sessionId] = matches[2]; // store notebook path for later use
     }
 });
 

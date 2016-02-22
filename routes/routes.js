@@ -59,47 +59,7 @@ function _renderList(req, res, list, next) {
     );
 }
 
-/* GET / - index notebook or list of notebooks */
-router.get('/', function(req, res, next) {
-    nbstore.list().then(
-        function success(notebooks) {
-            // if index notebook exists redirect to it immediately
-            var indexFound;
-            for (var i=0; i<notebooks.length; i++) {
-                if (indexRegex.test(notebooks[i])) {
-                    indexFound = notebooks[i];
-                    break;
-                }
-            }
-            if (indexFound) {
-                // redirect to the index notebook
-                res.redirect('/dashboards/' + indexFound);
-            } else {
-                _renderList(req, res, notebooks, next);
-            }
-        },
-        function error(err) {
-            console.error('Error loading list of notebooks',err);
-            next(err);
-        }
-    );
-});
-
-/* GET /dashboards - list of notebooks */
-router.get('/dashboards', function(req, res, next) {
-    nbstore.list().then(
-        function success(notebooks) {
-            _renderList(req, res, notebooks, next);
-        },
-        function error(err) {
-            console.error('Error loading list of notebooks',err);
-            next(err);
-        }
-    );
-});
-
-/* GET /dashboards/* - a single dashboard or list of files. */
-router.get('/dashboards/*', function(req, res, next) {
+function _renderDashboard(req, res, next, hideChrome) {
     var dbpath = req.params[0];
     nbstore.stat(dbpath, function(err, stats) {
         if (err) {
@@ -133,11 +93,11 @@ router.get('/dashboards/*', function(req, res, next) {
                         title: nbname,
                         notebook: notebook,
                         username: req.session.username,
-                        showAllLink: isIndex
+                        showAllLink: isIndex,
+                        hideChrome: hideChrome
                     });
                 },
                 function error(err) {
-                    console.error('error loading nb',err);
                     // TODO better way of determing the error
                     err.status = err.message.indexOf('loading') === -1 ? 500 : 404;
                     next(err);
@@ -145,6 +105,53 @@ router.get('/dashboards/*', function(req, res, next) {
             );
         }
     });
+}
+
+/* GET / - index notebook or list of notebooks */
+router.get('/', function(req, res, next) {
+    nbstore.list().then(
+        function success(notebooks) {
+            // if index notebook exists redirect to it immediately
+            var indexFound;
+            for (var i=0; i<notebooks.length; i++) {
+                if (indexRegex.test(notebooks[i])) {
+                    indexFound = notebooks[i];
+                    break;
+                }
+            }
+            if (indexFound) {
+                // redirect to the index notebook
+                res.redirect('/dashboards/' + indexFound);
+            } else {
+                _renderList(req, res, notebooks, next);
+            }
+        },
+        function error(err) {
+            next(err);
+        }
+    );
+});
+
+/* GET /dashboards - list of notebooks */
+router.get('/dashboards', function(req, res, next) {
+    nbstore.list().then(
+        function success(notebooks) {
+            _renderList(req, res, notebooks, next);
+        },
+        function error(err) {
+            next(err);
+        }
+    );
+});
+
+/* GET /dashboards-plain/* - same as /dashboards/* with no extra UI chrome */
+router.get('/dashboards-plain/*', function(req, res, next) {
+    _renderDashboard(req, res, next, true);
+});
+
+/* GET /dashboards/* - a single dashboard or list of files. */
+router.get('/dashboards/*', function(req, res, next) {
+    _renderDashboard(req, res, next);
 });
 
 module.exports = router;
