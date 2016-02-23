@@ -5,13 +5,14 @@
 
 requirejs.config({
     paths: {
+        bootstrap: require.toUrl('/components/bootstrap.min'),
         Gridstack: require.toUrl('/components/gridstack.min'),
-        lodash: require.toUrl('/components/lodash.min'),
         jquery: require.toUrl('/components/jquery.min'),
         'jquery-ui': require.toUrl('/components/jquery-ui.min'),
         'jupyter-js-output-area': require.toUrl('/components/jupyter-js-output-area'),
         'jupyter-js-services': require.toUrl('/components/jupyter-js-services'),
         'jupyter-js-widgets': require.toUrl('/components/jupyter-js-widgets'),
+        lodash: require.toUrl('/components/lodash.min'),
         'urth-widgets': require.toUrl('/components/urth-widgets')
     },
     map: {
@@ -22,6 +23,11 @@ requirejs.config({
             'jquery-ui/resizable': 'jquery-ui',
             'jquery-ui/draggable': 'jquery-ui'
         }
+    },
+    shim : {
+        bootstrap: {
+            deps: [ 'jquery' ]
+        }
     }
 });
 
@@ -30,12 +36,13 @@ requirejs([
     'gridstack-custom',
     'jupyter-js-output-area',
     'jupyter-js-services',
+    'bootstrap',  // required by jupyter-js-widgets
     'jupyter-js-widgets',
     'urth-widgets',
     'widget-manager',
     './error-indicator',
     './kernel'
-], function($, Gridstack, OutputArea, Services, Widgets, DeclWidgets, WidgetManager, ErrorIndicator, Kernel) {
+], function($, Gridstack, OutputArea, Services, bs, Widgets, DeclWidgets, WidgetManager, ErrorIndicator, Kernel) {
     'use strict';
 
     var OutputType = OutputArea.OutputType;

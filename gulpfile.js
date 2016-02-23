@@ -51,7 +51,7 @@ gulp.task('webpack:components', function(done) {
             },
             externals: [
                 // 'backbone',      // as of 2016-02-22, only used by *-widgets
-                // 'bootstrap',     // as of 2016-02-22, only used by *-widgets
+                'bootstrap',
                 'jquery',
                 'jquery-ui',
                 'jupyter-js-output-area',
@@ -84,8 +84,9 @@ gulp.task('copy:components', function() {
     var tasks = [
         {
             files: [
-                'node_modules/requirejs/require.js',
+                'node_modules/bootstrap/dist/js/bootstrap.min.js',
                 'node_modules/jupyter-js-widgets/css/widgets.min.css',
+                'node_modules/requirejs/require.js',
                 'bower_components/gridstack/dist/gridstack.min.js',
                 'bower_components/gridstack/dist/gridstack.min.css',
                 'bower_components/jquery/dist/jquery.min.js',
