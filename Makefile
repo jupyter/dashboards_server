@@ -72,8 +72,9 @@ ext/declarativewidgets:
 	@-npm uninstall --quiet urth-widgets
 	@-rm -rf $@
 	@mkdir -p $@ ; \
-		git clone -b StandaloneExperiment https://github.com/jhpedemonte/declarativewidgets.git $@ ; \
+		git clone https://github.com/jhpedemonte/declarativewidgets.git $@ ; \
 		cd $@ ; \
+		git checkout 3d1d93d5af7ad7b0679f4c522c0e112c1c2a0b82 ; \
 		make node_modules ext/ipywidgets dist NOSCALA=true
 
 dev-install: ext/ipywidgets ext/declarativewidgets
