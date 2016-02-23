@@ -4,7 +4,15 @@
 
 A NodeJS application that can display Jupyter notebooks as dynamic dashboards outside of the Jupyter Notebook server.
 
-**Note** that this project is very much a work-in-progress as part of the [dashboards deployment roadmap](https://github.com/jupyter-incubator/dashboards/wiki/Deployment-Roadmap).
+![Dashboards server screenshot](etc/server_intro.png)
+
+This repository is a portion of the `jupyter-incubator/dashboards` effort which covers:
+
+* [Arranging](https://github.com/jupyter-incubator/dashboards) notebook outputs in a grid-layout
+* [Bundling](https://github.com/jupyter-incubator/dashboards_bundlers) notebooks and associated assets for deployment as dashboards
+* [Serving](https://github.com/jupyter-incubator/dashboards_server) notebook-defined dashboards as standalone web apps (**this repo**)
+
+It is also has close ties to [jupyter-incubator/declarativewidgets](https://github.com/jupyter-incubator/declarativewidgets) which provides one way (but not the only way) of enabling rich interactivity in notebook-defined dashboards.
 
 ## What it Gives You
 
@@ -18,8 +26,7 @@ The behavior of the application is similar to that of [Thebe](https://github.com
 * The notebook code is visible only in the NodeJS application backend.
 * The NodeJS backend is the only actor that can send notebook code to a kernel for execution.
 * The browser client can only send [Jupyter comm messages](http://jupyter-client.readthedocs.org/en/latest/messaging.html#opening-a-comm) to kernels (*not* arbitrary code).
-* The application uses the jupyter-js-services and jupyter-js-widgets libraries for communication with kernels.
-
+* The application uses the [jupyter-js-services](https://github.com/jupyter/jupyter-js-services) and [jupyter-js-widgets](https://github.com/ipython/ipywidgets/tree/master/jupyter-js-widgets) libraries for communication with kernels.
 
 ## Try It
 
@@ -38,7 +45,7 @@ To see another notebook as a dashboard:
 2. Copy the `*.ipynb` file to the `data/` directory in the project root.
 3. Run `make demo-container` again -- this will rebuild the Docker image and restart the Node application container.
 
-**Note again** that this project is a work in progress and so many notebooks with dashboard layouts and interactive widgets will not work here yet.
+**Note** that this project is a work in progress and so many notebooks with dashboard layouts and interactive widgets will not work here yet.
 
 ## Deploy It
 
