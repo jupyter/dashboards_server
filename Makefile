@@ -14,17 +14,17 @@ HTTPS_PORT?=3001
 
 help:
 	@echo 'Make commands:'
-	@echo '             build - builds Docker images for dashboard server and kernel gateway'
-	@echo '              kill - stops Docker containers'
-	@echo '             certs - generate self-signed HTTPS key and certificate files'
-	@echo '               dev - runs the dashboard server on the host and kernel gateway in Docker'
-	@echo '         dev-debug - dev + debugging through node-inspector'
-	@echo '       dev-logging - dev + node network logging enabled'
-	@echo '    demo-container - runs the dashboard server and a kernel gateway in Docker'
-	@echo '   debug-container - demo + debugging through node-inspector'
-	@echo '   logging-logging - demo + node network logging enabled'
-	@echo '              test - run unit tests'
-	@echo '  integration-test - run integration tests'
+	@echo '               build - builds Docker images for dashboard server and kernel gateway'
+	@echo '                kill - stops Docker containers'
+	@echo '               certs - generate self-signed HTTPS key and certificate files'
+	@echo '                 dev - runs the dashboard server on the host and kernel gateway in Docker'
+	@echo '           dev-debug - dev + debugging through node-inspector'
+	@echo '         dev-logging - dev + node network logging enabled'
+	@echo '      demo-container - runs the dashboard server and a kernel gateway in Docker'
+	@echo '     debug-container - demo + debugging through node-inspector'
+	@echo '   logging-container - demo + node network logging enabled'
+	@echo '                test - run unit tests'
+	@echo '    integration-test - run integration tests'
 	@echo
 	@echo 'Dashboard server option defaults (via nconf):'
 	@cat config.json
@@ -72,8 +72,9 @@ ext/declarativewidgets:
 	@-npm uninstall --quiet urth-widgets
 	@-rm -rf $@
 	@mkdir -p $@ ; \
-		git clone -b StandaloneExperiment https://github.com/jhpedemonte/declarativewidgets.git $@ ; \
+		git clone https://github.com/jhpedemonte/declarativewidgets.git $@ ; \
 		cd $@ ; \
+		git checkout 3d1d93d5af7ad7b0679f4c522c0e112c1c2a0b82 ; \
 		make node_modules ext/ipywidgets dist NOSCALA=true
 
 dev-install: ext/ipywidgets ext/declarativewidgets
