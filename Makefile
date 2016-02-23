@@ -75,7 +75,7 @@ ext/declarativewidgets:
 	@mkdir -p $@ ; \
 		git clone https://github.com/jhpedemonte/declarativewidgets.git $@ ; \
 		cd $@ ; \
-		git checkout 0c275926f7295eccb4e5b3af75ccaceb6c63fef6 ; \
+		git checkout 9f6423bbcc4e9e266a8c2594028caeabaebe9a8f ; \
 		make ext/ipywidgets node_modules dist NOSCALA=true
 
 dev-install: ext/ipywidgets ext/declarativewidgets
