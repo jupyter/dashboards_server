@@ -50,9 +50,6 @@ define([
                                 .toggleClass('active', isBusy);
                     }, 500);
                 });
-                kernel.commOpened.connect(function(_kernel, commMsg) {
-                    var comm = kernel.connectToComm(commMsg.target_name, commMsg.comm_id);
-                });
                 return kernel;
             })
             .catch(function(e) {

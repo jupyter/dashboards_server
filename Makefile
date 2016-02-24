@@ -59,23 +59,24 @@ kill:
 ############### Dashboard server development on host
 
 ext/ipywidgets:
-	@-npm uninstall --quiet jupyter-js-widgets
+	@-test -d node_modules && npm uninstall --quiet jupyter-js-widgets
 	@-rm -rf $@
 	@mkdir -p $@ ; \
 		git clone https://github.com/ipython/ipywidgets.git $@ ; \
 		cd $@ ; \
-		git checkout 38218351c9dc4196419f6c8f0129df7d0f4cd24c ; \
-		cd ipywidgets ; \
+		git checkout 851fd648195be1f42cab2560600c3b629bbe3330 ; \
+		cd jupyter-js-widgets ; \
 		npm install --quiet
 
 ext/declarativewidgets:
-	@-npm uninstall --quiet urth-widgets
+	@-test -d node_modules && npm uninstall --quiet urth-widgets
 	@-rm -rf $@
+	# SHA below is a commit on 'StandaloneExperiment' branch
 	@mkdir -p $@ ; \
 		git clone https://github.com/jhpedemonte/declarativewidgets.git $@ ; \
 		cd $@ ; \
-		git checkout 3d1d93d5af7ad7b0679f4c522c0e112c1c2a0b82 ; \
-		make node_modules ext/ipywidgets dist NOSCALA=true
+		git checkout 9f6423bbcc4e9e266a8c2594028caeabaebe9a8f ; \
+		make ext/ipywidgets node_modules dist NOSCALA=true
 
 dev-install: ext/ipywidgets ext/declarativewidgets
 	npm install --quiet

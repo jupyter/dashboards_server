@@ -109,12 +109,16 @@ define([
     };
 
     WidgetManager.prototype._get_callbacks = function(outputAreaModel) {
-        // TODO: only registering one callback until https://github.com/ipython/ipywidgets/pull/353
-        // is fixed
         var that = this;
         return {
             iopub: {
                 output: function(msg) {
+                    that.msgHandler(msg, outputAreaModel);
+                },
+                clear_output: function(msg) {
+                    that.msgHandler(msg, outputAreaModel);
+                },
+                status: function(msg) {
                     that.msgHandler(msg, outputAreaModel);
                 }
             }

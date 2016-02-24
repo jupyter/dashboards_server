@@ -17,7 +17,7 @@ var webpackStatsOptions = {
     hash: false,
     timings: false,
     chunks: false,
-    chunkModules: false,
+    chunkModules: false,  // set this & above to `true` to see which modules are complied in
     modules: false,
     children: true,
     version: false,
@@ -33,13 +33,15 @@ gulp.task('webpack:components', function(done) {
             entry: {
                 'jupyter-js-output-area': './node_modules/jupyter-js-notebook/lib/output-area/index.js',
                 'jupyter-js-services': './node_modules/jupyter-js-services/lib/index.js',
-                'jupyter-js-widgets': './node_modules/jupyter-js-widgets/index.js',
+                'jupyter-js-widgets': './node_modules/jupyter-js-widgets/src/index.js',
                 'urth-widgets': './node_modules/urth-widgets/index.js'
             },
             module: {
                 loaders: [
                     { test: /\.css$/, loader: 'style-loader!css-loader' },
-                    { test: /\.json$/, loader: 'json-loader' }
+                    { test: /\.json$/, loader: 'json-loader' },
+                    // jquery-ui loads some images
+                    { test: /\.(jpg|png|gif)$/, loader: "file" }
                 ],
 
                 // NOTE: This is required when building `widgets` from src
@@ -48,7 +50,10 @@ gulp.task('webpack:components', function(done) {
                 unknownContextCritical: false
             },
             externals: [
+                // 'backbone',      // as of 2016-02-22, only used by *-widgets
+                'bootstrap',
                 'jquery',
+                'jquery-ui',
                 'jupyter-js-output-area',
                 'jupyter-js-services',
                 'jupyter-js-widgets',
@@ -79,8 +84,9 @@ gulp.task('copy:components', function() {
     var tasks = [
         {
             files: [
+                'node_modules/bootstrap/dist/js/bootstrap.min.js',
+                'node_modules/jupyter-js-widgets/css/widgets.min.css',
                 'node_modules/requirejs/require.js',
-                'node_modules/jupyter-js-widgets/static/widgets/css/widgets.min.css',
                 'bower_components/gridstack/dist/gridstack.min.js',
                 'bower_components/gridstack/dist/gridstack.min.css',
                 'bower_components/jquery/dist/jquery.min.js',
@@ -91,11 +97,6 @@ gulp.task('copy:components', function() {
         },
         {
             files: [
-                'bower_components/jquery-ui/ui/minified/core.min.js',
-                'bower_components/jquery-ui/ui/minified/mouse.min.js',
-                'bower_components/jquery-ui/ui/minified/widget.min.js',
-                'bower_components/jquery-ui/ui/minified/resizable.min.js',
-                'bower_components/jquery-ui/ui/minified/draggable.min.js',
                 'bower_components/jquery-ui/themes/smoothness/jquery-ui.min.css',
             ],
             dest: 'public/components/jquery-ui'
