@@ -4,6 +4,7 @@
  */
 var commonmark = require('commonmark');
 var config = require('./config');
+var urljoin = require('url-join');
 
 var reader = new commonmark.Parser();
 var writer = new commonmark.HtmlRenderer();
@@ -44,6 +45,12 @@ module.exports = {
 
     urlBasename: function(url) {
         return url.split('/').pop();
+    },
+
+    urlJoin: function() {
+        // don't want the last argument
+        var args = Array.apply(null, arguments).slice(0, arguments.length-1);
+        return urljoin.apply(null, args);
     },
 
     basename: function(url) {

@@ -18,6 +18,7 @@ var authRoutes = require('./routes/auth-routes');
 var apiRoutes = require('./routes/api');
 var loginRoutes = require('./routes/login');
 var logoutRoutes = require('./routes/logout');
+var presentationRoutes = require('./routes/presentation')
 
 var app = express();
 
@@ -99,7 +100,11 @@ if (config.get('AUTH_ENABLED')) {
 // AUTHENTICATED ROUTES
 ///////////////////////
 
-app.use('/', routes);
+if (config.get('PRESENTATION_MODE')) {
+    app.use('/', presentationRoutes);
+} else {
+    app.use('/', routes);
+}
 app.use('/api', apiRoutes);
 
 /////////////////

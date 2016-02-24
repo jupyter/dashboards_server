@@ -4,6 +4,7 @@
  */
 var nconf = require('nconf');
 var hjson = require('hjson');
+var path = require('path');
 
 var config = nconf.argv()
                   .env()
@@ -22,5 +23,8 @@ var ext = config.get('DB_FILE_EXT');
 if (!/^\./.test(ext)) {
     config.set('DB_FILE_EXT', '.' + ext);
 }
+
+// build the full path to the data directory
+config.set('NOTEBOOKS_DIR', path.join(__dirname, '..', config.get('NOTEBOOKS_DIR')));
 
 module.exports = config;

@@ -93,7 +93,7 @@ function uploadFileTest(uploadPath, originalname, finalname) {
     }).then(function() {
         expect(fsStub.mkdir).calledOnce;
         var destination = fsStub.mkdir.firstCall.args[0];
-        var dest = path.join(__dirname, projectRoot, notebooksDir, dirname);
+        var dest = path.join(notebooksDir, dirname);
         expect(destination).to.equal(dest);
 
         expect(fsStub.writeFile).calledOnce;

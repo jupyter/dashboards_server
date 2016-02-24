@@ -14,6 +14,7 @@ var Promise = require('es6-promise').Promise;
 var request = require('request');
 var url = require('url');
 var urljoin = require('url-join');
+var urlToDashboard = require('./url-to-dashboard');
 
 var kgUrl = config.get('KERNEL_GATEWAY_URL');
 var kgAuthToken = config.get('KG_AUTH_TOKEN');
@@ -43,7 +44,7 @@ var substituteCodeCell = function(payload) {
             payload = JSON.parse(payload);
             if (payload.header.msg_type === 'execute_request') {
                 // get notebook data for current session
-                var nbpath = sessions[payload.header.session];
+                var nbpath = urlToDashboard(sessions[payload.header.session]);
                 transformedData = nbstore.get(nbpath).then(
                     function success(nb) {
                         // get code string for cell at index and update WS message
@@ -244,13 +245,13 @@ proxy.on('proxyRes', function (proxyRes, req, res) {
             error('Missing notebook path or session ID headers');
             return;
         }
-        var matches = notebookPathHeader.match(/^\/dashboards(-plain)?\/(.*)$/);
+        var matches = notebookPathHeader.match(/^\/(dashboards(-plain)?\/)?(.*)$/);
         if (!matches) {
             // TODO error handling
             error('Invalid notebook path header');
             return;
         }
-        sessions[sessionId] = matches[2]; // store notebook path for later use
+        sessions[sessionId] = matches[3]; // store notebook path for later use
     }
 });
 

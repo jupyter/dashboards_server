@@ -10,7 +10,8 @@ var path = require('path');
 var Promise = require('es6-promise').Promise;
 
 var dbExt = config.get('DB_FILE_EXT');
-var dataDir = path.join(__dirname, '..', config.get('NOTEBOOKS_DIR'));
+var dataDir = config.get('NOTEBOOKS_DIR');
+var indexNb = ('index' + dbExt).toLowerCase();
 
 // cached notebook objects
 var store = {};
@@ -23,6 +24,19 @@ var store = {};
 function _appendExt(nbpath) {
     var ext = path.extname(nbpath) === dbExt ? '' : dbExt;
     return nbpath + ext;
+}
+
+// determines if the specified file exists (case-insensitive)
+function existsIgnoreCase(nbpath, cb) {
+    fs.readdir(dataDir, function(err, items) {
+        var indexFile = null;
+        for (var i = 0, len = items.length; i < len; i++) {
+            if (items[i].toLowerCase() === indexNb) {
+                indexFile = items[i];
+            }
+        }
+        cb(indexFile);
+    });
 }
 
 // stat the path in the data directory
@@ -207,6 +221,7 @@ function upload(req, res, next) {
 }
 
 module.exports = {
+    exists: existsIgnoreCase,
     /**
      * Loads, parses, and returns cells (minus code) of the notebook specified by nbpath.
      * @param  {String} nbpath - path of the notbeook to load
