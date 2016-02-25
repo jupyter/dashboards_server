@@ -30,13 +30,13 @@ function existsIgnoreCase(nbpath, cb) {
     var dirname = path.join(dataDir, path.dirname(nbpath));
     var basename = _appendExt(path.basename(nbpath)).toLowerCase();
     fs.readdir(dirname, function(err, items) {
-        var indexFile = null;
+        var file = null;
         for (var i = 0, len = items.length; i < len; i++) {
             if (items[i].toLowerCase() === basename) {
-                indexFile = items[i];
+                file = items[i];
             }
         }
-        cb(indexFile);
+        cb(file);
     });
 }
 
