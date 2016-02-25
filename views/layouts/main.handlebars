@@ -11,7 +11,11 @@
         <link rel="stylesheet" href="/css/style.css">
     </head>
     <body>
-        {{> nav}}
+        {{#unless (config "PRESENTATION_MODE")}}
+            {{#unless hideChrome}}
+                {{> nav}}
+            {{/unless}}
+        {{/unless}}
         {{{body}}}
     </body>
 </html>

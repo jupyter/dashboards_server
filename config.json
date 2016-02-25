@@ -23,6 +23,8 @@
     // Login
     USERNAME: null
     PASSWORD: null
+    // "Presentation Mode" - Disable all UI Chrome, only render a dashboard
+    PRESENTATION_MODE: false
 
     /////////////////////////
     // Kernel Gateway options

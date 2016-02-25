@@ -23,7 +23,7 @@
         {{#each items}}
             <li class="list-group-item">
                 <i class="list-item-icon {{fsIcon type}}"></i>
-                <a href="/dashboards/{{url}}">{{urlBasename url}}</a>
+                <a href="{{urlJoin '/dashboards' url}}">{{urlBasename url}}</a>
             </li>
         {{/each}}
     </ul>
