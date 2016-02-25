@@ -11,7 +11,6 @@ var Promise = require('es6-promise').Promise;
 
 var dbExt = config.get('DB_FILE_EXT');
 var dataDir = config.get('NOTEBOOKS_DIR');
-var indexNb = ('index' + dbExt).toLowerCase();
 
 // cached notebook objects
 var store = {};
@@ -28,10 +27,12 @@ function _appendExt(nbpath) {
 
 // determines if the specified file exists (case-insensitive)
 function existsIgnoreCase(nbpath, cb) {
-    fs.readdir(dataDir, function(err, items) {
+    var dirname = path.join(dataDir, path.dirname(nbpath));
+    var basename = _appendExt(path.basename(nbpath)).toLowerCase();
+    fs.readdir(dirname, function(err, items) {
         var indexFile = null;
         for (var i = 0, len = items.length; i < len; i++) {
-            if (items[i].toLowerCase() === indexNb) {
+            if (items[i].toLowerCase() === basename) {
                 indexFile = items[i];
             }
         }
@@ -221,6 +222,11 @@ function upload(req, res, next) {
 }
 
 module.exports = {
+    /**
+     * Checks if the specified file exists (case-insensitive)
+     * @param  {String} nbpath - path to a notebook
+     * @param  {Function} cb - callback called with the name of the file if it exists, else null.
+     */
     exists: existsIgnoreCase,
     /**
      * Loads, parses, and returns cells (minus code) of the notebook specified by nbpath.
@@ -228,8 +234,28 @@ module.exports = {
      * @return {Promise} ES6 Promise resolved with notebook JSON or error string
      */
     get: get,
+    /**
+     * Lists contents of the specified directory
+     * @param {String} dir - optional sub-directory to Lists
+     * @return {Promise} ES6 Promise resolved with list of contents
+     */
     list: list,
+    /**
+     * Deletes the specified notebook
+     * @param {String} nbpath - path to notebook to delete
+     */
     remove: remove,
+    /**
+     * Runs `stat` on the specified path
+     * @param {String} nbpath - path that may be a notebook or directory
+     * @param {Function} cb - callback called with the `stat` results
+     */
     stat: stat,
+    /**
+     * Uploads a notebook file
+     * @param {Request}  req - HTTP request object
+     * @param {Response} res - HTTP response object
+     * @param {Function} next - next function
+     */
     upload: upload
 };

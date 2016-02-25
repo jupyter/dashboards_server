@@ -48,7 +48,7 @@ module.exports = {
     },
 
     urlJoin: function() {
-        // don't want the last argument
+        // need varargs but Handlebars adds an arg to the end, so slice it off
         var args = Array.apply(null, arguments).slice(0, arguments.length-1);
         return urljoin.apply(null, args);
     },

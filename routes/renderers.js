@@ -102,7 +102,7 @@ function _renderDashboardOrList(req, res, next, dbpath, hideChrome) {
             }
             next(err);
         } else if (stats.isDirectory()) {
-            _renderList(req, res, next, dbpath);
+            _renderList(req, res, next);
         } else {
             _renderDashboard(req, res, next, dbpath, hideChrome);
         }
@@ -110,7 +110,27 @@ function _renderDashboardOrList(req, res, next, dbpath, hideChrome) {
 }
 
 module.exports = {
+    /**
+     * Renders the list of items at the directory specified in request param
+     * @param {Request}  req - HTTP request object
+     * @param {Response} res - HTTP response object
+     * @param {Function} next - next function
+     */
     renderList: _renderList,
+    /**
+     * Renders a dashboard at path specified by either request param or dbpath
+     * @param {Request}  req - HTTP request object
+     * @param {Response} res - HTTP response object
+     * @param {Function} next - next function
+     * @param {String} dbpath - optional path to use instead of request param
+     * @param {Boolean} hideChrome - if true, disables UI chrome
+     */
     renderDashboard: _renderDashboard,
+    /**
+     * Renders either a list or a dashboard from the path specified in request param
+     * @param {Request}  req - HTTP request object
+     * @param {Response} res - HTTP response object
+     * @param {Function} next - next function
+     */
     render: _renderDashboardOrList
 };
