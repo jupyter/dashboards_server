@@ -38,19 +38,74 @@ requirejs([
     'jupyter-js-services',
     'bootstrap',  // required by jupyter-js-widgets
     'jupyter-js-widgets',
-    'urth-widgets',
     'widget-manager',
     './error-indicator',
     './kernel'
-], function($, Gridstack, OutputArea, Services, bs, Widgets, DeclWidgets, WidgetManager, ErrorIndicator, Kernel) {
+], function($, Gridstack, OutputArea, Services, bs, Widgets, WidgetManager, ErrorIndicator, Kernel) {
     'use strict';
 
     var OutputType = OutputArea.OutputType;
     var OutputAreaModel = OutputArea.OutputAreaModel;
     var OutputAreaWidget = OutputArea.OutputAreaWidget;
     var StreamName = OutputArea.StreamName;
+    var Config = window.jupyter_dashboard.Config;
 
     var $container = $('#dashboard-container');
+
+    // initialize Gridstack
+    _initGrid();
+
+    if (Config.supportsDeclWidgets) {
+        require(['urth-widgets'], function(DeclWidgets) {
+            // initialize Declarative Widgets
+            // NOTE: DeclWidgets adds 'urth_components/...' to this path
+            DeclWidgets.init(document.baseURI + '/');
+        });
+    }
+
+    // start a kernel
+    Kernel.start().then(function(kernel) {
+        // initialize an ipywidgets manager
+        var widgetManager = new WidgetManager(kernel, _consumeMessage);
+        _registerKernelErrorHandler(kernel);
+
+        _getCodeCells().each(function() {
+            var $cell = $(this);
+
+            // create a jupyter output area mode and widget view for each
+            // dashboard code cell
+            var model = new OutputAreaModel();
+            var view = new OutputAreaWidget(model);
+            model.outputs.changed.connect(function(sender, args) {
+                if (args.newValue.data &&
+                    args.newValue.data.hasOwnProperty('text/html')) {
+                    view.addClass('rendered_html');
+                }
+            });
+
+            // attach the view to the cell dom node
+            view.attach(this);
+
+            // create the widget area and widget subarea dom structure used
+            // by ipywidgets in jupyter
+            var $widgetArea = $('<div class="widget-area">');
+            var $widgetSubArea = $('<div class="widget-subarea">').appendTo($widgetArea);
+            // append the widget area and the output area within the grid cell
+            $cell.append($widgetArea, view.node);
+
+            // request execution of the code associated with the dashboard cell
+            var kernelFuture = Kernel.execute($cell.attr('data-cell-index'), function(msg) {
+                // handle the response to the initial execution request
+                if (model) {
+                    _consumeMessage(msg, model);
+                }
+            });
+            // track execution replies in order to associate the newly created
+            // widget *subarea* with its output areas and DOM container
+            widgetManager.trackPending(kernelFuture, $widgetSubArea.get(0), model);
+        });
+    });
+
 
     function _initGrid() {
         // enable gridstack with parameters set by JS in the HTML page by
@@ -149,59 +204,9 @@ requirejs([
         });
     }
 
-    // initialize Gridstack
-    _initGrid();
-
-    // initialize Declarative Widgets
-    // NOTE: DeclWidgets adds 'urth_components/...' to this path
-    DeclWidgets.init(document.baseURI + '/');
-
     function _getCodeCells() {
         return $('.dashboard-cell.code-cell').sort(function(a, b) {
             return $(a).attr('data-cell-index') - $(b).attr('data-cell-index');
         });
     }
-
-    // start a kernel
-    Kernel.start().then(function(kernel) {
-        // initialize an ipywidgets manager
-        var widgetManager = new WidgetManager(kernel, _consumeMessage);
-        _registerKernelErrorHandler(kernel);
-
-        _getCodeCells().each(function() {
-            var $cell = $(this);
-
-            // create a jupyter output area mode and widget view for each
-            // dashboard code cell
-            var model = new OutputAreaModel();
-            var view = new OutputAreaWidget(model);
-            model.outputs.changed.connect(function(sender, args) {
-                if (args.newValue.data &&
-                    args.newValue.data.hasOwnProperty('text/html')) {
-                    view.addClass('rendered_html');
-                }
-            });
-
-            // attach the view to the cell dom node
-            view.attach(this);
-
-            // create the widget area and widget subarea dom structure used
-            // by ipywidgets in jupyter
-            var $widgetArea = $('<div class="widget-area">');
-            var $widgetSubArea = $('<div class="widget-subarea">').appendTo($widgetArea);
-            // append the widget area and the output area within the grid cell
-            $cell.append($widgetArea, view.node);
-
-            // request execution of the code associated with the dashboard cell
-            var kernelFuture = Kernel.execute($cell.attr('data-cell-index'), function(msg) {
-                // handle the response to the initial execution request
-                if (model) {
-                    _consumeMessage(msg, model);
-                }
-            });
-            // track execution replies in order to associate the newly created
-            // widget *subarea* with its output areas and DOM container
-            widgetManager.trackPending(kernelFuture, $widgetSubArea.get(0), model);
-        });
-    });
 });

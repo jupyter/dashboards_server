@@ -72,12 +72,22 @@ function stat(nbpath) {
                 reject(err);
             } else {
                 stats.fullpath = nbpath;
+
                 if (stats.isDirectory()) {
                     // check if this directory contains an index dashboard
                     existsIgnoreCase(path.join(nbpath, indexNb)).then(
                         function success(fn) {
                             stats.isDashboard = stats.hasIndex = !!fn;
-                            resolve(stats);
+                            if (stats.hasIndex) {
+                                // check if bundled dashboard has an 'urth_components' dir
+                                fs.stat(path.join(nbpath, 'urth_components'),
+                                    function(err, urth_stats) {
+                                        stats.supportsDeclWidgets = !err && urth_stats.isDirectory();
+                                        resolve(stats);
+                                    });
+                            } else {
+                                resolve(stats);
+                            }
                         },
                         function failure(err) {
                             reject(err);

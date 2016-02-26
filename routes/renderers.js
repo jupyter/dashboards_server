@@ -72,8 +72,8 @@ function _renderList(req, res, next) {
     );
 }
 
-function _renderDashboard(req, res, next, dbpath, hideChrome) {
-    dbpath = dbpath || req.params[0];
+function _renderDashboard(req, res, next, opts) {
+    var dbpath = opts.dbpath || req.params[0];
     nbstore.get(dbpath).then(
         function success(notebook) {
             debug('Success loading nb');
@@ -84,7 +84,8 @@ function _renderDashboard(req, res, next, dbpath, hideChrome) {
                 notebook: notebook,
                 username: req.session.username,
                 showAllLink: indexRegex.test(dbpath),
-                hideChrome: hideChrome
+                hideChrome: opts.hideChrome,
+                supportsDeclWidgets: opts.supportsDeclWidgets
             });
         },
         function error(err) {
@@ -108,8 +109,10 @@ module.exports = {
      * @param {Request}  req - HTTP request object
      * @param {Response} res - HTTP response object
      * @param {Function} next - next function
-     * @param {String} dbpath - optional path to use instead of request param
-     * @param {Boolean} hideChrome - if true, disables UI chrome
+     * @param {Object} opts - additional options
+     * @param {String} opts.dbpath - optional path to use instead of request param
+     * @param {Boolean} opts.hideChrome - if true, disables UI chrome
+     * @param {Boolean} opts.supportsDeclWidgets - if true, enables init of DeclWidgets on client
      */
     renderDashboard: _renderDashboard
 };

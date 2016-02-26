@@ -53,7 +53,11 @@ function renderDashboardOrList(req, res, next, dbpath, hideChrome) {
                 if (stats.hasIndex) {
                     dbpath = path.join(dbpath, indexFilename);
                 } 
-                renderers.renderDashboard(req, res, next, dbpath, hideChrome);
+                renderers.renderDashboard(req, res, next, {
+                    dbpath: dbpath,
+                    hideChrome: hideChrome,
+                    supportsDeclWidgets: stats.supportsDeclWidgets
+                });
             } else if (stats.isDirectory()) {
                 renderers.renderList(req, res, next);
             } else {
