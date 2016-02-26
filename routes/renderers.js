@@ -38,9 +38,11 @@ function _renderList(req, res, next) {
                             } else if (stats.isFile()) {
                                 type = 'file';
                             }
+                            var filepath = type === 'directory' ? 
+                                    url : path.join(path.dirname(url), path.basename(url, dbExt));
                             resolve({
                                 type: type,
-                                path: path.join(path.dirname(url), path.basename(url, dbExt))
+                                path: filepath
                             });
                         },
                         function failure(err) {
@@ -85,7 +87,10 @@ function _renderDashboard(req, res, next, opts) {
                 username: req.session.username,
                 showAllLink: indexRegex.test(dbpath),
                 hideChrome: opts.hideChrome,
-                supportsDeclWidgets: opts.supportsDeclWidgets
+                supportsDeclWidgets: opts.supportsDeclWidgets,
+                // need to set document.baseURI with trailing slash (i.e. "/dashboards/nb/") so
+                // that relative paths load correctly
+                baseURI: urljoin(req.originalUrl, '/')
             });
         },
         function error(err) {

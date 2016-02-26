@@ -32,12 +32,11 @@ help:
 clean:
 	@-rm -rf bower_components
 	@-rm -rf certs
-	@-rm -f data/decl-widgets-taxi-demo.ipynb
+	@-rm -rf data/taxi-demo data/bundled-dashboard
 	@-rm -rf ext
 	@-rm -rf node_modules
 	@-rm -rf public/components
 	@-rm -rf public/css
-	@-rm -rf public/urth_components
 
 ############### Docker images
 
@@ -220,14 +219,19 @@ certs: certs/server.pem
 
 ############### Examples/demos
 
+BASE_DECLWIDGETS:=node_modules/urth-widgets/dist/urth/widgets/ext/notebook/bower_components
+
+data/bundled-dashboard:
+	@cp -r etc/notebooks/$(@F) data/
+	@cp -r $(BASE_DECLWIDGETS) data/$(@F)/urth_components
+
 # this example requires some additional Polymer elements
-data/decl-widgets-taxi-demo.ipynb: URTH_COMP_DIR=public/urth_components
-data/decl-widgets-taxi-demo.ipynb:
-	@cp etc/notebooks/$(@F) data/
-	@mkdir -p $(URTH_COMP_DIR)
-	@cd $(URTH_COMP_DIR) && bower --silent --config.interactive=false --config.analytics=false \
-		--config.directory=. install --production \
+data/taxi-demo:
+	@cp -r etc/notebooks/$(@F) data/
+	@cp -r $(BASE_DECLWIDGETS) data/$(@F)/urth_components
+	@cd data/$(@F)/urth_components && bower --silent --config.interactive=false \
+		--config.analytics=false --config.directory=. install --production \
 		PolymerElements/paper-button PolymerElements/paper-card \
 		PolymerElements/paper-slider GoogleWebComponents/google-map
 
-examples: data/decl-widgets-taxi-demo.ipynb
+examples: data/bundled-dashboard data/taxi-demo

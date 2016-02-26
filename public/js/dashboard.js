@@ -59,8 +59,10 @@ requirejs([
         require(['urth-widgets'], function(DeclWidgets) {
             // initialize Declarative Widgets
             // NOTE: DeclWidgets adds 'urth_components/...' to this path
-            DeclWidgets.init(document.baseURI + '/');
+            DeclWidgets.init(document.baseURI);
         });
+    } else {
+        console.log('Declarative Widgets not supported ("urth_components" directory not found)');
     }
 
     // start a kernel
