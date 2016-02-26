@@ -23,6 +23,6 @@ config.set('NOTEBOOKS_DIR', path.join(__dirname, '..', config.get('NOTEBOOKS_DIR
 
 // TODO Move vars to own module
 config.set('DB_FILE_EXT', '.ipynb');
-config.set('DB_BUNDLED_FILENAME', '__notebook__.ipynb');
+config.set('DB_INDEX', 'index.ipynb');
 
 module.exports = config;

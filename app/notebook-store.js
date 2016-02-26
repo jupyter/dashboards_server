@@ -12,8 +12,8 @@ var Promise = require('es6-promise').Promise;
 var dbExt = config.get('DB_FILE_EXT');
 var dataDir = config.get('NOTEBOOKS_DIR');
 var hasExtension = new RegExp('\\' + dbExt + '$');
-var bundledNb = config.get('DB_BUNDLED_FILENAME');
-var isBundled = new RegExp(bundledNb + '$');
+var indexNb = config.get('DB_INDEX');
+var hasIndex = new RegExp(indexNb + '$');
 
 // cached notebook objects
 var store = {};
@@ -29,17 +29,26 @@ function _appendExt(nbpath) {
 }
 
 // determines if the specified file exists (case-insensitive)
-function existsIgnoreCase(nbpath, cb) {
-    var dirname = path.join(dataDir, path.dirname(nbpath));
-    var basename = _appendExt(path.basename(nbpath)).toLowerCase();
-    fs.readdir(dirname, function(err, items) {
-        var file = null;
-        for (var i = 0, len = items.length; i < len; i++) {
-            if (items[i].toLowerCase() === basename) {
-                file = items[i];
-            }
+function existsIgnoreCase(nbpath) {
+    return new Promise(function(resolve, reject) {
+        if (!path.isAbsolute(nbpath)) {
+            nbpath = path.join(dataDir, nbpath);
         }
-        cb(file);
+        var dirname = path.dirname(nbpath);
+        var basename = _appendExt(path.basename(nbpath)).toLowerCase();
+        fs.readdir(dirname, function(err, items) {
+            if (err) {
+                return reject(err);
+            }
+
+            var file = null;
+            for (var i = 0, len = items.length; i < len; i++) {
+                if (items[i].toLowerCase() === basename) {
+                    file = items[i];
+                }
+            }
+            resolve(file);
+        });
     });
 }
 
@@ -64,19 +73,19 @@ function stat(nbpath) {
             } else {
                 stats.fullpath = nbpath;
                 if (stats.isDirectory()) {
-                    // check if this directory contains a packaged dashboard
-                    fs.readdir(nbpath, function(err, items) {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            stats.isDashboard = stats.isBundledDashboard = 
-                                items.indexOf(bundledNb) !== -1;
+                    // check if this directory contains an index dashboard
+                    existsIgnoreCase(path.join(nbpath, indexNb)).then(
+                        function success(fn) {
+                            stats.isDashboard = stats.hasIndex = !!fn;
                             resolve(stats);
+                        },
+                        function failure(err) {
+                            reject(err);
                         }
-                    });
+                    );
                 } else {
-                    stats.isDashboard = stats.isFile() && 
-                                        path.extname(nbpath) === dbExt;
+                    stats.isDashboard =
+                            stats.isFile() && path.extname(nbpath) === dbExt;
                     resolve(stats);
                 }
             }
@@ -98,7 +107,7 @@ function _loadNb(nbpath) {
 
                     // cache notebook for future reads
                     store[nbpath] = nb;
-                    if (isBundled.test(nbpath)) {
+                    if (hasIndex.test(nbpath)) {
                         // cache bundled dashboard directory as well
                         store[path.dirname(nbpath)] = nb;
                     }
@@ -263,11 +272,11 @@ module.exports = {
     /**
      * Checks if the specified file exists (case-insensitive)
      * @param  {String} nbpath - path to a notebook
-     * @param  {Function} cb - callback called with the name of the file if it exists, else null.
+     * @return {Promise} promise resolved with the name of the file if it exists, else null
      */
     exists: existsIgnoreCase,
     /**
-     * Loads, parses, and returns cells (minus code) of the notebook specified by nbpath.
+     * Loads, parses, and returns cells (minus code) of the notebook specified by nbpath
      * @param  {String} nbpath - path of the notbeook to load
      * @return {Promise} ES6 Promise resolved with notebook JSON or error string
      */

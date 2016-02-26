@@ -11,17 +11,22 @@ var path = require('path');
 var renderers = require('./renderers');
 var router = require('express').Router();
 
-var bundledFilename = config.get('DB_BUNDLED_FILENAME');
+var indexFilename = config.get('DB_INDEX');
 
 /* GET / - index notebook or list of notebooks */
 router.get('/', function(req, res, next) {
-    nbstore.exists('index', function(indexFile) {
-        if (indexFile) {
-            renderers.renderDashboard(req, res, next, indexFile, false);
-        } else {
-            renderers.renderList(req, res, next);
+    nbstore.exists('index').then(
+        function success(indexFile) {
+            if (indexFile) {
+                renderers.renderDashboard(req, res, next, indexFile, false);
+            } else {
+                renderers.renderList(req, res, next);
+            }
+        },
+        function failure(err) {
+            next(err);
         }
-    });
+    );
 });
 
 /* GET /dashboards - list of notebooks */
@@ -45,8 +50,8 @@ function renderDashboardOrList(req, res, next, dbpath, hideChrome) {
     nbstore.stat(dbpath).then(
         function success(stats) {
             if (stats.isDashboard) {
-                if (stats.isBundledDashboard) {
-                    dbpath = path.join(dbpath, bundledFilename);
+                if (stats.hasIndex) {
+                    dbpath = path.join(dbpath, indexFilename);
                 } 
                 renderers.renderDashboard(req, res, next, dbpath, hideChrome);
             } else if (stats.isDirectory()) {
