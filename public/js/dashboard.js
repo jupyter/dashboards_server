@@ -154,7 +154,7 @@ requirejs([
 
     // initialize Declarative Widgets
     // NOTE: DeclWidgets adds 'urth_components/...' to this path
-    DeclWidgets.init('/');
+    DeclWidgets.init(document.baseURI + '/');
 
     function _getCodeCells() {
         return $('.dashboard-cell.code-cell').sort(function(a, b) {
