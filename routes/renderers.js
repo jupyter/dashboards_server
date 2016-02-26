@@ -25,26 +25,28 @@ function _renderList(req, res, next) {
                 list.unshift('..');
             }
             // check each item to determine if a file or directory
-            var statPromises = list.map(function(item) {
-                item = urljoin(listPath, item);
+            var statPromises = list.map(function(filename) {
+                var url = urljoin(listPath, filename);
                 return new Promise(function(resolve, reject) {
-                    nbstore.stat(item, function(err, stats) {
-                        if (err) {
-                            reject(err);
-                        } else {
+                    nbstore.stat(url).then(
+                        function success(stats) {
                             var type;
-                            if (stats.isDirectory()) {
+                            if (stats.isDashboard) {
+                                type = 'dashboard';
+                            } else if (stats.isDirectory()) {
                                 type = 'directory';
                             } else if (stats.isFile()) {
-                                if (path.extname(item) === dbExt) {
-                                    type = 'dashboard';
-                                } else {
-                                    type = 'file';
-                                }
+                                type = 'file';
                             }
-                            resolve({ type: type, url: item });
+                            resolve({
+                                type: type,
+                                path: path.join(path.dirname(url), path.basename(url, dbExt))
+                            });
+                        },
+                        function failure(err) {
+                            reject(err);
                         }
-                    });
+                    );
                 });
             });
 
@@ -93,22 +95,6 @@ function _renderDashboard(req, res, next, dbpath, hideChrome) {
     );
 }
 
-function _renderDashboardOrList(req, res, next, dbpath, hideChrome) {
-    dbpath = dbpath || req.params[0];
-    nbstore.stat(dbpath, function(err, stats) {
-        if (err) {
-            if (err.code === 'ENOENT') {
-                err.status = 404;
-            }
-            next(err);
-        } else if (stats.isDirectory()) {
-            _renderList(req, res, next);
-        } else {
-            _renderDashboard(req, res, next, dbpath, hideChrome);
-        }
-    });
-}
-
 module.exports = {
     /**
      * Renders the list of items at the directory specified in request param
@@ -125,12 +111,5 @@ module.exports = {
      * @param {String} dbpath - optional path to use instead of request param
      * @param {Boolean} hideChrome - if true, disables UI chrome
      */
-    renderDashboard: _renderDashboard,
-    /**
-     * Renders either a list or a dashboard from the path specified in request param
-     * @param {Request}  req - HTTP request object
-     * @param {Response} res - HTTP response object
-     * @param {Function} next - next function
-     */
-    render: _renderDashboardOrList
+    renderDashboard: _renderDashboard
 };

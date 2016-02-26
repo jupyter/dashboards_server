@@ -18,13 +18,11 @@ if (hasUsername !== hasPassword) {
 }
 config.set('AUTH_ENABLED', hasUsername && hasPassword);
 
-// ensure file extension starts with a dot
-var ext = config.get('DB_FILE_EXT');
-if (!/^\./.test(ext)) {
-    config.set('DB_FILE_EXT', '.' + ext);
-}
-
 // build the full path to the data directory
 config.set('NOTEBOOKS_DIR', path.join(__dirname, '..', config.get('NOTEBOOKS_DIR')));
+
+// TODO Move vars to own module
+config.set('DB_FILE_EXT', '.ipynb');
+config.set('DB_BUNDLED_FILENAME', '__notebook__.ipynb');
 
 module.exports = config;

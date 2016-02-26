@@ -5,9 +5,13 @@
 /**
  * Normal routes that require login (if enabled)
  */
+var config = require('../app/config');
 var nbstore = require('../app/notebook-store');
+var path = require('path');
 var renderers = require('./renderers');
 var router = require('express').Router();
+
+var bundledFilename = config.get('DB_BUNDLED_FILENAME');
 
 /* GET / - index notebook or list of notebooks */
 router.get('/', function(req, res, next) {
@@ -27,12 +31,39 @@ router.get('/dashboards', function(req, res, next) {
 
 /* GET /dashboards-plain/* - same as /dashboards/* with no extra UI chrome */
 router.get('/dashboards-plain/*', function(req, res, next) {
-    renderers.render(req, res, next, null, true);
+    renderDashboardOrList(req, res, next, null, true);
 });
 
 /* GET /dashboards/* - a single dashboard or list of files. */
 router.get('/dashboards/*', function(req, res, next) {
-    renderers.render(req, res, next, null, false);
+    renderDashboardOrList(req, res, next, null, false);
 });
+
+
+function renderDashboardOrList(req, res, next, dbpath, hideChrome) {
+    dbpath = dbpath || req.params[0];
+    nbstore.stat(dbpath).then(
+        function success(stats) {
+            if (stats.isDashboard) {
+                if (stats.isBundledDashboard) {
+                    dbpath = path.join(dbpath, bundledFilename);
+                } 
+                renderers.renderDashboard(req, res, next, dbpath, hideChrome);
+            } else if (stats.isDirectory()) {
+                renderers.renderList(req, res, next);
+            } else {
+                // plain file -- return contents
+                res.sendFile(stats.fullpath);
+            }
+        },
+        function failure(err) {
+            if (err.code === 'ENOENT') {
+                err.status = 404;
+            }
+            next(err);
+        }
+    );
+}
+
 
 module.exports = router;

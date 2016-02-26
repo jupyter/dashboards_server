@@ -11,6 +11,9 @@ var Promise = require('es6-promise').Promise;
 
 var dbExt = config.get('DB_FILE_EXT');
 var dataDir = config.get('NOTEBOOKS_DIR');
+var hasExtension = new RegExp('\\' + dbExt + '$');
+var bundledNb = config.get('DB_BUNDLED_FILENAME');
+var isBundled = new RegExp(bundledNb + '$');
 
 // cached notebook objects
 var store = {};
@@ -41,15 +44,43 @@ function existsIgnoreCase(nbpath, cb) {
 }
 
 // stat the path in the data directory
-function stat(nbpath, cb) {
-    // file extension is optional, so first try with the specified nbpath
-    fs.stat(path.join(dataDir, nbpath), function(err, status) {
-        if (err && err.code === 'ENOENT') {
-            // might have left off extension, so try appending the extension
-            fs.stat(path.join(dataDir, _appendExt(nbpath)), cb);
-        } else {
-            cb.apply(null, arguments);
-        }
+function stat(nbpath) {
+    nbpath = path.join(dataDir, nbpath);
+    return new Promise(function(resolve, reject) {
+        // file extension is optional, so first try with the specified nbpath
+        fs.stat(nbpath, function(err, stats) {
+            if (err && err.code === 'ENOENT' && !hasExtension.test(nbpath)) {
+                // might have left off extension, so try appending it
+                fs.stat(_appendExt(nbpath), function(err, stats) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        stats.isDashboard = stats.isFile();
+                        resolve(stats);
+                    }
+                });
+            } else if (err) {
+                reject(err);
+            } else {
+                stats.fullpath = nbpath;
+                if (stats.isDirectory()) {
+                    // check if this directory contains a packaged dashboard
+                    fs.readdir(nbpath, function(err, items) {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            stats.isDashboard = stats.isBundledDashboard = 
+                                items.indexOf(bundledNb) !== -1;
+                            resolve(stats);
+                        }
+                    });
+                } else {
+                    stats.isDashboard = stats.isFile() && 
+                                        path.extname(nbpath) === dbExt;
+                    resolve(stats);
+                }
+            }
+        });
     });
 }
 
@@ -64,7 +95,14 @@ function _loadNb(nbpath) {
             } else {
                 try {
                     var nb = JSON.parse(rawData);
+
+                    // cache notebook for future reads
                     store[nbpath] = nb;
+                    if (isBundled.test(nbpath)) {
+                        // cache bundled dashboard directory as well
+                        store[path.dirname(nbpath)] = nb;
+                    }
+
                     resolve(nb);
                 } catch(e) {
                     reject(new Error('Error parsing notebook JSON'));
@@ -248,7 +286,7 @@ module.exports = {
     /**
      * Runs `stat` on the specified path
      * @param {String} nbpath - path that may be a notebook or directory
-     * @param {Function} cb - callback called with the `stat` results
+     * @return {Promise} promise resolved with the `stat` results
      */
     stat: stat,
     /**
