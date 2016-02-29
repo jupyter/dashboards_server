@@ -5,15 +5,20 @@
 var Busboy = require('busboy');
 var config = require('./config');
 var debug = require('debug')('dashboard-proxy:notebook-store');
-var fs = require('fs');
+var extract = require('extract-zip');
+var fs = require('fs-extra');
 var path = require('path');
 var Promise = require('es6-promise').Promise;
+var tmp = require('tmp');
 
-var dbExt = config.get('DB_FILE_EXT');
-var dataDir = config.get('NOTEBOOKS_DIR');
-var hasExtension = new RegExp('\\' + dbExt + '$');
-var indexNb = config.get('DB_INDEX');
-var hasIndex = new RegExp(indexNb + '$');
+var DB_EXT = config.get('DB_FILE_EXT');
+var DATA_DIR = config.get('NOTEBOOKS_DIR');
+var INDEX_NB_NAME = config.get('DB_INDEX');
+var ZIP_EXT = '.zip';
+
+var allowedUploadExts = [ DB_EXT, ZIP_EXT ];
+var hasIndex = new RegExp(INDEX_NB_NAME + '$');
+var nbExtension = new RegExp('\\' + DB_EXT + '$');
 
 // cached notebook objects
 var store = {};
@@ -24,7 +29,7 @@ var store = {};
 
 // Append the notebook file extension if left off
 function _appendExt(nbpath) {
-    var ext = path.extname(nbpath) === dbExt ? '' : dbExt;
+    var ext = path.extname(nbpath) === DB_EXT ? '' : DB_EXT;
     return nbpath + ext;
 }
 
@@ -32,7 +37,7 @@ function _appendExt(nbpath) {
 function existsIgnoreCase(nbpath) {
     return new Promise(function(resolve, reject) {
         if (!path.isAbsolute(nbpath)) {
-            nbpath = path.join(dataDir, nbpath);
+            nbpath = path.join(DATA_DIR, nbpath);
         }
         var dirname = path.dirname(nbpath);
         var basename = _appendExt(path.basename(nbpath)).toLowerCase();
@@ -54,11 +59,11 @@ function existsIgnoreCase(nbpath) {
 
 // stat the path in the data directory
 function stat(nbpath) {
-    nbpath = path.join(dataDir, nbpath);
+    nbpath = path.join(DATA_DIR, nbpath);
     return new Promise(function(resolve, reject) {
         // file extension is optional, so first try with the specified nbpath
         fs.stat(nbpath, function(err, stats) {
-            if (err && err.code === 'ENOENT' && !hasExtension.test(nbpath)) {
+            if (err && err.code === 'ENOENT' && !nbExtension.test(nbpath)) {
                 // might have left off extension, so try appending it
                 fs.stat(_appendExt(nbpath), function(err, stats) {
                     if (err) {
@@ -75,7 +80,7 @@ function stat(nbpath) {
 
                 if (stats.isDirectory()) {
                     // check if this directory contains an index dashboard
-                    existsIgnoreCase(path.join(nbpath, indexNb)).then(
+                    existsIgnoreCase(path.join(nbpath, INDEX_NB_NAME)).then(
                         function success(fn) {
                             stats.isDashboard = stats.hasIndex = !!fn;
                             if (stats.hasIndex) {
@@ -95,7 +100,7 @@ function stat(nbpath) {
                     );
                 } else {
                     stats.isDashboard =
-                            stats.isFile() && path.extname(nbpath) === dbExt;
+                            stats.isFile() && path.extname(nbpath) === DB_EXT;
                     resolve(stats);
                 }
             }
@@ -107,7 +112,7 @@ function stat(nbpath) {
 function _loadNb(nbpath) {
     nbpath = _appendExt(nbpath);
     return new Promise(function(resolve, reject) {
-        var nbPath = path.join(dataDir, nbpath);
+        var nbPath = path.join(DATA_DIR, nbpath);
         fs.readFile(nbPath, 'utf8', function(err, rawData) {
             if (err) {
                 reject(new Error('Error loading notebook'));
@@ -134,7 +139,7 @@ function _loadNb(nbpath) {
 function list(dir) {
     // list all (not hidden) children of the specified directory
     // (within the data directory)
-    var dbpath = path.join(dataDir, dir || '');
+    var dbpath = path.join(DATA_DIR, dir || '');
     return new Promise(function(resolve, reject) {
         fs.readdir(dbpath, function(err, files) {
             if (err) {
@@ -173,16 +178,121 @@ function remove(nbpath) {
 
 var _uploadMessage = 'Make sure to upload a single Jupyter Notebook file (*.ipynb).';
 
+/**
+ * Return absolute destination directory
+ * @param  {Request} req
+ * @return {String}
+ */
 function _getDestination (req) {
     // parse destination directory from request url
     var nbdir = path.dirname(req.params[0]);
-    var destDir = path.join(dataDir, nbdir);
+    var destDir = path.join(DATA_DIR, nbdir);
     return destDir;
 }
 
 function _fileFilter (filename) {
-    // check for file extension
-    return new RegExp('\\'+dbExt+'$').test(filename); // escape the leading dot
+    // check that file extension is in list of allowed upload file extensions
+    var ext = path.extname(filename).toLowerCase();
+    return allowedUploadExts.indexOf(ext) !== -1;
+}
+
+/**
+ * Write file contents to specified location
+ * 
+ * @param  {String} destination - directory path which will contain uploaded dashboard
+ * @param  {String} filename    - name of dashboard
+ * @param  {Buffer} buffer      - contents of uploaded file
+ * @return {Promise}
+ */
+function _writeFile (destination, filename, buffer) {
+    return new Promise(function(resolve, reject) {
+        fs.mkdir(destination, function(err) {
+            if (err && err.code !== 'EEXIST') {
+                reject(err);
+            } else {
+                var destFilename = path.join(destination, filename);
+                debug('Uploading notebook: ' + destFilename);
+                fs.writeFile(destFilename, buffer, function(err) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve();
+                    }
+                });
+            }
+        });
+    });
+}
+
+/**
+ * Write zip archive contents to specified location
+ * 
+ * @param  {String} destination - directory path which will contain uploaded dashboard
+ * @param  {String} filename    - name of dashboard
+ * @param  {Buffer} buffer      - contents of uploaded zip archive
+ * @return {Promise}
+ */
+function _writeZipFile(destination, filename, buffer) {
+    // create a temporary directory in which to unzip archive
+    return new Promise(function(resolve, reject) {
+        tmp.dir({ unsafeCleanup: true }, function(err, tmpDir, cleanup) {
+            if (err) {
+                return reject(err);
+            }
+            resolve({
+                path: tmpDir,
+                cleanup: cleanup
+            });
+        });
+    })
+    .then(function(tempobj) {
+        var tmpDir = tempobj.path;
+        var tmpZip = path.join(tmpDir, filename + ZIP_EXT);
+        var tmpUnzipDir = path.join(path.dirname(tmpZip), path.basename(tmpZip, ZIP_EXT));
+
+        // write zip archive contents to filesystem
+        return _writeFile(tmpDir, path.basename(tmpZip), buffer)
+        // extract zip archive
+        .then(function() {
+            return new Promise(function(resolve, reject) {
+                extract(tmpZip, {dir: tmpUnzipDir}, function (err) {
+                    if (err) {
+                        return reject(err);
+                    }
+                    resolve(tmpUnzipDir);
+                });
+            });
+        })
+        // validate zip archive contents -- does it contain 'index.ipynb'?
+        .then(function(tmpUnzipDir) {
+            return new Promise(function(resolve, reject) {
+                fs.stat(path.join(tmpUnzipDir, INDEX_NB_NAME), function(err, stat) {
+                    if (!err && stat.isFile()) {
+                        return resolve(tmpUnzipDir);
+                    }
+                    reject(err);
+                });
+            });
+        })
+        // move unzipped contents to data directory, overwriting previously existing dir
+        .then(function(tmpUnzipDir) {
+            var destDir = path.join(destination, filename);
+
+            return new Promise(function(resolve, reject) {
+                fs.move(tmpUnzipDir, destDir, { clobber: true }, function(err) {
+                    if (err) {
+                        return reject(err);
+                    }
+                    resolve();
+                });
+            });
+        })
+        // cleanup on success or failure
+        .then(tempobj.cleanup, function failure(err) {
+            tempobj.cleanup();
+            throw err;
+        });
+    });
 }
 
 // busboy limits.
@@ -199,7 +309,7 @@ function upload(req, res, next) {
     var buffers = [];
     var bufferLength = 0;
     var destination = _getDestination(req);
-    var filename = _appendExt(path.basename(req.params[0]));
+    var filename = path.basename(req.params[0]);
     var cachedPath = req.params[0];
     var fileCount = 0;
 
@@ -228,22 +338,22 @@ function upload(req, res, next) {
                     file.on('end', function() {
                         debug('File [' + fieldname + '] Finished');
                         var totalFile = Buffer.concat(buffers, bufferLength);
+                        var promise;
 
-                        fs.mkdir(destination, function(err) {
-                            if (err && err.code !== 'EEXIST') {
-                                reject(err);
-                            } else {
-                                var destFilename = path.join(destination, filename);
-                                debug('Uploading notebook: ' + destFilename);
-                                fs.writeFile(destFilename, totalFile, function(err) {
-                                    if (err) {
-                                        reject(err);
-                                    } else {
-                                        resolve();
-                                    }
-                                });
-                            }
+                        // write the file correctly
+                        var extension = path.extname(originalname);
+                        if (extension === DB_EXT) {
+                            promise = _writeFile(destination, _appendExt(filename), totalFile);
+                        } else if (extension === '.zip') {
+                            promise = _writeZipFile(destination, filename, totalFile);
+                        }
+
+                        promise.then(resolve, function failure(err) {
+                            reject(new Error('Failed to upload file:', err.message));
                         });
+                    });
+                    file.on('error', function(err) {
+                        reject(err);
                     });
                 } else {
                     file.resume();
