@@ -28,6 +28,11 @@ The behavior of the application is similar to that of [Thebe](https://github.com
 * The browser client can only send [Jupyter comm messages](http://jupyter-client.readthedocs.org/en/latest/messaging.html#opening-a-comm) to kernels (*not* arbitrary code).
 * The application uses the [jupyter-js-services](https://github.com/jupyter/jupyter-js-services) and [jupyter-js-widgets](https://github.com/ipython/ipywidgets/tree/master/jupyter-js-widgets) libraries for communication with kernels.
 
+## Detailed Documentation
+
+* [Server API](https://github.com/jupyter-incubator/dashboards_server/wiki/Server-API) - server endpoints
+    - Also contains information about **bundled dashboards** (allowing specification of external resources).
+
 ## Try It
 
 We have not yet made a standalone release of this project (e.g., on npm). If you want to try it today, you can run the demos here in Docker. A simple way to run [Docker](https://www.docker.com/) is to use [docker-machine](https://docs.docker.com/machine/get-started/). After setting up Docker, do the following:
