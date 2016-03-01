@@ -54,7 +54,7 @@ describe('Upload and list dashboards', function() {
     it('should list the uploaded notebook', function(done) {
         upload('upload-notebook-test', notebookFile, function(err, res, body) {
             expect(body).to.contain('<!doctype html>');
-            expect(body).to.contain('upload-notebook-test.ipynb');
+            expect(body).to.contain('upload-notebook-test');
             done();
         });
     });
@@ -63,7 +63,7 @@ describe('Upload and list dashboards', function() {
         upload('InDex', indexNotebook, function(err, res, body) {
             expect(body).to.contain('<!doctype html>');
             expect(body).to.contain('Dashboards');
-            expect(body).to.contain('InDex.ipynb');
+            expect(body).to.contain('InDex');
             done();
         });
     });
@@ -81,6 +81,7 @@ describe('Upload and list dashboards', function() {
         });
     });
 
+    // XXX TODO revisit this test
     it('should show directory if both a directory and notebook with same name', function(done) {
         // upload a file into a folder named 'foo'
         upload('foo/bar', indexNotebook, function(err, res, body) {
@@ -92,8 +93,8 @@ describe('Upload and list dashboards', function() {
                     expect(response.statusCode).to.equal(200);
                     expect(body).to.contain('<!doctype html>');
                     expect(body).to.contain('Dashboards');
-                    expect(body).to.not.contain('foo.ipynb');
-                    expect(body).to.contain('bar.ipynb');
+                    expect(body).to.not.contain('foo');
+                    expect(body).to.contain('bar');
                     done();
                 });
             });

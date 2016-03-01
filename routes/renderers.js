@@ -14,6 +14,7 @@ var Promise = require('es6-promise').Promise;
 var urljoin = require('url-join');
 
 var dbExt = config.get('DB_FILE_EXT');
+var indexFilename = config.get('DB_INDEX');
 var indexRegex = new RegExp('^index(\\' + dbExt + ')?$', 'i');
 
 function _renderList(req, res, next) {
@@ -75,33 +76,87 @@ function _renderList(req, res, next) {
 }
 
 function _renderDashboard(req, res, next, opts) {
-    var dbpath = opts.dbpath || req.params[0];
-    nbstore.get(dbpath).then(
-        function success(notebook) {
-            debug('Success loading nb');
+    var dbpath = (opts && opts.dbpath) || req.params[0];
+    var hideChrome = !!(opts && opts.hideChrome);
+    var stats = (opts && opts.stats) || nbstore.stat(dbpath);
 
-            res.status(200);
-            res.render('dashboard', {
-                title: path.basename(dbpath, dbExt),
-                notebook: notebook,
-                username: req.session.username,
-                showAllLink: indexRegex.test(dbpath),
-                hideChrome: opts.hideChrome,
-                supportsDeclWidgets: opts.supportsDeclWidgets,
-                // need to set document.baseURI with trailing slash (i.e. "/dashboards/nb/") so
-                // that relative paths load correctly
-                baseURI: urljoin(req.originalUrl, '/')
-            });
+    Promise.resolve(stats).then(function(stats) {
+        if (stats.hasIndex) {
+            dbpath = path.join(dbpath, indexFilename);
+        } 
+        return nbstore.get(dbpath);
+    })
+    .then(function success(notebook) {
+        debug('Success loading nb');
+
+        res.status(200);
+        res.render('dashboard', {
+            title: path.basename(dbpath, dbExt),
+            notebook: notebook,
+            username: req.session.username,
+            showAllLink: indexRegex.test(dbpath),
+            hideChrome: hideChrome,
+            supportsDeclWidgets: stats.supportsDeclWidgets,
+            // need to set document.baseURI with trailing slash (i.e. "/dashboards/nb/") so
+            // that relative paths load correctly
+            baseURI: urljoin(req.originalUrl, '/')
+        });
+    })
+    .catch(function error(err) {
+        // TODO better way of determing the error
+        err.status = err.message.indexOf('loading') === -1 ? 500 : 404;
+        next(err);
+    });
+}
+
+function _render(req, res, next, opts) {
+    var dbpath = (opts && opts.dbpath) || req.params[0];
+    var hideChrome = !!(opts && opts.hideChrome);
+    var errorOnList = !!(opts && opts.errorOnList);
+
+    nbstore.stat(dbpath).then(
+        function success(stats) {
+            if (stats.isDashboard) {
+                _renderDashboard(req, res, next, {
+                    dbpath: dbpath,
+                    hideChrome: hideChrome,
+                    stats: stats
+                });
+            } else if (stats.isDirectory()) {
+                if (errorOnList) {
+                    var err = new Error('List not supported');
+                    err.status = 404;
+                    next(err);
+                    return;
+                }
+                _renderList(req, res, next);
+            } else {
+                // plain file -- return contents
+                res.sendFile(stats.fullpath);
+            }
         },
-        function error(err) {
-            // TODO better way of determing the error
-            err.status = err.message.indexOf('loading') === -1 ? 500 : 404;
+        function failure(err) {
+            if (err.code === 'ENOENT') {
+                err.status = 404;
+            }
             next(err);
         }
     );
 }
 
 module.exports = {
+    /**
+     * Renders a dashboard or list of files or responds with an individual file
+     * @param {Request}  req - HTTP request object
+     * @param {Response} res - HTTP response object
+     * @param {Function} next - next function
+     * @param {Object} [opts] - additional options
+     * @param {String} [opts.dbpath] - path to use instead of request param
+     * @param {Boolean} [opts.hideChrome] - if true, disables UI chrome; defaults to false
+     * @param {Boolean} [opts.stats] - object returned from `nbstore.stat()`; if not provided, calls
+     *                                 `nbstore.stat()`
+     */
+    render: _render,
     /**
      * Renders the list of items at the directory specified in request param
      * @param {Request}  req - HTTP request object
@@ -114,10 +169,11 @@ module.exports = {
      * @param {Request}  req - HTTP request object
      * @param {Response} res - HTTP response object
      * @param {Function} next - next function
-     * @param {Object} opts - additional options
-     * @param {String} opts.dbpath - optional path to use instead of request param
-     * @param {Boolean} opts.hideChrome - if true, disables UI chrome
-     * @param {Boolean} opts.supportsDeclWidgets - if true, enables init of DeclWidgets on client
+     * @param {Object} [opts] - additional options
+     * @param {String} [opts.dbpath] - path to use instead of request param
+     * @param {Boolean} [opts.hideChrome] - if true, disables UI chrome; defaults to false
+     * @param {Boolean} [opts.stats] - object returned from `nbstore.stat()`; if not provided, calls
+     *                                 `nbstore.stat()`
      */
     renderDashboard: _renderDashboard
 };

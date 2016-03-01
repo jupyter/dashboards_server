@@ -13,12 +13,19 @@ var dbExt = config.get('DB_FILE_EXT');
 
 /* GET / - render index notebook at home page */
 router.get('/', function(req, res, next) {
-    renderers.renderDashboard(req, res, next, 'index' + dbExt, true);
+    renderers.render(req, res, next, {
+        dbpath: 'index' + dbExt,
+        hideChrome: true,
+        errorOnList: true
+    });
 });
 
 /* GET /dashboards/* - a single dashboard. */
 router.get('/dashboards/*', function(req, res, next) {
-    renderers.renderDashboard(req, res, next, null, true);
+    renderers.render(req, res, next, {
+        hideChrome: true,
+        errorOnList: true
+    });
 });
 
 module.exports = router;

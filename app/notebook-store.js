@@ -115,7 +115,7 @@ function _loadNb(nbpath) {
         var nbPath = path.join(DATA_DIR, nbpath);
         fs.readFile(nbPath, 'utf8', function(err, rawData) {
             if (err) {
-                reject(new Error('Error loading notebook'));
+                reject(new Error('Error loading notebook: ' + err.message));
             } else {
                 try {
                     var nb = JSON.parse(rawData);
