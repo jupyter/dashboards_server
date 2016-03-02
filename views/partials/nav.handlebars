@@ -3,19 +3,10 @@
     Distributed under the terms of the Modified BSD License.
 }}
 
-{{#*inline "viewAllLink"}}
-    <ul class="nav navbar-nav view-all-link">
-        <li><a href="/dashboards">View all dashboards</a></li>
-    </ul>
-{{/inline}}
-
 <nav class="navbar navbar-default">
     <div class="center-container">
         <div class="navbar-left-container">
             <a class="navbar-brand" href="/" title="Home">Jupyter Dashboard</a>
-            {{#if showAllLink}}
-                {{> viewAllLink}}
-            {{/if}}
         </div>
 
         <div class="navbar-right-container">
@@ -42,8 +33,3 @@
         </div>
     </div>
 </nav>
-{{#if showAllLink}}
-    <nav class="navbar navbar-default navbar-row-2">
-        {{> viewAllLink}}
-    </nav>
-{{/if}}

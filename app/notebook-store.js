@@ -18,7 +18,6 @@ var ZIP_EXT = '.zip';
 
 var allowedUploadExts = [ DB_EXT, ZIP_EXT ];
 var hasIndex = new RegExp(INDEX_NB_NAME + '$');
-var nbExtension = new RegExp('\\' + DB_EXT + '$');
 
 // cached notebook objects
 var store = {};
@@ -33,26 +32,23 @@ function _appendExt(nbpath) {
     return nbpath + ext;
 }
 
-// determines if the specified file exists (case-insensitive)
-function existsIgnoreCase(nbpath) {
+// determines if the specified file exists
+function exists(nbpath) {
     return new Promise(function(resolve, reject) {
         if (!path.isAbsolute(nbpath)) {
             nbpath = path.join(DATA_DIR, nbpath);
         }
-        var dirname = path.dirname(nbpath);
-        var basename = _appendExt(path.basename(nbpath)).toLowerCase();
-        fs.readdir(dirname, function(err, items) {
+        nbpath = _appendExt(nbpath);
+        fs.stat(nbpath, function(err, stats) {
             if (err) {
-                return reject(err);
-            }
-
-            var file = null;
-            for (var i = 0, len = items.length; i < len; i++) {
-                if (items[i].toLowerCase() === basename) {
-                    file = items[i];
+                if (err.code === 'ENOENT') { // file not found
+                    resolve(false);
+                } else {
+                    reject(err);
                 }
+            } else {
+                resolve(stats.isFile());
             }
-            resolve(file);
         });
     });
 }
@@ -61,48 +57,37 @@ function existsIgnoreCase(nbpath) {
 function stat(nbpath) {
     nbpath = path.join(DATA_DIR, nbpath);
     return new Promise(function(resolve, reject) {
-        // file extension is optional, so first try with the specified nbpath
         fs.stat(nbpath, function(err, stats) {
-            if (err && err.code === 'ENOENT' && !nbExtension.test(nbpath)) {
-                // might have left off extension, so try appending it
-                fs.stat(_appendExt(nbpath), function(err, stats) {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        stats.isDashboard = stats.isFile();
-                        resolve(stats);
-                    }
-                });
-            } else if (err) {
-                reject(err);
-            } else {
-                stats.fullpath = nbpath;
+            if (err) {
+                return reject(err);
+            }
 
-                if (stats.isDirectory()) {
-                    // check if this directory contains an index dashboard
-                    existsIgnoreCase(path.join(nbpath, INDEX_NB_NAME)).then(
-                        function success(fn) {
-                            stats.isDashboard = stats.hasIndex = !!fn;
-                            if (stats.hasIndex) {
-                                // check if bundled dashboard has an 'urth_components' dir
-                                fs.stat(path.join(nbpath, 'urth_components'),
-                                    function(err, urth_stats) {
-                                        stats.supportsDeclWidgets = !err && urth_stats.isDirectory();
-                                        resolve(stats);
-                                    });
-                            } else {
-                                resolve(stats);
-                            }
-                        },
-                        function failure(err) {
-                            reject(err);
+            stats.fullpath = nbpath;
+
+            if (stats.isDirectory()) {
+                // check if this directory contains an index dashboard
+                exists(path.join(nbpath, INDEX_NB_NAME)).then(
+                    function success(exists) {
+                        stats.isDashboard = stats.hasIndex = exists;
+                        if (stats.hasIndex) {
+                            // check if bundled dashboard has an 'urth_components' dir
+                            fs.stat(path.join(nbpath, 'urth_components'),
+                                function(err, urth_stats) {
+                                    stats.supportsDeclWidgets = !err && urth_stats.isDirectory();
+                                    resolve(stats);
+                                });
+                        } else {
+                            resolve(stats);
                         }
-                    );
-                } else {
-                    stats.isDashboard =
-                            stats.isFile() && path.extname(nbpath) === DB_EXT;
-                    resolve(stats);
-                }
+                    },
+                    function failure(err) {
+                        reject(err);
+                    }
+                );
+            } else {
+                // might be a dashboard file or a "regular" file
+                stats.isDashboard = stats.isFile() && path.extname(nbpath) === DB_EXT;
+                resolve(stats);
             }
         });
     });
@@ -155,13 +140,11 @@ function list(dir) {
 }
 
 function get(nbpath) {
-    return new Promise(function(resolve, reject) {
-        if (store.hasOwnProperty(nbpath)) {
-            resolve(store[nbpath]);
-        } else {
-            resolve(_loadNb(nbpath));
-        }
-    });
+    if (store.hasOwnProperty(nbpath)) {
+        return Promise.resolve(store[nbpath]);
+    } else {
+        return _loadNb(nbpath);
+    }
 }
 
 ////////////////////
@@ -349,7 +332,7 @@ function upload(req, res, next) {
                         }
 
                         promise.then(resolve, function failure(err) {
-                            reject(new Error('Failed to upload file:', err.message));
+                            reject(new Error('Failed to upload file: ' + err.message));
                         });
                     });
                     file.on('error', function(err) {
@@ -390,21 +373,21 @@ function upload(req, res, next) {
 
 module.exports = {
     /**
-     * Checks if the specified file exists (case-insensitive)
+     * Checks if the specified file exists
      * @param  {String} nbpath - path to a notebook
-     * @return {Promise} promise resolved with the name of the file if it exists, else null
+     * @return {Promise(Boolean)} resolved to true if it exists
      */
-    exists: existsIgnoreCase,
+    exists: exists,
     /**
      * Loads, parses, and returns cells (minus code) of the notebook specified by nbpath
      * @param  {String} nbpath - path of the notbeook to load
-     * @return {Promise} ES6 Promise resolved with notebook JSON or error string
+     * @return {Promise} resolved with notebook JSON or error string
      */
     get: get,
     /**
      * Lists contents of the specified directory
      * @param {String} dir - optional sub-directory to Lists
-     * @return {Promise} ES6 Promise resolved with list of contents
+     * @return {Promise} resolved with list of contents
      */
     list: list,
     /**
@@ -415,7 +398,11 @@ module.exports = {
     /**
      * Runs `stat` on the specified path
      * @param {String} nbpath - path that may be a notebook or directory
-     * @return {Promise} promise resolved with the `stat` results
+     * @return {Promise} resolved with the `stat` results. Will contain some custom properties:
+     *     {String} fullpath - absolute path of file/dir
+     *     {Boolean} isDashboard - true if the path is a dashboard file or directory
+     *     {Boolean} hasIndex - true if the path contains an index dashboard
+     *     {Boolean} supportsDeclWidgets - true if the dashboard supports Declarative Widgets
      */
     stat: stat,
     /**

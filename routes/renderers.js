@@ -13,9 +13,9 @@ var path = require('path');
 var Promise = require('es6-promise').Promise;
 var urljoin = require('url-join');
 
-var dbExt = config.get('DB_FILE_EXT');
-var indexFilename = config.get('DB_INDEX');
-var indexRegex = new RegExp('^index(\\' + dbExt + ')?$', 'i');
+var DB_EXT = config.get('DB_FILE_EXT');
+var INDEX_NB_NAME = config.get('DB_INDEX');
+var reNbExt = new RegExp('\\' + DB_EXT + '$');
 
 function _renderList(req, res, next) {
     var listPath = req.params[0] || '';
@@ -35,7 +35,7 @@ function _renderList(req, res, next) {
                             type = 'file';
                         }
                         var filepath = type === 'directory' ? url :
-                                path.join(path.dirname(url), path.basename(url, dbExt));
+                                path.join(path.dirname(url), path.basename(url, DB_EXT));
                         return {
                             type: type,
                             path: filepath
@@ -81,7 +81,7 @@ function _renderDashboard(req, res, next, opts) {
 
     Promise.resolve(stats).then(function(stats) {
         if (stats.hasIndex) {
-            dbpath = path.join(dbpath, indexFilename);
+            dbpath = path.join(dbpath, INDEX_NB_NAME);
         } 
         return nbstore.get(dbpath);
     })
@@ -90,10 +90,9 @@ function _renderDashboard(req, res, next, opts) {
 
         res.status(200);
         res.render('dashboard', {
-            title: path.basename(dbpath, dbExt),
+            title: path.basename(dbpath, DB_EXT),
             notebook: notebook,
             username: req.session.username,
-            showAllLink: indexRegex.test(dbpath),
             hideChrome: hideChrome,
             supportsDeclWidgets: stats.supportsDeclWidgets,
             // need to set document.baseURI with trailing slash (i.e. "/dashboards/nb/") so
@@ -109,12 +108,23 @@ function _renderDashboard(req, res, next, opts) {
 }
 
 function _render(req, res, next, opts) {
-    var dbpath = (opts && opts.dbpath) || req.params[0];
+    var dbpath = (opts && opts.dbpath) || req.params[0] || '/';
     var hideChrome = !!(opts && opts.hideChrome);
     var errorOnList = !!(opts && opts.errorOnList);
 
-    nbstore.stat(dbpath).then(
-        function success(stats) {
+    // first, check if notebook file (with '.ipynb') exists for this path
+    var dbpathWithExt = dbpath + (reNbExt.test(dbpath) ? '' : DB_EXT);
+    nbstore.stat(dbpathWithExt)
+        .catch(function(err) {
+            if (dbpath === dbpathWithExt) {
+                throw err;
+            }
+
+            // with extension didn't exist; try path directly
+            return nbstore.stat(dbpath);
+        })
+        .then(function success(stats) {
+            // found file or directory -- render appropriate HTML
             if (stats.isDashboard) {
                 _renderDashboard(req, res, next, {
                     dbpath: dbpath,
@@ -133,14 +143,14 @@ function _render(req, res, next, opts) {
                 // plain file -- return contents
                 res.sendFile(stats.fullpath);
             }
-        },
-        function failure(err) {
+        })
+        .catch(function failure(err) {
+            // nothing found for given path
             if (err.code === 'ENOENT') {
                 err.status = 404;
             }
             next(err);
-        }
-    );
+        });
 }
 
 module.exports = {

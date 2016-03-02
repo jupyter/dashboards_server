@@ -126,8 +126,8 @@ describe('upload notebook', function() {
     });
 
     it('should upload a notebook to a subdirectory', function() {
-        // upload to /dashboards/foo
-        var url = randomUrl('foo');
+        // upload to /dashboards/it_dir
+        var url = randomUrl('it_dir');
         upload(url.postUrl, notebookFile, function(err, res) {
             checkExists(url.getUrl, null, done);
         });

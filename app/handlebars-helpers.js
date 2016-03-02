@@ -57,10 +57,13 @@ module.exports = {
         if (!url) {
             return [];
         } else {
-            var split = url.replace(/\/+/g, '/').split('/');
-            return split.map(function(d, i) {
-                return split.slice(0, i+1).join('/');
-            });
+            return url.split('/')
+                .filter(function(str) {
+                    return !!str; // ignore empty strings
+                })
+                .map(function(d, i, arr) {
+                    return arr.slice(0, i+1).join('/');
+                });
         }
     }
 };
