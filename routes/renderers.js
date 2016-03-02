@@ -21,37 +21,36 @@ function _renderList(req, res, next) {
     var listPath = req.params[0] || '';
     nbstore.list(listPath).then(
         function success(list) {
-            // render parent directory if not at root
-            if (listPath.length > 0) {
-                list.unshift('..');
-            }
             // check each item to determine if a file or directory
             var statPromises = list.map(function(filename) {
                 var url = urljoin(listPath, filename);
-                return new Promise(function(resolve, reject) {
-                    nbstore.stat(url).then(
-                        function success(stats) {
-                            var type;
-                            if (stats.isDashboard) {
-                                type = 'dashboard';
-                            } else if (stats.isDirectory()) {
-                                type = 'directory';
-                            } else if (stats.isFile()) {
-                                type = 'file';
-                            }
-                            var filepath = type === 'directory' ? 
-                                    url : path.join(path.dirname(url), path.basename(url, dbExt));
-                            resolve({
-                                type: type,
-                                path: filepath
-                            });
-                        },
-                        function failure(err) {
-                            reject(err);
+                return nbstore.stat(url).then(
+                    function success(stats) {
+                        var type;
+                        if (stats.isDashboard) {
+                            type = 'dashboard';
+                        } else if (stats.isDirectory()) {
+                            type = 'directory';
+                        } else if (stats.isFile()) {
+                            type = 'file';
                         }
-                    );
-                });
+                        var filepath = type === 'directory' ? url :
+                                path.join(path.dirname(url), path.basename(url, dbExt));
+                        return {
+                            type: type,
+                            path: filepath
+                        };
+                    }
+                );
             });
+
+            // render parent directory listing if not at root
+            if (listPath.length > 0) {
+                statPromises.unshift({
+                    type: 'directory',
+                    path: urljoin(listPath, '..')
+                });
+            }
 
             // render the list once all items have a type
             Promise.all(statPromises).then(
