@@ -50,7 +50,7 @@ describe('upload notebook auth token', function() {
     });
 
     it('should upload a `notebook` with valid auth token', function(done) {
-        upload({ Authorization: authToken }, 201, 200, done);
+        upload({ Authorization: 'token ' + authToken }, 201, 200, done);
     });
     it('should not upload a notebook with invalid auth token', function(done) {
         upload({ Authorization: 'badtoken' }, 401, 404, done);

@@ -11,7 +11,7 @@ var authToken = config.get('AUTH_TOKEN');
 var authMessage = 'Authentication required. Please provide a valid auth token.';
 
 module.exports = function(req, res, next) {
-    if (authToken && authToken !== req.headers.authorization) {
+    if (authToken && ('token ' + authToken) !== req.headers.authorization) {
         var err = new Error(authMessage);
         err.status = 401;
         next(err);
