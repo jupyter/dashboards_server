@@ -53,7 +53,7 @@ var projectRoot = '../../../';
 var appDir = path.join(projectRoot, '/app');
 var nbstore = proxyquire(path.join(appDir, '/notebook-store'), {
     './config': configStub,
-    fs: fsStub,
+    'fs-extra': fsStub,
     busboy: EventMock
 });
 
@@ -83,8 +83,7 @@ function uploadFileTest(uploadPath, originalname, finalname) {
         function next(err) {
             if (err) {
                 reject(err);
-            }
-            else {
+            } else {
                 resolve();
             }
             done();

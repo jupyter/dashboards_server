@@ -109,12 +109,6 @@ gulp.task('copy:components', function() {
         },
         {
             files: [
-                'node_modules/urth-widgets/dist/urth/widgets/ext/notebook/bower_components/**/*'
-            ],
-            dest: 'public/urth_components'
-        },
-        {
-            files: [
                 'node_modules/font-awesome/fonts/*'
             ],
             dest: 'public/components/fonts'

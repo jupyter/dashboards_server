@@ -9,6 +9,9 @@
         <meta name="viewport" content="width=device-width">
         <title>{{title }}</title>
         <link rel="stylesheet" href="/css/style.css">
+        {{#if baseURI}}
+            <base href="{{baseURI}}">
+        {{/if}}
     </head>
     <body>
         {{#unless (config "PRESENTATION_MODE")}}

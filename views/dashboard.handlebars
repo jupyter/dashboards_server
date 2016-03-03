@@ -42,16 +42,22 @@
 
 <script src="/components/require.js" data-main="/js/dashboard.js"></script>
 <script>
-    var Config = window.Config = window.Config || {};
-    {{#if notebook.metadata.urth.dashboard}}
-        {{#with notebook.metadata.urth.dashboard}}
-            Config.cellMargin = {{cellMargin}};
-            Config.defaultCellHeight = {{defaultCellHeight}};
-            Config.maxColumns = {{maxColumns}};
-        {{/with}}
-    {{else}}
-        Config.cellMargin = {{{config "DB_CELL_MARGIN"}}};
-        Config.defaultCellHeight = {{{config "DB_DEFAULT_CELL_HEIGHT"}}};
-        Config.maxColumns = {{{config "DB_MAX_COLUMNS"}}};
-    {{/if}}
+    (function() {
+        var db = window.jupyter_dashboard = window.jupyter_dashboard || {};
+        var Config = db.Config = db.Config || {};
+        {{#if notebook.metadata.urth.dashboard}}
+            {{#with notebook.metadata.urth.dashboard}}
+                Config.cellMargin = {{cellMargin}};
+                Config.defaultCellHeight = {{defaultCellHeight}};
+                Config.maxColumns = {{maxColumns}};
+            {{/with}}
+        {{else}}
+            Config.cellMargin = {{{config "DB_CELL_MARGIN"}}};
+            Config.defaultCellHeight = {{{config "DB_DEFAULT_CELL_HEIGHT"}}};
+            Config.maxColumns = {{{config "DB_MAX_COLUMNS"}}};
+        {{/if}}
+        {{#if supportsDeclWidgets}}
+            Config.supportsDeclWidgets = true;
+        {{/if}}
+    })();
 </script>

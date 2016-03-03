@@ -5,12 +5,19 @@
 var Busboy = require('busboy');
 var config = require('./config');
 var debug = require('debug')('dashboard-proxy:notebook-store');
-var fs = require('fs');
+var extract = require('extract-zip');
+var fs = require('fs-extra');
 var path = require('path');
 var Promise = require('es6-promise').Promise;
+var tmp = require('tmp');
 
-var dbExt = config.get('DB_FILE_EXT');
-var dataDir = config.get('NOTEBOOKS_DIR');
+var DB_EXT = config.get('DB_FILE_EXT');
+var DATA_DIR = config.get('NOTEBOOKS_DIR');
+var INDEX_NB_NAME = config.get('DB_INDEX');
+var ZIP_EXT = '.zip';
+
+var allowedUploadExts = [ DB_EXT, ZIP_EXT ];
+var hasIndex = new RegExp(INDEX_NB_NAME + '$');
 
 // cached notebook objects
 var store = {};
@@ -21,35 +28,68 @@ var store = {};
 
 // Append the notebook file extension if left off
 function _appendExt(nbpath) {
-    var ext = path.extname(nbpath) === dbExt ? '' : dbExt;
+    var ext = path.extname(nbpath) === DB_EXT ? '' : DB_EXT;
     return nbpath + ext;
 }
 
-// determines if the specified file exists (case-insensitive)
-function existsIgnoreCase(nbpath, cb) {
-    var dirname = path.join(dataDir, path.dirname(nbpath));
-    var basename = _appendExt(path.basename(nbpath)).toLowerCase();
-    fs.readdir(dirname, function(err, items) {
-        var file = null;
-        for (var i = 0, len = items.length; i < len; i++) {
-            if (items[i].toLowerCase() === basename) {
-                file = items[i];
-            }
+// determines if the specified file exists
+function exists(nbpath) {
+    return new Promise(function(resolve, reject) {
+        if (!path.isAbsolute(nbpath)) {
+            nbpath = path.join(DATA_DIR, nbpath);
         }
-        cb(file);
+        nbpath = _appendExt(nbpath);
+        fs.stat(nbpath, function(err, stats) {
+            if (err) {
+                if (err.code === 'ENOENT') { // file not found
+                    resolve(false);
+                } else {
+                    reject(err);
+                }
+            } else {
+                resolve(stats.isFile());
+            }
+        });
     });
 }
 
 // stat the path in the data directory
-function stat(nbpath, cb) {
-    // file extension is optional, so first try with the specified nbpath
-    fs.stat(path.join(dataDir, nbpath), function(err, status) {
-        if (err && err.code === 'ENOENT') {
-            // might have left off extension, so try appending the extension
-            fs.stat(path.join(dataDir, _appendExt(nbpath)), cb);
-        } else {
-            cb.apply(null, arguments);
-        }
+function stat(nbpath) {
+    nbpath = path.join(DATA_DIR, nbpath);
+    return new Promise(function(resolve, reject) {
+        fs.stat(nbpath, function(err, stats) {
+            if (err) {
+                return reject(err);
+            }
+
+            stats.fullpath = nbpath;
+
+            if (stats.isDirectory()) {
+                // check if this directory contains an index dashboard
+                exists(path.join(nbpath, INDEX_NB_NAME)).then(
+                    function success(exists) {
+                        stats.isDashboard = stats.hasIndex = exists;
+                        if (stats.hasIndex) {
+                            // check if bundled dashboard has an 'urth_components' dir
+                            fs.stat(path.join(nbpath, 'urth_components'),
+                                function(err, urth_stats) {
+                                    stats.supportsDeclWidgets = !err && urth_stats.isDirectory();
+                                    resolve(stats);
+                                });
+                        } else {
+                            resolve(stats);
+                        }
+                    },
+                    function failure(err) {
+                        reject(err);
+                    }
+                );
+            } else {
+                // might be a dashboard file or a "regular" file
+                stats.isDashboard = stats.isFile() && path.extname(nbpath) === DB_EXT;
+                resolve(stats);
+            }
+        });
     });
 }
 
@@ -57,14 +97,21 @@ function stat(nbpath, cb) {
 function _loadNb(nbpath) {
     nbpath = _appendExt(nbpath);
     return new Promise(function(resolve, reject) {
-        var nbPath = path.join(dataDir, nbpath);
+        var nbPath = path.join(DATA_DIR, nbpath);
         fs.readFile(nbPath, 'utf8', function(err, rawData) {
             if (err) {
-                reject(new Error('Error loading notebook'));
+                reject(new Error('Error loading notebook: ' + err.message));
             } else {
                 try {
                     var nb = JSON.parse(rawData);
+
+                    // cache notebook for future reads
                     store[nbpath] = nb;
+                    if (hasIndex.test(nbpath)) {
+                        // cache bundled dashboard directory as well
+                        store[path.dirname(nbpath)] = nb;
+                    }
+
                     resolve(nb);
                 } catch(e) {
                     reject(new Error('Error parsing notebook JSON'));
@@ -77,7 +124,7 @@ function _loadNb(nbpath) {
 function list(dir) {
     // list all (not hidden) children of the specified directory
     // (within the data directory)
-    var dbpath = path.join(dataDir, dir || '');
+    var dbpath = path.join(DATA_DIR, dir || '');
     return new Promise(function(resolve, reject) {
         fs.readdir(dbpath, function(err, files) {
             if (err) {
@@ -93,13 +140,11 @@ function list(dir) {
 }
 
 function get(nbpath) {
-    return new Promise(function(resolve, reject) {
-        if (store.hasOwnProperty(nbpath)) {
-            resolve(store[nbpath]);
-        } else {
-            resolve(_loadNb(nbpath));
-        }
-    });
+    if (store.hasOwnProperty(nbpath)) {
+        return Promise.resolve(store[nbpath]);
+    } else {
+        return _loadNb(nbpath);
+    }
 }
 
 ////////////////////
@@ -116,16 +161,121 @@ function remove(nbpath) {
 
 var _uploadMessage = 'Make sure to upload a single Jupyter Notebook file (*.ipynb).';
 
+/**
+ * Return absolute destination directory
+ * @param  {Request} req
+ * @return {String}
+ */
 function _getDestination (req) {
     // parse destination directory from request url
     var nbdir = path.dirname(req.params[0]);
-    var destDir = path.join(dataDir, nbdir);
+    var destDir = path.join(DATA_DIR, nbdir);
     return destDir;
 }
 
 function _fileFilter (filename) {
-    // check for file extension
-    return new RegExp('\\'+dbExt+'$').test(filename); // escape the leading dot
+    // check that file extension is in list of allowed upload file extensions
+    var ext = path.extname(filename).toLowerCase();
+    return allowedUploadExts.indexOf(ext) !== -1;
+}
+
+/**
+ * Write file contents to specified location
+ * 
+ * @param  {String} destination - directory path which will contain uploaded dashboard
+ * @param  {String} filename    - name of dashboard
+ * @param  {Buffer} buffer      - contents of uploaded file
+ * @return {Promise}
+ */
+function _writeFile (destination, filename, buffer) {
+    return new Promise(function(resolve, reject) {
+        fs.mkdir(destination, function(err) {
+            if (err && err.code !== 'EEXIST') {
+                reject(err);
+            } else {
+                var destFilename = path.join(destination, filename);
+                debug('Uploading notebook: ' + destFilename);
+                fs.writeFile(destFilename, buffer, function(err) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve();
+                    }
+                });
+            }
+        });
+    });
+}
+
+/**
+ * Write zip archive contents to specified location
+ * 
+ * @param  {String} destination - directory path which will contain uploaded dashboard
+ * @param  {String} filename    - name of dashboard
+ * @param  {Buffer} buffer      - contents of uploaded zip archive
+ * @return {Promise}
+ */
+function _writeZipFile(destination, filename, buffer) {
+    // create a temporary directory in which to unzip archive
+    return new Promise(function(resolve, reject) {
+        tmp.dir({ unsafeCleanup: true }, function(err, tmpDir, cleanup) {
+            if (err) {
+                return reject(err);
+            }
+            resolve({
+                path: tmpDir,
+                cleanup: cleanup
+            });
+        });
+    })
+    .then(function(tempobj) {
+        var tmpDir = tempobj.path;
+        var tmpZip = path.join(tmpDir, filename + ZIP_EXT);
+        var tmpUnzipDir = path.join(path.dirname(tmpZip), path.basename(tmpZip, ZIP_EXT));
+
+        // write zip archive contents to filesystem
+        return _writeFile(tmpDir, path.basename(tmpZip), buffer)
+        // extract zip archive
+        .then(function() {
+            return new Promise(function(resolve, reject) {
+                extract(tmpZip, {dir: tmpUnzipDir}, function (err) {
+                    if (err) {
+                        return reject(err);
+                    }
+                    resolve(tmpUnzipDir);
+                });
+            });
+        })
+        // validate zip archive contents -- does it contain 'index.ipynb'?
+        .then(function(tmpUnzipDir) {
+            return new Promise(function(resolve, reject) {
+                fs.stat(path.join(tmpUnzipDir, INDEX_NB_NAME), function(err, stat) {
+                    if (!err && stat.isFile()) {
+                        return resolve(tmpUnzipDir);
+                    }
+                    reject(err);
+                });
+            });
+        })
+        // move unzipped contents to data directory, overwriting previously existing dir
+        .then(function(tmpUnzipDir) {
+            var destDir = path.join(destination, filename);
+
+            return new Promise(function(resolve, reject) {
+                fs.move(tmpUnzipDir, destDir, { clobber: true }, function(err) {
+                    if (err) {
+                        return reject(err);
+                    }
+                    resolve();
+                });
+            });
+        })
+        // cleanup on success or failure
+        .then(tempobj.cleanup, function failure(err) {
+            tempobj.cleanup();
+            throw err;
+        });
+    });
 }
 
 // busboy limits.
@@ -142,7 +292,7 @@ function upload(req, res, next) {
     var buffers = [];
     var bufferLength = 0;
     var destination = _getDestination(req);
-    var filename = _appendExt(path.basename(req.params[0]));
+    var filename = path.basename(req.params[0]);
     var cachedPath = req.params[0];
     var fileCount = 0;
 
@@ -171,22 +321,22 @@ function upload(req, res, next) {
                     file.on('end', function() {
                         debug('File [' + fieldname + '] Finished');
                         var totalFile = Buffer.concat(buffers, bufferLength);
+                        var promise;
 
-                        fs.mkdir(destination, function(err) {
-                            if (err && err.code !== 'EEXIST') {
-                                reject(err);
-                            } else {
-                                var destFilename = path.join(destination, filename);
-                                debug('Uploading notebook: ' + destFilename);
-                                fs.writeFile(destFilename, totalFile, function(err) {
-                                    if (err) {
-                                        reject(err);
-                                    } else {
-                                        resolve();
-                                    }
-                                });
-                            }
+                        // write the file correctly
+                        var extension = path.extname(originalname);
+                        if (extension === DB_EXT) {
+                            promise = _writeFile(destination, _appendExt(filename), totalFile);
+                        } else if (extension === '.zip') {
+                            promise = _writeZipFile(destination, filename, totalFile);
+                        }
+
+                        promise.then(resolve, function failure(err) {
+                            reject(new Error('Failed to upload file: ' + err.message));
                         });
+                    });
+                    file.on('error', function(err) {
+                        reject(err);
                     });
                 } else {
                     file.resume();
@@ -223,21 +373,21 @@ function upload(req, res, next) {
 
 module.exports = {
     /**
-     * Checks if the specified file exists (case-insensitive)
+     * Checks if the specified file exists
      * @param  {String} nbpath - path to a notebook
-     * @param  {Function} cb - callback called with the name of the file if it exists, else null.
+     * @return {Promise(Boolean)} resolved to true if it exists
      */
-    exists: existsIgnoreCase,
+    exists: exists,
     /**
-     * Loads, parses, and returns cells (minus code) of the notebook specified by nbpath.
+     * Loads, parses, and returns cells (minus code) of the notebook specified by nbpath
      * @param  {String} nbpath - path of the notbeook to load
-     * @return {Promise} ES6 Promise resolved with notebook JSON or error string
+     * @return {Promise} resolved with notebook JSON or error string
      */
     get: get,
     /**
      * Lists contents of the specified directory
      * @param {String} dir - optional sub-directory to Lists
-     * @return {Promise} ES6 Promise resolved with list of contents
+     * @return {Promise} resolved with list of contents
      */
     list: list,
     /**
@@ -248,7 +398,11 @@ module.exports = {
     /**
      * Runs `stat` on the specified path
      * @param {String} nbpath - path that may be a notebook or directory
-     * @param {Function} cb - callback called with the `stat` results
+     * @return {Promise} resolved with the `stat` results. Will contain some custom properties:
+     *     {String} fullpath - absolute path of file/dir
+     *     {Boolean} isDashboard - true if the path is a dashboard file or directory
+     *     {Boolean} hasIndex - true if the path contains an index dashboard
+     *     {Boolean} supportsDeclWidgets - true if the dashboard supports Declarative Widgets
      */
     stat: stat,
     /**

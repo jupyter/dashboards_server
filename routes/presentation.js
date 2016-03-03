@@ -9,16 +9,20 @@ var config = require('../app/config');
 var renderers = require('./renderers');
 var router = require('express').Router();
 
-var dbExt = config.get('DB_FILE_EXT');
-
-/* GET / - render index notebook at home page */
+/* GET / - index notebook */
 router.get('/', function(req, res, next) {
-    renderers.renderDashboard(req, res, next, 'index' + dbExt, true);
+    renderers.render(req, res, next, {
+        hideChrome: true,
+        errorOnList: true
+    });
 });
 
 /* GET /dashboards/* - a single dashboard. */
-router.get('/dashboards/*', function(req, res, next) {
-    renderers.renderDashboard(req, res, next, null, true);
+router.get('/dashboards(/*)?', function(req, res, next) {
+    renderers.render(req, res, next, {
+        hideChrome: true,
+        errorOnList: true
+    });
 });
 
 module.exports = router;
