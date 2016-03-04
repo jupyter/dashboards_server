@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0 (2016-03-04)
+
+* Support bundled zip uploads containing notebooks and associated frontend assets
+* Add a `/dashboards-plain` route prefix for hiding the dashboard server chrome
+* Add a `PRESENTATION_MODE` option to always hide dashboard server chrome
+* Show an indicator in the navbar on kernel error
+* Fix layout offset due to empty widget areas
+* Fix `POST /notebooks` authorization header format (missing `token` constant)
+* Update dependencies (jupyter-js-services, jupyter-js-widgets)
+
 ## 0.2.0 (2016-02-18)
 
 * Improve the styling on the login and dashboard list pages
