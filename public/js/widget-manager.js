@@ -44,6 +44,7 @@ define([
         validate();
 
         this._shimDeclWidgets(kernel);
+        this._shimMatplotlib(kernel);
     };
     WidgetManager.prototype = Object.create(Widgets.ManagerBase.prototype);
 
@@ -174,9 +175,14 @@ define([
      * DECLARATIVE WIDGETS SHIMS
      **/
 
-    WidgetManager.prototype._shimDeclWidgets = function(kernel) {
+    function notebookShim() {
         var ipy = window.IPython = window.IPython || {};
         var nb = ipy.notebook = ipy.notebook || {};
+        return nb;
+    }
+
+    WidgetManager.prototype._shimDeclWidgets = function(kernel) {
+        var nb = notebookShim();
         nb.events = nb.events || $({});
 
         nb.kernel = kernel;
@@ -205,6 +211,32 @@ define([
             return that._get_callbacks(outputAreaModel);
         };
         $cell.data('cell', cellData);
+    };
+
+    /**
+     * matplotlib shims
+     */
+
+    WidgetManager.prototype._shimMatplotlib = function(kernel) {
+        var nb = notebookShim();
+        var cells = this._pendingExecutions;
+        nb.get_cells = function() {
+            return Object.keys(cells).map(function(id) {
+                return {
+                    cell_type: 'code', // each _pendingExecution cell is code
+                    output_area: {
+                        outputs: cells[id].outputAreaModel.outputs.internal
+                    }
+                };
+            });
+        };
+        nb.kernel = nb.kernel || kernel;
+        nb.kernel.comm_manager = this.commManager;
+        window.IPython.keyboard_manager = nb.keyboard_manager = {
+            enable: function() { /* no-op */ },
+            register_events: function() { /* no-op */ }
+        };
+        nb.set_dirty = function() { /* no-op */ };
     };
 
     return WidgetManager;
