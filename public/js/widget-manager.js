@@ -45,6 +45,7 @@ define([
 
         this._shimDeclWidgets(kernel);
         this._shimMatplotlib(kernel);
+        this._shimBokeh(kernel);
     };
     WidgetManager.prototype = Object.create(Widgets.ManagerBase.prototype);
 
@@ -237,6 +238,13 @@ define([
             register_events: function() { /* no-op */ }
         };
         nb.set_dirty = function() { /* no-op */ };
+    };
+
+    WidgetManager.prototype._shimBokeh = function(kernel) {
+        var jupyter = window.Jupyter = window.Jupyter || {};
+        var nb = jupyter.notebook = jupyter.notebook || {};
+        nb.kernel = nb.kernel || kernel;
+        nb.kernel.comm_manager = this.commManager;
     };
 
     return WidgetManager;
