@@ -12,8 +12,7 @@ requirejs.config({
         'jupyter-js-output-area': require.toUrl('/components/jupyter-js-output-area'),
         'jupyter-js-services': require.toUrl('/components/jupyter-js-services'),
         'jupyter-js-widgets': require.toUrl('/components/jupyter-js-widgets'),
-        lodash: require.toUrl('/components/lodash.min'),
-        'urth-widgets': require.toUrl('/components/urth-widgets')
+        lodash: require.toUrl('/components/lodash.min')
     },
     map: {
         Gridstack: {
@@ -33,15 +32,25 @@ requirejs.config({
 
 requirejs([
     'jquery',
-    'gridstack-custom',
+    './gridstack-custom',
     'jupyter-js-output-area',
     'jupyter-js-services',
     'bootstrap',  // required by jupyter-js-widgets
     'jupyter-js-widgets',
-    'widget-manager',
+    './widget-manager',
     './error-indicator',
     './kernel'
-], function($, Gridstack, OutputArea, Services, bs, Widgets, WidgetManager, ErrorIndicator, Kernel) {
+], function(
+    $,
+    Gridstack,
+    OutputArea,
+    Services,
+    bs,
+    Widgets,
+    WidgetManager,
+    ErrorIndicator,
+    Kernel
+) {
     'use strict';
 
     var OutputType = OutputArea.OutputType;
@@ -55,15 +64,7 @@ requirejs([
     // initialize Gridstack
     _initGrid();
 
-    if (Config.supportsDeclWidgets) {
-        require(['urth-widgets'], function(DeclWidgets) {
-            // initialize Declarative Widgets
-            // NOTE: DeclWidgets adds 'urth_components/...' to this path
-            DeclWidgets.init(document.baseURI);
-        });
-    } else {
-        console.log('Declarative Widgets not supported ("urth_components" directory not found)');
-    }
+    _initDeclWidgets();
 
     // start a kernel
     Kernel.start().then(function(kernel) {
@@ -130,6 +131,29 @@ requirejs([
 
         // show dashboard
         $container.removeClass('invisible');
+    }
+
+    function _initDeclWidgets() {
+        if (Config.supportsDeclWidgets) {
+            // construct path relative to notebook, in order to properly configure require.js
+            var a = document.createElement('a');
+            a.href = document.baseURI;
+            var path = a.pathname;
+            var sep = path[path.length-1] === '/' ? '' : '/';
+            require.config({
+                paths: {
+                    'urth_widgets': a.protocol + '//' + a.host + path + sep + 'urth_widgets'
+                }
+            });
+
+            require(['urth_widgets/js/init/init'], function(DeclWidgets) {
+                // initialize Declarative Widgets
+                // NOTE: DeclWidgets adds 'urth_components/...' to this path
+                DeclWidgets(document.baseURI);
+            });
+        } else {
+            console.log('Declarative Widgets not supported ("urth_components" directory not found)');
+        }
     }
 
     // This object has delegates for kernel message handling, keyed by message
