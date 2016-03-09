@@ -15,9 +15,7 @@ define([
     Services
 ) {
 
-    var KernelStatus = Services.KernelStatus;
-
-    var WidgetManager  = function(kernel, msgHandler) {
+    var WidgetManager = function(kernel, msgHandler) {
         //  Call the base class.
         Widgets.ManagerBase.call(this);
 
@@ -43,11 +41,28 @@ define([
         }).bind(this);
         validate();
 
-        this._shimDeclWidgets(kernel);
         this._shimMatplotlib(kernel);
         this._shimBokeh(kernel);
     };
+
     WidgetManager.prototype = Object.create(Widgets.ManagerBase.prototype);
+
+    //--------------------------------------------------------------------
+    // Class level
+    //--------------------------------------------------------------------
+
+    WidgetManager.register_widget_model = function(model_name, model_type) {
+        return Widgets.ManagerBase.register_widget_model.apply(this, arguments);
+    };
+
+    WidgetManager.register_widget_view = function(view_name, view_type) {
+        return Widgets.ManagerBase.register_widget_view.apply(this, arguments);
+    };
+
+
+    //--------------------------------------------------------------------
+    // Instance level
+    //--------------------------------------------------------------------
 
     /*
      * Called when a jupyter widget is added to the DOM.
@@ -176,28 +191,6 @@ define([
      * DECLARATIVE WIDGETS SHIMS
      **/
 
-    function notebookShim() {
-        var ipy = window.IPython = window.IPython || {};
-        var nb = ipy.notebook = ipy.notebook || {};
-        return nb;
-    }
-
-    WidgetManager.prototype._shimDeclWidgets = function(kernel) {
-        var nb = notebookShim();
-        nb.events = nb.events || $({});
-
-        nb.kernel = kernel;
-        nb.kernel.is_connected = function() {
-            return kernel.status === KernelStatus.Busy || kernel.status === KernelStatus.Idle;
-        };
-        nb.kernel.widget_manager = this;
-
-        // IPython.notebook.base_url   ?????
-
-        // WidgetManager is instantiated after creation of a kernel, so assume it is ready
-        nb.events.trigger('kernel_ready.Kernel');
-    };
-
     WidgetManager.prototype._hookupDeclWidgetsCallbacks = function(kernelFuture, widgetNode, outputAreaModel) {
         var that = this;
 
@@ -219,7 +212,6 @@ define([
      */
 
     WidgetManager.prototype._shimMatplotlib = function(kernel) {
-        var nb = notebookShim();
         var cells = this._pendingExecutions;
         nb.get_cells = function() {
             return Object.keys(cells).map(function(id) {

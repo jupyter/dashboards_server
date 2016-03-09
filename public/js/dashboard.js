@@ -64,13 +64,14 @@ requirejs([
     // initialize Gridstack
     _initGrid();
 
-    _initDeclWidgets();
-
     // start a kernel
     Kernel.start().then(function(kernel) {
         // initialize an ipywidgets manager
         var widgetManager = new WidgetManager(kernel, _consumeMessage);
         _registerKernelErrorHandler(kernel);
+
+        _shimNotebook(kernel, widgetManager);
+        _initDeclWidgets();
 
         _getCodeCells().each(function() {
             var $cell = $(this);
@@ -133,6 +134,25 @@ requirejs([
         $container.removeClass('invisible');
     }
 
+    // shim Jupyter Notebook objects for backwards compatibility
+    function _shimNotebook(kernel, widgetManager) {
+        var ipy = window.IPython = window.IPython || {};
+        var nb = ipy.notebook = ipy.notebook || {};
+        nb.base_url = document.baseURI;
+        nb.events = nb.events || $({});
+
+        nb.kernel = kernel;
+        var KernelStatus = Services.KernelStatus;
+        nb.kernel.is_connected = function() {
+            return kernel.status === KernelStatus.Busy || kernel.status === KernelStatus.Idle;
+        };
+
+        nb.kernel.widget_manager = widgetManager;
+
+        // kernel has already started
+        nb.events.trigger('kernel_ready.Kernel');
+    }
+
     function _initDeclWidgets() {
         if (Config.supportsDeclWidgets) {
             // construct path relative to notebook, in order to properly configure require.js
@@ -148,8 +168,12 @@ requirejs([
 
             require(['urth_widgets/js/init/init'], function(DeclWidgets) {
                 // initialize Declarative Widgets
-                // NOTE: DeclWidgets adds 'urth_components/...' to this path
-                DeclWidgets(document.baseURI);
+                DeclWidgets({
+                    IPython: window.IPython,
+                    events: window.IPython.notebook.events,
+                    WidgetManager: WidgetManager,
+                    WidgetModel: Widgets.WidgetModel
+                });
             });
         } else {
             console.log('Declarative Widgets not supported ("urth_components" directory not found)');
