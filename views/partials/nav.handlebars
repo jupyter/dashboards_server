@@ -19,16 +19,10 @@
                 title="An error has occurred. Check the console for details. Click to dismiss."></i>
             </span>
 
-            {{#if (config 'AUTH_ENABLED')}}
-                {{#if username}}
-                    <form class="navbar-form navbar-right" action="/logout" method="post">
-                        <button type="submit" class="navbar-btn logout-btn btn btn-link">Log out</button>
-                    </form>
-                {{else}}
-                    <ul class="nav navbar-nav navbar-right">
-                        <li><a class="login-btn" href="/login">Log in</a></li>
-                    </ul>
-                {{/if}}
+            {{#if user}}
+                <form class="navbar-form navbar-right" action="/logout" method="post">
+                    <button type="submit" class="navbar-btn logout-btn btn btn-link">Log out</button>
+                </form>
             {{/if}}
         </div>
     </div>

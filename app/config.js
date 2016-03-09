@@ -10,13 +10,11 @@ var config = nconf.argv()
                   .env()
                   .file({ file: 'config.json', format: hjson });
 
-// Set "meta-config" values
 var hasUsername = !!config.get('USERNAME');
 var hasPassword = !!config.get('PASSWORD');
-if (hasUsername !== hasPassword) {
-    throw new Error('Both USERNAME and PASSWORD must be set');
+if (hasUsername && hasPassword && !config.get('AUTH_STRATEGY')) {
+    config.set('AUTH_STRATEGY', './app/auth-local');
 }
-config.set('AUTH_ENABLED', hasUsername && hasPassword);
 
 // build the full path to the data directory
 config.set('NOTEBOOKS_DIR', path.join(__dirname, '..', config.get('NOTEBOOKS_DIR')));

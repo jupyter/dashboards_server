@@ -20,7 +20,9 @@
     NOTEBOOKS_DIR: ./data/
     // Secret for authentication tokens
     AUTH_TOKEN: null
-    // Login
+    // User auth strategy (default: no auth)
+    AUTH_STRATEGY: null
+    // Username/password for ./app/auth-local strategy
     USERNAME: null
     PASSWORD: null
     // "Presentation Mode" - Disable all UI Chrome, only render a dashboard
