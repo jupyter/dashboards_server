@@ -42,7 +42,6 @@ define([
         validate();
 
         this._shimMatplotlib(kernel);
-        this._shimBokeh(kernel);
     };
 
     WidgetManager.prototype = Object.create(Widgets.ManagerBase.prototype);
@@ -177,7 +176,7 @@ define([
      * outputAreaModel: OutputArea that contains the widget
      */
     WidgetManager.prototype.trackPending = function(kernelFuture, widgetNode, outputAreaModel) {
-        this._hookupDeclWidgetsCallbacks(kernelFuture, widgetNode, outputAreaModel);
+        this._hookupWidgetsCallbacks(kernelFuture, widgetNode, outputAreaModel);
 
         var msg_id = kernelFuture.msg.header.msg_id;
         this._pendingExecutions[msg_id] = {
@@ -188,14 +187,14 @@ define([
 
 
     /**
-     * DECLARATIVE WIDGETS SHIMS
+     * SHIMS FOR WIDGET LIBRARIES
      **/
 
-    WidgetManager.prototype._hookupDeclWidgetsCallbacks = function(kernelFuture, widgetNode, outputAreaModel) {
+    WidgetManager.prototype._hookupWidgetsCallbacks = function(kernelFuture, widgetNode, outputAreaModel) {
         var that = this;
 
         kernelFuture.onReply = function(msg) {
-            window.IPython.notebook.events.trigger('shell_reply.Kernel');
+            window.Jupyter.notebook.events.trigger('shell_reply.Kernel');
         };
 
         // Declarative Widgets attempts to get `callbacks` through "cell" data
@@ -207,11 +206,9 @@ define([
         $cell.data('cell', cellData);
     };
 
-    /**
-     * matplotlib shims
-     */
-
+    // matplotlib shims
     WidgetManager.prototype._shimMatplotlib = function(kernel) {
+        var nb = window.Jupyter.notebook;
         var cells = this._pendingExecutions;
         nb.get_cells = function() {
             return Object.keys(cells).map(function(id) {
@@ -223,20 +220,11 @@ define([
                 };
             });
         };
-        nb.kernel = nb.kernel || kernel;
-        nb.kernel.comm_manager = this.commManager;
-        window.IPython.keyboard_manager = nb.keyboard_manager = {
+        window.Jupyter.keyboard_manager = nb.keyboard_manager = {
             enable: function() { /* no-op */ },
             register_events: function() { /* no-op */ }
         };
         nb.set_dirty = function() { /* no-op */ };
-    };
-
-    WidgetManager.prototype._shimBokeh = function(kernel) {
-        var jupyter = window.Jupyter = window.Jupyter || {};
-        var nb = jupyter.notebook = jupyter.notebook || {};
-        nb.kernel = nb.kernel || kernel;
-        nb.kernel.comm_manager = this.commManager;
     };
 
     return WidgetManager;

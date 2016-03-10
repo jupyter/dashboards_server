@@ -136,8 +136,9 @@ requirejs([
 
     // shim Jupyter Notebook objects for backwards compatibility
     function _shimNotebook(kernel, widgetManager) {
-        var ipy = window.IPython = window.IPython || {};
-        var nb = ipy.notebook = ipy.notebook || {};
+        var jup = window.Jupyter = window.Jupyter || {};
+        window.IPython = window.Jupyter;
+        var nb = jup.notebook = jup.notebook || {};
         nb.base_url = document.baseURI;
         nb.events = nb.events || $({});
 
@@ -148,6 +149,7 @@ requirejs([
         };
 
         nb.kernel.widget_manager = widgetManager;
+        nb.kernel.comm_manager = widgetManager.commManager;
 
         // kernel has already started
         nb.events.trigger('kernel_ready.Kernel');
@@ -169,8 +171,8 @@ requirejs([
             require(['urth_widgets/js/init/init'], function(DeclWidgets) {
                 // initialize Declarative Widgets
                 DeclWidgets({
-                    IPython: window.IPython,
-                    events: window.IPython.notebook.events,
+                    namespace: window.Jupyter,
+                    events: window.Jupyter.notebook.events,
                     WidgetManager: WidgetManager,
                     WidgetModel: Widgets.WidgetModel
                 });
