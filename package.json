@@ -10,7 +10,8 @@
     "start-logging": "NODE_DEBUG=http DEBUG=express:*,dashboard-proxy:* node ./bin/www",
     "test": "mocha test/base/**/*-test.js",
     "integration-test": "mocha test/integration/default/**/*-test.js",
-    "integration-test-auth-token": "mocha test/integration/auth-token/**/*-test.js"
+    "integration-test-auth-token": "mocha test/integration/auth-token/**/*-test.js",
+    "integration-test-auth-local": "mocha test/integration/auth-local/**/*-test.js"
   },
   "dependencies": {
     "ansi-parser": "^3.2.1",

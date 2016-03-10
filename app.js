@@ -83,8 +83,7 @@ if(config.get('AUTH_STRATEGY')) {
     app.use(passport.initialize());
     app.use(passport.session());
 
-    // Load auth strategy
-    // TODO: make configurable
+    // Load auth strategy based on config
     var strategy = require(config.get('AUTH_STRATEGY'))(app);
     passport.use(strategy);
 

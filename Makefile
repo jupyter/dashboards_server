@@ -168,6 +168,8 @@ $(DASHBOARD_SERVER) -d \
 	-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
 	-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
 	-e AUTH_TOKEN=$(AUTH_TOKEN) \
+	-e USERNAME=$(USERNAME) \
+	-e PASSWORD=$(PASSWORD) \
 	--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
 	$(DASHBOARD_IMAGE_NAME)
 @echo '-- Waiting 10 seconds for servers to start...'
@@ -175,11 +177,16 @@ $(DASHBOARD_SERVER) -d \
 @$(MAKE) test-container \
 	CMD=$(CMD) \
 	SERVER_NAME=$(IT_SERVER_NAME) \
-	DOCKER_OPTIONS="-e APP_URL=http://$(IT_IP):$(HTTP_PORT) -e KERNEL_GATEWAY_URL=http://$(IT_IP):$(IT_KG_PORT) -e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) -e AUTH_TOKEN=$(AUTH_TOKEN)";
+	DOCKER_OPTIONS="-e APP_URL=http://$(IT_IP):$(HTTP_PORT) \
+		-e KERNEL_GATEWAY_URL=http://$(IT_IP):$(IT_KG_PORT) \
+		-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
+		-e AUTH_TOKEN=$(AUTH_TOKEN) \
+		-e TEST_USERNAME=$(USERNAME) \
+		-e TEST_PASSWORD=$(PASSWORD)";
 @$(MAKE) kill
 endef
 
-integration-test: | kill build integration-test-default integration-test-auth-token
+integration-test: | kill build integration-test-default integration-test-auth-token integration-test-auth-local
 
 integration-test-default: CMD=integration-test
 integration-test-default: | kill build
@@ -191,6 +198,13 @@ integration-test-auth-token: KG_AUTH_TOKEN=1a2b3c4d5e6f
 integration-test-auth-token: AUTH_TOKEN=7g8h9i0j
 integration-test-auth-token: | kill build
 	@echo '-- Running system integration tests using auth tokens...'
+	$(RUN_INTEGRATION_TEST)
+
+integration-test-auth-local: CMD=integration-test-auth-local
+integration-test-auth-local: USERNAME=testuser
+integration-test-auth-local: PASSWORD=testpass
+integration-test-auth-local: | kill build
+	@echo '-- Running system integration tests using local user auth...'
 	$(RUN_INTEGRATION_TEST)
 
 ############### Self-signed HTTPS certs
