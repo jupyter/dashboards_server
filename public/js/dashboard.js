@@ -66,11 +66,12 @@ requirejs([
 
     // start a kernel
     Kernel.start().then(function(kernel) {
+        _shimNotebook(kernel);
+
         // initialize an ipywidgets manager
         var widgetManager = new WidgetManager(kernel, _consumeMessage);
         _registerKernelErrorHandler(kernel);
 
-        _shimNotebook(kernel, widgetManager);
         _initDeclWidgets();
 
         _getCodeCells().each(function() {
@@ -147,9 +148,6 @@ requirejs([
         nb.kernel.is_connected = function() {
             return kernel.status === KernelStatus.Busy || kernel.status === KernelStatus.Idle;
         };
-
-        nb.kernel.widget_manager = widgetManager;
-        nb.kernel.comm_manager = widgetManager.commManager;
 
         // kernel has already started
         nb.events.trigger('kernel_ready.Kernel');

@@ -41,7 +41,7 @@ define([
         }).bind(this);
         validate();
 
-        this._shimMatplotlib(kernel);
+        this._shimWidgetsLibs();
     };
 
     WidgetManager.prototype = Object.create(Widgets.ManagerBase.prototype);
@@ -206,8 +206,16 @@ define([
         $cell.data('cell', cellData);
     };
 
+    WidgetManager.prototype._shimWidgetsLibs = function() {
+        var nb = window.Jupyter.notebook;
+        nb.kernel.widget_manager = this;
+        nb.kernel.comm_manager = this.commManager;
+
+        this._shimMatplotlib();
+    };
+
     // matplotlib shims
-    WidgetManager.prototype._shimMatplotlib = function(kernel) {
+    WidgetManager.prototype._shimMatplotlib = function() {
         var nb = window.Jupyter.notebook;
         var cells = this._pendingExecutions;
         nb.get_cells = function() {
