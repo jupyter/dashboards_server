@@ -79,7 +79,7 @@ With these installed, you can use the `make dev-*` targets. Under the covers, th
 ```bash
 # re-run if the Dockerfile.kernel changes
 make kernel-gateway-image
-# re-run if package.json or bower.json changes
+# re-run if package.json changes
 make dev-install
 # run if you want to try the preliminary jupyter-incubator/declarativewidgets support
 make examples

@@ -8,7 +8,7 @@ requirejs.config({
         bootstrap: require.toUrl('/components/bootstrap.min'),
         Gridstack: require.toUrl('/components/gridstack.min'),
         jquery: require.toUrl('/components/jquery.min'),
-        'jquery-ui': require.toUrl('/components/jquery-ui.min'),
+        'jquery-ui': require.toUrl('/components/jquery-ui/jquery-ui'),
         'jupyter-js-output-area': require.toUrl('/components/jupyter-js-output-area'),
         'jupyter-js-services': require.toUrl('/components/jupyter-js-services'),
         'jupyter-js-widgets': require.toUrl('/components/jupyter-js-widgets'),
@@ -129,10 +129,10 @@ requirejs([
         // enable gridstack with parameters set by JS in the HTML page by
         // the backend
         var gridstack = $container.gridstack({
-            vertical_margin: Config.cellMargin,
-            cell_height: Config.defaultCellHeight,
+            verticalMargin: Config.cellMargin,
+            cellHeight: Config.defaultCellHeight,
             width: Config.maxColumns,
-            static_grid: true
+            staticGrid: true
         }).data('gridstack');
 
         var halfMargin = Config.cellMargin / 2;

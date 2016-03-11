@@ -30,7 +30,6 @@ help:
 	@cat config.json
 
 clean:
-	@-rm -rf bower_components
 	@-rm -rf certs
 	@-rm -rf data/taxi-demo data/bundled-dashboard
 	@-rm -rf ext
@@ -69,7 +68,6 @@ ext/ipywidgets:
 
 dev-install: ext/ipywidgets
 	npm install --quiet
-	npm run bower
 
 dev: KG_IP?=$$(docker-machine ip $$(docker-machine active))
 dev: kernel-gateway-container

@@ -87,23 +87,23 @@ gulp.task('copy:components', function() {
                 'node_modules/bootstrap/dist/js/bootstrap.min.js',
                 'node_modules/jupyter-js-widgets/css/widgets.min.css',
                 'node_modules/requirejs/require.js',
-                'bower_components/gridstack/dist/gridstack.min.js',
-                'bower_components/gridstack/dist/gridstack.min.css',
-                'bower_components/jquery/dist/jquery.min.js',
-                'bower_components/jquery-ui/jquery-ui.min.js',
-                'bower_components/lodash/dist/lodash.min.js'
+                'node_modules/gridstack/dist/gridstack.min.js',
+                'node_modules/gridstack/dist/gridstack.min.css',
+                'node_modules/jquery/dist/jquery.min.js',
+                'node_modules/lodash/lodash.min.js'
             ],
             dest: 'public/components'
         },
         {
             files: [
-                'bower_components/jquery-ui/themes/smoothness/jquery-ui.min.css',
+                'node_modules/jquery-ui/jquery-ui.js',
+                'node_modules/jquery-ui/themes/smoothness/jquery-ui.min.css',
             ],
             dest: 'public/components/jquery-ui'
         },
         {
             files: [
-                'bower_components/jquery-ui/themes/smoothness/images/**/*'
+                'node_modules/jquery-ui/themes/smoothness/images/**/*'
             ],
             dest: 'public/components/jquery-ui/images'
         },

@@ -23,13 +23,10 @@ RUN cd ext && \
     cd jupyter-js-widgets && \
     npm install --quiet
 
-# npm & bower install separately, so these are properly cached by docker and not affected by
+# npm install separately, so it is properly cached by docker and not affected by
 # changes in rest of source
 ADD package.json package.json
 RUN npm install --quiet
-
-ADD bower.json bower.json
-RUN npm run bower
 
 # add everything else
 USER root

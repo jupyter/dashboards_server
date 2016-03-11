@@ -50,11 +50,11 @@ define(['jquery', 'Gridstack'], function($, Gridstack) {
 
         // init new style
         this._styles_id_2 = 'gridstack-style-' + (Math.random() * 100000).toFixed();
-        this._styles_2 = Utils.create_stylesheet(this._styles_id_2);
+        this._styles_2 = Utils.createStylesheet(this._styles_id_2);
         var style = this._styles_2;
 
         rules.forEach(function(item, i) {
-            Utils.insert_css_rule(style,
+            Utils.insertCSSRule(style,
                 item.selector,
                 item.rules,
                 i
@@ -64,7 +64,7 @@ define(['jquery', 'Gridstack'], function($, Gridstack) {
 
     GridstackCustom.prototype.removeStylesheet = function() {
         if (this._styles_id_2) {
-            Gridstack.Utils.remove_stylesheet(this._styles_id_2);
+            Gridstack.Utils.removeStylesheet(this._styles_id_2);
         }
     };
 
