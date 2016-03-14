@@ -116,6 +116,8 @@ make dev USERNAME=admin PASSWORD=password
 open http://127.0.0.1:3000
 ```
 
+See the [Authentication](https://github.com/jupyter-incubator/dashboards_server/wiki/Authentication) wiki page for information about configuring alternative authentication mechanisms.
+
 ### Dashboard Server w/ Auto Restart and Self-Signed HTTPS Certificate
 
 ```bash
