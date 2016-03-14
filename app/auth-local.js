@@ -25,13 +25,14 @@ module.exports = function(app) {
     var seedUsername = config.get('USERNAME');
     var seedPassword = config.get('PASSWORD');
 
-    // Render local login form
+    // Render local login form.
     app.get('/login', function(req, res) {
         if(req.user) {
             return res.redirect('/');
         }
         res.render('login', {
             title: 'Log in',
+            formAuth: true,
             authError: !!req.flash('error').length
         });
     });
