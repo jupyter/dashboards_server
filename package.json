@@ -27,7 +27,6 @@
     "extract-zip": "^1.4.1",
     "font-awesome": "^4.5.0",
     "fs-extra": "^0.26.5",
-    "gridstack": "0.2.5",
     "hjson": "^1.7.4",
     "http-proxy": "^1.12.0",
     "jupyter-js-notebook": "^0.5.10",

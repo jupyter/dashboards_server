@@ -6,8 +6,6 @@
 {{! Required for jupyter-js-widgets }}
 <link rel="stylesheet" href="/components/jquery-ui/jquery-ui.min.css">
 <link rel="stylesheet" href="/components/widgets.min.css">
-{{! Required for gridstack }}
-<link rel="stylesheet" href="/components/gridstack.min.css">
 
 <noscript>
     <div id="noscript">
@@ -17,16 +15,16 @@
 </noscript>
 
 <div id="outer-dashboard">
-    <div id="dashboard-container" class="grid-stack invisible center-container">
+    <div id="dashboard-container" class="invisible center-container">
         {{#each notebook.cells}}
             {{#if metadata.urth.dashboard.layout}}
                 {{#with metadata.urth.dashboard.layout}}
-                    <div class="cell dashboard-cell grid-stack-item {{mapCellType ../cell_type}}"
+                    <div class="cell dashboard-cell {{mapCellType ../cell_type}}"
                         data-cell-index={{@index}}
-                        data-gs-x={{col}}
-                        data-gs-y={{row}}
-                        data-gs-width={{width}}
-                        data-gs-height={{height}}>{{{markdownContent ../cell_type ../source}}}</div>
+                        data-x={{col}}
+                        data-y={{row}}
+                        data-width={{width}}
+                        data-height={{height}}>{{{markdownContent ../cell_type ../source}}}</div>
                 {{/with}}
             {{else}}
                 <div class="cell dashboard-cell hidden {{mapCellType cell_type}}" data-cell-index={{@index}}></div>

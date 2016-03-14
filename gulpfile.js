@@ -87,10 +87,7 @@ gulp.task('copy:components', function() {
                 'node_modules/bootstrap/dist/js/bootstrap.min.js',
                 'node_modules/jupyter-js-widgets/css/widgets.min.css',
                 'node_modules/requirejs/require.js',
-                'node_modules/gridstack/dist/gridstack.min.js',
-                'node_modules/gridstack/dist/gridstack.min.css',
-                'node_modules/jquery/dist/jquery.min.js',
-                'node_modules/lodash/lodash.min.js'
+                'node_modules/jquery/dist/jquery.min.js'
             ],
             dest: 'public/components'
         },

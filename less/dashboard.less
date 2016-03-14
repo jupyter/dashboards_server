@@ -11,11 +11,6 @@ html {
 body {
     font-size: 14px;
     margin: 0;
-
-    &.grid-view {
-        background-color: #606672;
-        background-image: url(img/noisy-texture.png);
-    }
 }
 
 #outer-dashboard {
@@ -25,9 +20,12 @@ body {
     min-height: 100vh;
 
     #dashboard-container {
+        position: relative;
         line-height: 1.5em;
 
         .dashboard-cell {
+            position: absolute;
+
             &.hidden {
                 display: none;
             }
@@ -44,7 +42,7 @@ body {
                     border: none;
                     font-family: monospace;
                     font-size: 1em;
-                    line-height: 1.2em;
+                    line-height: 1.21429em; // match notebook pre font size
                     margin: 0;
                     padding: 0;
                 }
@@ -60,11 +58,13 @@ body {
             }
         }
 
-        .grid-stack-item.rendered_html {
-            /*
-                computed in dashboard.js:
-                padding: (margin/2)px  (margin/2 + 6)px;
-             */
+        @media (max-width: @dashboard-width-small) {
+            .dashboard-cell {
+                position: relative;
+                left: auto;
+                top: auto;
+                width: 100%;
+            }
         }
     }
 
@@ -83,28 +83,6 @@ body {
             visibility: visible;
             transition-delay: 0s;
             /* change 'visibility' before 'top' transition is done */
-        }
-    }
-}
-
-
-.show-row-only {
-    background: none;
-
-    &.single-cell .grid-stack-item {
-        width: 100%;
-        height: 100%;
-    }
-
-    #outer-dashboard {
-        min-height: auto;
-        width: auto;
-
-        #dashboard-container {
-            padding: 0;
-            display: -webkit-flex;
-            display: -ms-flexbox;
-            display: flex;
         }
     }
 }

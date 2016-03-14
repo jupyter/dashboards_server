@@ -6,7 +6,6 @@
 requirejs.config({
     paths: {
         bootstrap: require.toUrl('/components/bootstrap.min'),
-        Gridstack: require.toUrl('/components/gridstack.min'),
         jquery: require.toUrl('/components/jquery.min'),
         'jquery-ui': require.toUrl('/components/jquery-ui/jquery-ui'),
         'jupyter-js-output-area': require.toUrl('/components/jupyter-js-output-area'),
@@ -14,15 +13,6 @@ requirejs.config({
         'jupyter-js-widgets': require.toUrl('/components/jupyter-js-widgets'),
         lodash: require.toUrl('/components/lodash.min'),
         'ansi-parser': require.toUrl('/components/ansi-parser')
-    },
-    map: {
-        Gridstack: {
-            'jquery-ui/core': 'jquery-ui',
-            'jquery-ui/mouse': 'jquery-ui',
-            'jquery-ui/widget': 'jquery-ui',
-            'jquery-ui/resizable': 'jquery-ui',
-            'jquery-ui/draggable': 'jquery-ui'
-        }
     },
     shim : {
         bootstrap: {
@@ -33,7 +23,6 @@ requirejs.config({
 
 requirejs([
     'jquery',
-    './gridstack-custom',
     'jupyter-js-output-area',
     'jupyter-js-services',
     'bootstrap',  // required by jupyter-js-widgets
@@ -41,10 +30,10 @@ requirejs([
     './widget-manager',
     './error-indicator',
     './kernel',
+    './layout',
     'ansi-parser'
 ], function(
     $,
-    Gridstack,
     OutputArea,
     Services,
     bs,
@@ -52,6 +41,7 @@ requirejs([
     WidgetManager,
     ErrorIndicator,
     Kernel,
+    Layout,
     AnsiParser
 ) {
     'use strict';
@@ -64,8 +54,7 @@ requirejs([
 
     var $container = $('#dashboard-container');
 
-    // initialize Gridstack
-    _initGrid();
+    _renderDashboard();
 
     // setup shims for backwards compatibility
     _shimNotebook();
@@ -123,30 +112,6 @@ requirejs([
             });
         });
     });
-
-
-    function _initGrid() {
-        // enable gridstack with parameters set by JS in the HTML page by
-        // the backend
-        var gridstack = $container.gridstack({
-            verticalMargin: Config.cellMargin,
-            cellHeight: Config.defaultCellHeight,
-            width: Config.maxColumns,
-            staticGrid: true
-        }).data('gridstack');
-
-        var halfMargin = Config.cellMargin / 2;
-        var styleRules = [
-            {
-                selector: '#dashboard-container .grid-stack-item',
-                rules: 'padding: ' + halfMargin + 'px ' + (halfMargin + 6) + 'px;'
-            }
-        ];
-        gridstack.generateStylesheet(styleRules);
-
-        // show dashboard
-        $container.removeClass('invisible');
-    }
 
     // shim Jupyter Notebook objects for backwards compatibility
     function _shimNotebook() {
@@ -278,6 +243,11 @@ requirejs([
                 ErrorIndicator.show();
             }
         });
+    }
+
+    function _renderDashboard() {
+        Layout.createStyle();
+        $container.removeClass('invisible');
     }
 
     function _getCodeCells() {
