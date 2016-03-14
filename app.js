@@ -11,6 +11,7 @@ var exphbs  = require('express-handlebars');
 var debug = require('debug')('dashboard-proxy:server');
 var passport = require('passport');
 var ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
+var flash = require('connect-flash');
 
 var hbsHelpers = require('./app/handlebars-helpers');
 var config = require('./app/config');
@@ -49,6 +50,7 @@ app.set('view engine', 'handlebars');
 
 app.use(logger('dev'));
 app.use(cookieParser());
+app.use(flash());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // redirect trailing slash
@@ -63,7 +65,7 @@ app.use(function(req, res, next) {
 var sessionSecret = config.get('SESSION_SECRET_TOKEN') || 'secret_token';
 app.use(session({
     secret: sessionSecret,
-    cookie: {maxAge: 24*3600*1000},//cookie max age set to one day
+    cookie: {maxAge: 24*3600*1000}, //cookie max age set to one day
     resave: true,
     saveUninitialized: true
 }));

@@ -27,15 +27,20 @@ module.exports = function(app) {
 
     // Render local login form
     app.get('/login', function(req, res) {
-        if(req.user) { return res.redirect('/'); }
-        res.render('login', { title: 'Log in' });
+        if(req.user) {
+            return res.redirect('/');
+        }
+        res.render('login', {
+            title: 'Log in',
+            authError: !!req.flash('error').length
+        });
     });
 
     // Validate login values
-    // TODO: flash message on failure
     app.post('/login', urlencodedParser, passport.authenticate('local', {
         failureRedirect: '/login',
-        successReturnToOrRedirect: '/'
+        successReturnToOrRedirect: '/',
+        failureFlash: true
     }));
 
     // Destroy session on any attempt to logout
@@ -47,9 +52,11 @@ module.exports = function(app) {
     // Local auth strategy compares against shared auth creds set in the config
     // at server start time
     return (new Strategy(function(username, password, cb) {
-        console.log(username, password);
-        if (username !== seedUsername) { return cb(null, false); }
-        if (password !== seedPassword) { return cb(null, false); }
+        if (username !== seedUsername) {
+            return cb(null, false, {message: 'invalid username'});
+        } else if (password !== seedPassword) {
+            return cb(null, false, {message: 'invalid password'});
+        }
         return cb(null, {username: username});
     }));
 };
