@@ -19,6 +19,7 @@ It is also has close ties to [jupyter-incubator/declarativewidgets](https://gith
 * Ability to run a Jupyter Notebook with [layout metadata](https://github.com/jupyter-incubator/dashboards) as a standalone dashboard application
 * Ability to navigate a list of multiple notebooks and select one to run as a dashboards
 * Optional shared login to secure access to the dashboard server
+* Ability to add custom authentication mechanisms usign the [Passport](http://passportjs.org/) middleware for Node.js
 * API for POSTing notebooks to the server at runtime with optional authentication (`/_api/notebooks`)
 
 The behavior of the application is similar to that of [Thebe](https://github.com/oreillymedia/thebe), but with some key technical differences:
@@ -32,6 +33,7 @@ The behavior of the application is similar to that of [Thebe](https://github.com
 
 * [Server API](https://github.com/jupyter-incubator/dashboards_server/wiki/Server-API) - server endpoints
     - Also contains information about **bundled dashboards** (allowing specification of external resources).
+* [Authentication](https://github.com/jupyter-incubator/dashboards_server/wiki/Authentication) - examples of integrating 3rd-party authentication strategies
 
 ## Try It
 
