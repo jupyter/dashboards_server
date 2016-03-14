@@ -43,12 +43,6 @@ module.exports = function(app) {
         failureFlash: true
     }));
 
-    // Destroy session on any attempt to logout
-    app.all('/logout', function(req, res) {
-        req.session.destroy();
-        res.redirect('/');
-    });
-
     // Local auth strategy compares against shared auth creds set in the config
     // at server start time
     return (new Strategy(function(username, password, cb) {

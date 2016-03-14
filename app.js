@@ -89,20 +89,25 @@ if(config.get('AUTH_STRATEGY')) {
     var strategy = require(config.get('AUTH_STRATEGY'))(app);
     passport.use(strategy);
 
-    // Ensure login on all following routes
-    app.use(ensureLoggedIn());
-    // Pass passport user object to all views
-    app.use(function(req, res, next) {
-        res.locals.user = req.user;
-        next();
-    });
-
     // Store passport user object in memory only for now
     passport.serializeUser( function(user, done) {
     	done(null, user);
     });
     passport.deserializeUser( function(obj, done) {
     	done(null, obj);
+    });
+
+    // Destroy session on any attempt to logout
+    app.all('/logout', function(req, res) {
+        req.session.destroy();
+        res.redirect('/');
+    });
+    // Ensure login on all following routes
+    app.use(ensureLoggedIn());
+    // Pass passport user object to all views
+    app.use(function(req, res, next) {
+        res.locals.user = req.user;
+        next();
     });
 }
 
