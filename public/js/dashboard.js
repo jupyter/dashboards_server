@@ -67,50 +67,60 @@ requirejs([
     // initialize Gridstack
     _initGrid();
 
+    // setup shims for backwards compatibility
+    _shimNotebook();
+
     // start a kernel
     Kernel.start().then(function(kernel) {
-        _shimNotebook(kernel);
+        // do some additional shimming
+        _setKernelShims(kernel);
+
+        _registerKernelErrorHandler(kernel);
 
         // initialize an ipywidgets manager
         var widgetManager = new WidgetManager(kernel, _consumeMessage);
-        _registerKernelErrorHandler(kernel);
 
-        _initDeclWidgets();
+        // initialize Declarative Widgets library
+        var widgetsReady = _initDeclWidgets();
 
-        _getCodeCells().each(function() {
-            var $cell = $(this);
+        // ensure client-side widgets are ready before executing code
+        widgetsReady.then(function() {
+            // setup and execute code cells
+            _getCodeCells().each(function() {
+                var $cell = $(this);
 
-            // create a jupyter output area mode and widget view for each
-            // dashboard code cell
-            var model = new OutputAreaModel();
-            var view = new OutputAreaWidget(model);
-            model.outputs.changed.connect(function(sender, args) {
-                if (args.newValue.data &&
-                    args.newValue.data.hasOwnProperty('text/html')) {
-                    view.addClass('rendered_html');
-                }
+                // create a jupyter output area mode and widget view for each
+                // dashboard code cell
+                var model = new OutputAreaModel();
+                var view = new OutputAreaWidget(model);
+                model.outputs.changed.connect(function(sender, args) {
+                    if (args.newValue.data &&
+                        args.newValue.data.hasOwnProperty('text/html')) {
+                        view.addClass('rendered_html');
+                    }
+                });
+
+                // attach the view to the cell dom node
+                view.attach(this);
+
+                // create the widget area and widget subarea dom structure used
+                // by ipywidgets in jupyter
+                var $widgetArea = $('<div class="widget-area">');
+                var $widgetSubArea = $('<div class="widget-subarea">').appendTo($widgetArea);
+                // append the widget area and the output area within the grid cell
+                $cell.append($widgetArea, view.node);
+
+                // request execution of the code associated with the dashboard cell
+                var kernelFuture = Kernel.execute($cell.attr('data-cell-index'), function(msg) {
+                    // handle the response to the initial execution request
+                    if (model) {
+                        _consumeMessage(msg, model);
+                    }
+                });
+                // track execution replies in order to associate the newly created
+                // widget *subarea* with its output areas and DOM container
+                widgetManager.trackPending(kernelFuture, $widgetSubArea.get(0), model);
             });
-
-            // attach the view to the cell dom node
-            view.attach(this);
-
-            // create the widget area and widget subarea dom structure used
-            // by ipywidgets in jupyter
-            var $widgetArea = $('<div class="widget-area">');
-            var $widgetSubArea = $('<div class="widget-subarea">').appendTo($widgetArea);
-            // append the widget area and the output area within the grid cell
-            $cell.append($widgetArea, view.node);
-
-            // request execution of the code associated with the dashboard cell
-            var kernelFuture = Kernel.execute($cell.attr('data-cell-index'), function(msg) {
-                // handle the response to the initial execution request
-                if (model) {
-                    _consumeMessage(msg, model);
-                }
-            });
-            // track execution replies in order to associate the newly created
-            // widget *subarea* with its output areas and DOM container
-            widgetManager.trackPending(kernelFuture, $widgetSubArea.get(0), model);
         });
     });
 
@@ -139,13 +149,16 @@ requirejs([
     }
 
     // shim Jupyter Notebook objects for backwards compatibility
-    function _shimNotebook(kernel, widgetManager) {
+    function _shimNotebook() {
         var jup = window.Jupyter = window.Jupyter || {};
         window.IPython = window.Jupyter;
         var nb = jup.notebook = jup.notebook || {};
         nb.base_url = document.baseURI;
         nb.events = nb.events || $({});
+    }
 
+    function _setKernelShims(kernel) {
+        var nb = window.Jupyter.notebook;
         nb.kernel = kernel;
         var KernelStatus = Services.KernelStatus;
         nb.kernel.is_connected = function() {
@@ -156,7 +169,14 @@ requirejs([
         nb.events.trigger('kernel_ready.Kernel');
     }
 
+    /**
+     * Initialize Declarative Widgets library. Requires that a widget manager has been created.
+     * @return {Promise} resolved when (1) Declarative Widgets have fully initialized; or
+     *                   (2) Declarative Widgets are not supported on this page
+     */
     function _initDeclWidgets() {
+        var deferred = new $.Deferred();
+
         if (Config.supportsDeclWidgets) {
             // construct path relative to notebook, in order to properly configure require.js
             var a = document.createElement('a');
@@ -176,11 +196,14 @@ requirejs([
                     events: window.Jupyter.notebook.events,
                     WidgetManager: WidgetManager,
                     WidgetModel: Widgets.WidgetModel
-                });
+                }).then(deferred.resolve);
             });
         } else {
             console.log('Declarative Widgets not supported ("urth_components" directory not found)');
+            deferred.resolve();
         }
+
+        return deferred;
     }
 
     // This object has delegates for kernel message handling, keyed by message
