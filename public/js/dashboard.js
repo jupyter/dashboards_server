@@ -12,7 +12,8 @@ requirejs.config({
         'jupyter-js-output-area': require.toUrl('/components/jupyter-js-output-area'),
         'jupyter-js-services': require.toUrl('/components/jupyter-js-services'),
         'jupyter-js-widgets': require.toUrl('/components/jupyter-js-widgets'),
-        lodash: require.toUrl('/components/lodash.min')
+        lodash: require.toUrl('/components/lodash.min'),
+        'ansi-parser': require.toUrl('/components/ansi-parser')
     },
     map: {
         Gridstack: {
@@ -39,7 +40,8 @@ requirejs([
     'jupyter-js-widgets',
     './widget-manager',
     './error-indicator',
-    './kernel'
+    './kernel',
+    'ansi-parser'
 ], function(
     $,
     Gridstack,
@@ -49,7 +51,8 @@ requirejs([
     Widgets,
     WidgetManager,
     ErrorIndicator,
-    Kernel
+    Kernel,
+    AnsiParser
 ) {
     'use strict';
 
@@ -222,8 +225,8 @@ requirejs([
         },
         error: function(msg, outputAreaModel) {
             // show tracebacks in the console, not on the page
-            var traceback = msg.content.traceback.join('\n');
-            console.error(msg.content.ename, msg.content.evalue, traceback);
+            var traceback = AnsiParser.removeAnsi(msg.content.traceback.join('\n'));
+            console.error(msg.content.ename, ':', msg.content.evalue, '\n', traceback);
             ErrorIndicator.show();
         },
         status: function(msg, outputAreaModel) {

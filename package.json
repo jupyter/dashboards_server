@@ -13,6 +13,7 @@
     "integration-test-auth-token": "mocha test/integration/auth-token/**/*-test.js"
   },
   "dependencies": {
+    "ansi-parser": "^3.2.1",
     "body-parser": "^1.13.3",
     "bootstrap": "3.3.6",
     "busboy": "^0.2.12",
