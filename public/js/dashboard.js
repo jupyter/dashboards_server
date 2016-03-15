@@ -13,7 +13,7 @@ requirejs.config({
         'jupyter-js-services': require.toUrl('/components/jupyter-js-services'),
         'jupyter-js-widgets': require.toUrl('/components/jupyter-js-widgets'),
         lodash: require.toUrl('/components/lodash.min'),
-        'urth-widgets': require.toUrl('/components/urth-widgets')
+        'ansi-parser': require.toUrl('/components/ansi-parser')
     },
     map: {
         Gridstack: {
@@ -33,15 +33,27 @@ requirejs.config({
 
 requirejs([
     'jquery',
-    'gridstack-custom',
+    './gridstack-custom',
     'jupyter-js-output-area',
     'jupyter-js-services',
     'bootstrap',  // required by jupyter-js-widgets
     'jupyter-js-widgets',
-    'widget-manager',
+    './widget-manager',
     './error-indicator',
-    './kernel'
-], function($, Gridstack, OutputArea, Services, bs, Widgets, WidgetManager, ErrorIndicator, Kernel) {
+    './kernel',
+    'ansi-parser'
+], function(
+    $,
+    Gridstack,
+    OutputArea,
+    Services,
+    bs,
+    Widgets,
+    WidgetManager,
+    ErrorIndicator,
+    Kernel,
+    AnsiParser
+) {
     'use strict';
 
     var OutputType = OutputArea.OutputType;
@@ -55,56 +67,60 @@ requirejs([
     // initialize Gridstack
     _initGrid();
 
-    if (Config.supportsDeclWidgets) {
-        require(['urth-widgets'], function(DeclWidgets) {
-            // initialize Declarative Widgets
-            // NOTE: DeclWidgets adds 'urth_components/...' to this path
-            DeclWidgets.init(document.baseURI);
-        });
-    } else {
-        console.log('Declarative Widgets not supported ("urth_components" directory not found)');
-    }
+    // setup shims for backwards compatibility
+    _shimNotebook();
 
     // start a kernel
     Kernel.start().then(function(kernel) {
-        // initialize an ipywidgets manager
-        var widgetManager = new WidgetManager(kernel, _consumeMessage);
+        // do some additional shimming
+        _setKernelShims(kernel);
+
         _registerKernelErrorHandler(kernel);
 
-        _getCodeCells().each(function() {
-            var $cell = $(this);
+        // initialize an ipywidgets manager
+        var widgetManager = new WidgetManager(kernel, _consumeMessage);
 
-            // create a jupyter output area mode and widget view for each
-            // dashboard code cell
-            var model = new OutputAreaModel();
-            var view = new OutputAreaWidget(model);
-            model.outputs.changed.connect(function(sender, args) {
-                if (args.newValue.data &&
-                    args.newValue.data.hasOwnProperty('text/html')) {
-                    view.addClass('rendered_html');
-                }
+        // initialize Declarative Widgets library
+        var widgetsReady = _initDeclWidgets();
+
+        // ensure client-side widgets are ready before executing code
+        widgetsReady.then(function() {
+            // setup and execute code cells
+            _getCodeCells().each(function() {
+                var $cell = $(this);
+
+                // create a jupyter output area mode and widget view for each
+                // dashboard code cell
+                var model = new OutputAreaModel();
+                var view = new OutputAreaWidget(model);
+                model.outputs.changed.connect(function(sender, args) {
+                    if (args.newValue.data &&
+                        args.newValue.data.hasOwnProperty('text/html')) {
+                        view.addClass('rendered_html');
+                    }
+                });
+
+                // attach the view to the cell dom node
+                view.attach(this);
+
+                // create the widget area and widget subarea dom structure used
+                // by ipywidgets in jupyter
+                var $widgetArea = $('<div class="widget-area">');
+                var $widgetSubArea = $('<div class="widget-subarea">').appendTo($widgetArea);
+                // append the widget area and the output area within the grid cell
+                $cell.append($widgetArea, view.node);
+
+                // request execution of the code associated with the dashboard cell
+                var kernelFuture = Kernel.execute($cell.attr('data-cell-index'), function(msg) {
+                    // handle the response to the initial execution request
+                    if (model) {
+                        _consumeMessage(msg, model);
+                    }
+                });
+                // track execution replies in order to associate the newly created
+                // widget *subarea* with its output areas and DOM container
+                widgetManager.trackPending(kernelFuture, $widgetSubArea.get(0), model);
             });
-
-            // attach the view to the cell dom node
-            view.attach(this);
-
-            // create the widget area and widget subarea dom structure used
-            // by ipywidgets in jupyter
-            var $widgetArea = $('<div class="widget-area">');
-            var $widgetSubArea = $('<div class="widget-subarea">').appendTo($widgetArea);
-            // append the widget area and the output area within the grid cell
-            $cell.append($widgetArea, view.node);
-
-            // request execution of the code associated with the dashboard cell
-            var kernelFuture = Kernel.execute($cell.attr('data-cell-index'), function(msg) {
-                // handle the response to the initial execution request
-                if (model) {
-                    _consumeMessage(msg, model);
-                }
-            });
-            // track execution replies in order to associate the newly created
-            // widget *subarea* with its output areas and DOM container
-            widgetManager.trackPending(kernelFuture, $widgetSubArea.get(0), model);
         });
     });
 
@@ -130,6 +146,64 @@ requirejs([
 
         // show dashboard
         $container.removeClass('invisible');
+    }
+
+    // shim Jupyter Notebook objects for backwards compatibility
+    function _shimNotebook() {
+        var jup = window.Jupyter = window.Jupyter || {};
+        window.IPython = window.Jupyter;
+        var nb = jup.notebook = jup.notebook || {};
+        nb.base_url = document.baseURI;
+        nb.events = nb.events || $({});
+    }
+
+    function _setKernelShims(kernel) {
+        var nb = window.Jupyter.notebook;
+        nb.kernel = kernel;
+        var KernelStatus = Services.KernelStatus;
+        nb.kernel.is_connected = function() {
+            return kernel.status === KernelStatus.Busy || kernel.status === KernelStatus.Idle;
+        };
+
+        // kernel has already started
+        nb.events.trigger('kernel_ready.Kernel');
+    }
+
+    /**
+     * Initialize Declarative Widgets library. Requires that a widget manager has been created.
+     * @return {Promise} resolved when (1) Declarative Widgets have fully initialized; or
+     *                   (2) Declarative Widgets are not supported on this page
+     */
+    function _initDeclWidgets() {
+        var deferred = new $.Deferred();
+
+        if (Config.supportsDeclWidgets) {
+            // construct path relative to notebook, in order to properly configure require.js
+            var a = document.createElement('a');
+            a.href = document.baseURI;
+            var path = a.pathname;
+            var sep = path[path.length-1] === '/' ? '' : '/';
+            require.config({
+                paths: {
+                    'urth_widgets': a.protocol + '//' + a.host + path + sep + 'urth_widgets'
+                }
+            });
+
+            require(['urth_widgets/js/init/init'], function(DeclWidgets) {
+                // initialize Declarative Widgets
+                DeclWidgets({
+                    namespace: window.Jupyter,
+                    events: window.Jupyter.notebook.events,
+                    WidgetManager: WidgetManager,
+                    WidgetModel: Widgets.WidgetModel
+                }).then(deferred.resolve);
+            });
+        } else {
+            console.log('Declarative Widgets not supported ("urth_components" directory not found)');
+            deferred.resolve();
+        }
+
+        return deferred;
     }
 
     // This object has delegates for kernel message handling, keyed by message
@@ -174,8 +248,8 @@ requirejs([
         },
         error: function(msg, outputAreaModel) {
             // show tracebacks in the console, not on the page
-            var traceback = msg.content.traceback.join('\n');
-            console.error(msg.content.ename, msg.content.evalue, traceback);
+            var traceback = AnsiParser.removeAnsi(msg.content.traceback.join('\n'));
+            console.error(msg.content.ename, ':', msg.content.evalue, '\n', traceback);
             ErrorIndicator.show();
         },
         status: function(msg, outputAreaModel) {

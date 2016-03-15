@@ -23,13 +23,6 @@ RUN cd ext && \
     cd jupyter-js-widgets && \
     npm install --quiet
 
-# SHA below is a commit on 'StandaloneExperiment' branch
-RUN cd ext && \
-    git clone https://github.com/jhpedemonte/declarativewidgets.git && \
-    cd declarativewidgets && \
-    git checkout 9f6423bbcc4e9e266a8c2594028caeabaebe9a8f && \
-    make ext/ipywidgets node_modules dist NOSCALA=true
-
 # npm & bower install separately, so these are properly cached by docker and not affected by
 # changes in rest of source
 ADD package.json package.json

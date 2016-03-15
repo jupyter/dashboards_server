@@ -15,9 +15,7 @@ define([
     Services
 ) {
 
-    var KernelStatus = Services.KernelStatus;
-
-    var WidgetManager  = function(kernel, msgHandler) {
+    var WidgetManager = function(kernel, msgHandler) {
         //  Call the base class.
         Widgets.ManagerBase.call(this);
 
@@ -43,11 +41,27 @@ define([
         }).bind(this);
         validate();
 
-        this._shimDeclWidgets(kernel);
-        this._shimMatplotlib(kernel);
-        this._shimBokeh(kernel);
+        this._shimWidgetsLibs();
     };
+
     WidgetManager.prototype = Object.create(Widgets.ManagerBase.prototype);
+
+    //--------------------------------------------------------------------
+    // Class level
+    //--------------------------------------------------------------------
+
+    WidgetManager.register_widget_model = function(model_name, model_type) {
+        return Widgets.ManagerBase.register_widget_model.apply(this, arguments);
+    };
+
+    WidgetManager.register_widget_view = function(view_name, view_type) {
+        return Widgets.ManagerBase.register_widget_view.apply(this, arguments);
+    };
+
+
+    //--------------------------------------------------------------------
+    // Instance level
+    //--------------------------------------------------------------------
 
     /*
      * Called when a jupyter widget is added to the DOM.
@@ -162,7 +176,7 @@ define([
      * outputAreaModel: OutputArea that contains the widget
      */
     WidgetManager.prototype.trackPending = function(kernelFuture, widgetNode, outputAreaModel) {
-        this._hookupDeclWidgetsCallbacks(kernelFuture, widgetNode, outputAreaModel);
+        this._hookupWidgetsCallbacks(kernelFuture, widgetNode, outputAreaModel);
 
         var msg_id = kernelFuture.msg.header.msg_id;
         this._pendingExecutions[msg_id] = {
@@ -173,36 +187,14 @@ define([
 
 
     /**
-     * DECLARATIVE WIDGETS SHIMS
+     * SHIMS FOR WIDGET LIBRARIES
      **/
 
-    function notebookShim() {
-        var ipy = window.IPython = window.IPython || {};
-        var nb = ipy.notebook = ipy.notebook || {};
-        return nb;
-    }
-
-    WidgetManager.prototype._shimDeclWidgets = function(kernel) {
-        var nb = notebookShim();
-        nb.events = nb.events || $({});
-
-        nb.kernel = kernel;
-        nb.kernel.is_connected = function() {
-            return kernel.status === KernelStatus.Busy || kernel.status === KernelStatus.Idle;
-        };
-        nb.kernel.widget_manager = this;
-
-        // IPython.notebook.base_url   ?????
-
-        // WidgetManager is instantiated after creation of a kernel, so assume it is ready
-        nb.events.trigger('kernel_ready.Kernel');
-    };
-
-    WidgetManager.prototype._hookupDeclWidgetsCallbacks = function(kernelFuture, widgetNode, outputAreaModel) {
+    WidgetManager.prototype._hookupWidgetsCallbacks = function(kernelFuture, widgetNode, outputAreaModel) {
         var that = this;
 
         kernelFuture.onReply = function(msg) {
-            window.IPython.notebook.events.trigger('shell_reply.Kernel');
+            window.Jupyter.notebook.events.trigger('shell_reply.Kernel');
         };
 
         // Declarative Widgets attempts to get `callbacks` through "cell" data
@@ -214,12 +206,17 @@ define([
         $cell.data('cell', cellData);
     };
 
-    /**
-     * matplotlib shims
-     */
+    WidgetManager.prototype._shimWidgetsLibs = function() {
+        var nb = window.Jupyter.notebook;
+        nb.kernel.widget_manager = this;
+        nb.kernel.comm_manager = this.commManager;
 
-    WidgetManager.prototype._shimMatplotlib = function(kernel) {
-        var nb = notebookShim();
+        this._shimMatplotlib();
+    };
+
+    // matplotlib shims
+    WidgetManager.prototype._shimMatplotlib = function() {
+        var nb = window.Jupyter.notebook;
         var cells = this._pendingExecutions;
         nb.get_cells = function() {
             return Object.keys(cells).map(function(id) {
@@ -231,20 +228,11 @@ define([
                 };
             });
         };
-        nb.kernel = nb.kernel || kernel;
-        nb.kernel.comm_manager = this.commManager;
-        window.IPython.keyboard_manager = nb.keyboard_manager = {
+        window.Jupyter.keyboard_manager = nb.keyboard_manager = {
             enable: function() { /* no-op */ },
             register_events: function() { /* no-op */ }
         };
         nb.set_dirty = function() { /* no-op */ };
-    };
-
-    WidgetManager.prototype._shimBokeh = function(kernel) {
-        var jupyter = window.Jupyter = window.Jupyter || {};
-        var nb = jupyter.notebook = jupyter.notebook || {};
-        nb.kernel = nb.kernel || kernel;
-        nb.kernel.comm_manager = this.commManager;
     };
 
     return WidgetManager;

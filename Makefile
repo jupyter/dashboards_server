@@ -67,17 +67,7 @@ ext/ipywidgets:
 		cd jupyter-js-widgets ; \
 		npm install --quiet
 
-ext/declarativewidgets:
-	@-test -d node_modules && npm uninstall --quiet urth-widgets
-	@-rm -rf $@
-	# SHA below is a commit on 'StandaloneExperiment' branch
-	@mkdir -p $@ ; \
-		git clone https://github.com/jhpedemonte/declarativewidgets.git $@ ; \
-		cd $@ ; \
-		git checkout 9f6423bbcc4e9e266a8c2594028caeabaebe9a8f ; \
-		make ext/ipywidgets node_modules dist NOSCALA=true
-
-dev-install: ext/ipywidgets ext/declarativewidgets
+dev-install: ext/ipywidgets
 	npm install --quiet
 	npm run bower
 
@@ -219,19 +209,9 @@ certs: certs/server.pem
 
 ############### Examples/demos
 
-BASE_DECLWIDGETS:=node_modules/urth-widgets/dist/urth/widgets/ext/notebook/bower_components
+notebook-zips: etc/notebooks/taxi-demo.zip etc/notebooks/bundled-dashboard.zip
+	@for zipfile in $? ; do \
+		unzip -q -d data/`basename $${zipfile%\.*}` $$zipfile ; \
+	done
 
-data/bundled-dashboard:
-	@cp -r etc/notebooks/$(@F) data/
-	@cp -r $(BASE_DECLWIDGETS) data/$(@F)/urth_components
-
-# this example requires some additional Polymer elements
-data/taxi-demo:
-	@cp -r etc/notebooks/$(@F) data/
-	@cp -r $(BASE_DECLWIDGETS) data/$(@F)/urth_components
-	@cd data/$(@F)/urth_components && bower --silent --config.interactive=false \
-		--config.analytics=false --config.directory=. install --production \
-		PolymerElements/paper-button PolymerElements/paper-card \
-		PolymerElements/paper-slider GoogleWebComponents/google-map
-
-examples: data/bundled-dashboard data/taxi-demo
+examples: notebook-zips

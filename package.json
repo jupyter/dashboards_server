@@ -13,6 +13,7 @@
     "integration-test-auth-token": "mocha test/integration/auth-token/**/*-test.js"
   },
   "dependencies": {
+    "ansi-parser": "^3.2.1",
     "body-parser": "^1.13.3",
     "bootstrap": "3.3.6",
     "busboy": "^0.2.12",
@@ -36,7 +37,6 @@
     "serve-favicon": "^2.3.0",
     "tmp": "0.0.28",
     "url-join": "0.0.1",
-    "urth-widgets": "file:./ext/declarativewidgets",
     "websocket": "^1.0.22",
     "ws": "^0.8.0",
     "xmlhttprequest": "^1.8.0"
