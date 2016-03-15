@@ -25,7 +25,7 @@ module.exports = function(app) {
         res.render('login', {
             title: 'Log in',
             provider_id: 'box', // when the user presses the login button goes to /login/{{provider_id}}
-            provider_name: 'box' // name to show on the button
+            provider_name: 'Box' // name to show on the button
         });
     });
 
