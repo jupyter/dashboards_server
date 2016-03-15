@@ -10,7 +10,7 @@
     border-left: none;
 
     .center-container {
-        @media (max-width: 768px) {
+        @media (max-width: @dashboard-width-small) {
             padding: 0 1em;
         }
     }
@@ -51,32 +51,17 @@
     }
 }
 
-// centered container using media queries
+// centered container with responsive width
 .center-container {
     margin: 0 auto;
 
-    @media (max-width: 768px) {
-        .list-group-item {
-            border-left: none;
-            border-right: none;
-        }
-
-        .navbar {
-            .navbar-brand {
-                margin-left: 1em;
-            }
-            .navbar-collapse {
-                margin-right: 1em;
-            }
-        }
+    @media (max-width: @dashboard-width-small) {
+        width: 100%;
     }
-    @media (min-width: 768px) {
-        width: 768px;
+    @media (min-width: @dashboard-width-small) {
+        width: @dashboard-width-small;
     }
-    @media (min-width: 992px) {
-        width: 940px;
-    }
-    @media (min-width: 1200px) {
-        width: 1140px;
+    @media (min-width: @dashboard-width) {
+        width: @dashboard-width;
     }
 }

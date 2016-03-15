@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "build": "gulp build",
-    "bower": "bower install --quiet",
     "start": "node ./bin/www",
     "start-debug": "node-inspector & node --debug-brk ./bin/www",
     "start-logging": "NODE_DEBUG=http DEBUG=express:*,dashboard-proxy:* node ./bin/www",
@@ -47,7 +46,6 @@
     "xmlhttprequest": "^1.8.0"
   },
   "devDependencies": {
-    "bower": "^1.7.2",
     "chai": "^3.4.1",
     "css-loader": "^0.23.1",
     "gulp": "^3.9.0",

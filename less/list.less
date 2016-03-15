@@ -42,4 +42,12 @@
             }
         }
     }
+
+    @media (max-width: @dashboard-width-small) {
+        // when full width, remove side borders
+        .list-group-item {
+            border-left: none;
+            border-right: none;
+        }
+    }
 }
