@@ -19,9 +19,11 @@ var urlToDashboard = require('./url-to-dashboard');
 var kgUrl = config.get('KERNEL_GATEWAY_URL');
 var kgAuthToken = config.get('KG_AUTH_TOKEN');
 var kgBaseUrl = config.get('KG_BASE_URL');
+var kgKernelRetentionTime = config.get('KG_KERNEL_RETENTIONTIME');
 
 var server = null;
 var sessions = {};
+var disconnectedKernels = {};
 var apiRe = new RegExp('^/api(/.*$)');
 var kernelIdRe = new RegExp('^.*/kernels/([^/]*)');
 
@@ -94,6 +96,7 @@ function setupWSProxy(_server) {
 
     // Listen to the `upgrade` event and proxy the WebSocket requests as well.
     _server.on('upgrade', function(req, socket, head) {
+        debug('PROXY: WS upgrading session ' + url.parse(req.url, true).query['session_id']);
         var _emit = socket.emit;
         socket.emit = function(eventName, data) {
 
@@ -169,15 +172,28 @@ function setupWSProxy(_server) {
         //
         // /api/kernels/8c51e1d7-7a1c-4ceb-a7dd-3a567f1505b9/channels?session_id=448e417f4c9a582bcaed2905541dcff0
         var kernelIdMatched = kernelIdRe.exec(req.url);
+        var kernelId = null;
+        if (kernelIdMatched) {
+            kernelId = kernelIdMatched[1];
+        }
         var query = url.parse(req.url, true).query;
         var sessionId = query['session_id'];
+        if (disconnectedKernels[sessionId]) {
+            debug('PROXY: WS reattaching to ' + sessionId);
+            clearTimeout(disconnectedKernels[sessionId]);
+            delete disconnectedKernels[sessionId];
+        }
         socket.on('close', function() {
-            removeSession(sessionId);
-            if (kernelIdMatched) {
-                var kernelId = kernelIdMatched[1];
-                debug('PROXY: WS closed for ' + kernelId);
-                killKernel(kernelId);
-            }
+            debug('PROXY: WS will kill kernel ' + kernelId + ' session ' + sessionId + ' soon');
+            var waiting = setTimeout(function(sessionId, kernelId) {
+                debug('PROXY: WS closed for ' + sessionId);
+                delete disconnectedKernels[sessionId];
+                removeSession(sessionId);
+                if (kernelId) {
+                    killKernel(kernelId);
+                }
+            }, kgKernelRetentionTime, sessionId, kernelId);
+            disconnectedKernels[sessionId] = waiting;
         });
 
         // remove '/api', otherwise proxies to '/api/api/...'
@@ -185,6 +201,7 @@ function setupWSProxy(_server) {
         proxy.ws(req, socket, head);
     });
 }
+
 
 // Kill kernel on backend kernel gateway.
 var killKernel = function(kernelId) {
@@ -199,8 +216,10 @@ var killKernel = function(kernelId) {
         method: 'DELETE',
         headers: headers
     }, function(err, response, body) {
-        debug('PROXY: kill kernel response: ' +
-            response.statusCode + ' ' + response.statusMessage);
+        if (response) {
+          debug('PROXY: kill kernel response: ' +
+              response.statusCode + ' ' + response.statusMessage);
+        }
     });
 };
 
@@ -233,7 +252,7 @@ proxy.on('proxyReqWs', function(proxyReq, req, socket, options, head) {
 });
 
 proxy.on('proxyRes', function (proxyRes, req, res) {
-    debug('PROXY: response from ' + req.originalUrl,
+    debug('PROXY: response from ' + req.method + " "+ req.originalUrl,
         JSON.stringify(proxyRes.headers, true, 2));
 
     // Store the notebook path for use within the WS proxy.
