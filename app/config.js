@@ -26,4 +26,7 @@ config.set('NOTEBOOKS_DIR', path.join(__dirname, '..', config.get('NOTEBOOKS_DIR
 config.set('DB_FILE_EXT', '.ipynb');
 config.set('DB_INDEX', 'index.ipynb');
 
+// how long to keep a kernel alive and reconnectable after its WS connection drops
+config.set('KG_KERNEL_RETENTIONTIME', 120000);
+
 module.exports = config;
