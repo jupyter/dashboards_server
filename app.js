@@ -9,6 +9,9 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var exphbs  = require('express-handlebars');
 var debug = require('debug')('dashboard-proxy:server');
+var passport = require('passport');
+var ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
+var flash = require('connect-flash');
 
 var hbsHelpers = require('./app/handlebars-helpers');
 var config = require('./app/config');
@@ -16,9 +19,7 @@ var config = require('./app/config');
 var routes = require('./routes/routes');
 var authRoutes = require('./routes/auth-routes');
 var apiRoutes = require('./routes/api');
-var loginRoutes = require('./routes/login');
-var logoutRoutes = require('./routes/logout');
-var presentationRoutes = require('./routes/presentation')
+var presentationRoutes = require('./routes/presentation');
 
 var app = express();
 
@@ -49,6 +50,7 @@ app.set('view engine', 'handlebars');
 
 app.use(logger('dev'));
 app.use(cookieParser());
+app.use(flash());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // redirect trailing slash
@@ -59,11 +61,11 @@ app.use(function(req, res, next) {
        next();
    }
 });
-
+//
 var sessionSecret = config.get('SESSION_SECRET_TOKEN') || 'secret_token';
 app.use(session({
     secret: sessionSecret,
-    cookie: {maxAge: 24*3600*1000},//cookie max age set to one day
+    cookie: {maxAge: 24*3600*1000}, //cookie max age set to one day
     resave: true,
     saveUninitialized: true
 }));
@@ -75,24 +77,37 @@ app.use(session({
 app.use('/_api', authRoutes);
 
 ////////
-// LOGIN
+// AUTHENTICATION
 ////////
 
-if (config.get('AUTH_ENABLED')) {
-    // if username and password supplied, enable auth
-    app.use('/login', loginRoutes);
-    app.use('/logout', logoutRoutes);
+if(config.get('AUTH_STRATEGY')) {
+    // Initialize passport and restore auth state from session
+    app.use(passport.initialize());
+    app.use(passport.session());
 
-    //routes registered below this filter will require a valid session value/user
-    app.all('*',function(req,res,next) {
-        if(req.session.username) {
-            next();
-        }
-        else {
-            //save the previous page in the session to know where to redirect back to after login
-            req.session.redirectAfterLogin = req.path;
-            res.redirect('/login');
-        }
+    // Load auth strategy based on config
+    var strategy = require(config.get('AUTH_STRATEGY'))(app);
+    passport.use(strategy);
+
+    // Store passport user object in memory only for now
+    passport.serializeUser( function(user, done) {
+    	done(null, user);
+    });
+    passport.deserializeUser( function(obj, done) {
+    	done(null, obj);
+    });
+
+    // Destroy session on any attempt to logout
+    app.all('/logout', function(req, res) {
+        req.session.destroy();
+        res.redirect('/');
+    });
+    // Ensure login on all following routes
+    app.use(ensureLoggedIn());
+    // Pass passport user object to all views
+    app.use(function(req, res, next) {
+        res.locals.user = req.user;
+        next();
     });
 }
 

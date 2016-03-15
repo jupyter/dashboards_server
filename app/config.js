@@ -10,13 +10,14 @@ var config = nconf.argv()
                   .env()
                   .file({ file: 'config.json', format: hjson });
 
-// Set "meta-config" values
+// Shortcut to set local auth strategy with a shared username/password.
+// Validation of username/password happens in the auth-local module since it's
+// specific to this strategy.
 var hasUsername = !!config.get('USERNAME');
 var hasPassword = !!config.get('PASSWORD');
-if (hasUsername !== hasPassword) {
-    throw new Error('Both USERNAME and PASSWORD must be set');
+if (hasUsername && hasPassword && !config.get('AUTH_STRATEGY')) {
+    config.set('AUTH_STRATEGY', './app/auth-local');
 }
-config.set('AUTH_ENABLED', hasUsername && hasPassword);
 
 // build the full path to the data directory
 config.set('NOTEBOOKS_DIR', path.join(__dirname, '..', config.get('NOTEBOOKS_DIR')));
