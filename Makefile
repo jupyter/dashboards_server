@@ -221,9 +221,14 @@ certs: certs/server.pem
 
 ############### Examples/demos
 
-notebook-zips: etc/notebooks/taxi-demo.zip etc/notebooks/bundled-dashboard.zip
-	@for zipfile in $? ; do \
-		unzip -q -d data/`basename $${zipfile%\.*}` $$zipfile ; \
-	done
+# Copy directories into `data/` and unzip any bundled dashboards
+data/%:
+	@mkdir -p $@
+	@cp -r etc/notebooks/$(@F)/* $@/
+	@find data -name "*.zip" | \
+		while read zipfile; do \
+			unzip -q -d `dirname $$zipfile`/`basename $${zipfile%\.*}` $$zipfile ; \
+			rm $$zipfile ; \
+		done
 
-examples: notebook-zips
+examples: data/test data/demo
