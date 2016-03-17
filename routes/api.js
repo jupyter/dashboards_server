@@ -178,11 +178,17 @@ function setupWSProxy(_server) {
         }
         var query = url.parse(req.url, true).query;
         var sessionId = query['session_id'];
+
+        // Check if this is a reconnection
         if (disconnectedKernels[sessionId]) {
             debug('PROXY: WS reattaching to ' + sessionId);
             clearTimeout(disconnectedKernels[sessionId]);
             delete disconnectedKernels[sessionId];
         }
+
+        // Setup a handler that schedules deletion of running kernels after
+        // a timeout to give clients that accidentally disconnected time to
+        // reconnect.
         socket.on('close', function() {
             debug('PROXY: WS will kill kernel ' + kernelId + ' session ' + sessionId + ' soon');
             var waiting = setTimeout(function(sessionId, kernelId) {

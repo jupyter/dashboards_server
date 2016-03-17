@@ -36,6 +36,8 @@
     KG_AUTH_TOKEN: null
     // Kernel gateway base URL (gets appended to KERNEL_GATEWAY_URL)
     KG_BASE_URL: ""
+    // Delay kernel cleanup for this many milliseconds to allow a client to reconnect
+    KG_KERNEL_RETENTIONTIME: 30000
 
     //////////////////////////////
     // Dashboard rendering options
