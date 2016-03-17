@@ -45,11 +45,11 @@ describe('kernel gateway auth token', function() {
     it('should successfully load dashboard (node app & gateway configured with token)', function(done) {
         request({
             method: 'GET',
-            uri: appUrl + '/dashboards/simple'
+            uri: appUrl + '/dashboards/INTRO'
         }, function(error, response, body) {
             expect(response.statusCode).to.equal(200);
             expect(body).to.contain('<!doctype html>');
-            expect(body).to.contain('Simple python dashboard');
+            expect(body).to.contain('Jupyter Dashboards Server');
             done();
         });
     });
