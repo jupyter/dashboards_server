@@ -19,6 +19,7 @@ var config = require('../../../app/config');
 var kgUrl = config.get('KERNEL_GATEWAY_URL');
 var kgAuthToken = config.get('KG_AUTH_TOKEN');
 var kgBaseUrl = config.get('KG_BASE_URL');
+var kgKernelRetentionTime = config.get('KG_KERNEL_RETENTIONTIME');
 
 
 ///////////////////
@@ -195,11 +196,13 @@ describe('routes: api', function() {
         }, 0);
     });
 
-    it('should kill kernel on close socket event', function(done) {
+    it('should kill kernel some time after the socket closed event', function(done) {
         var spy = sinon.spy(request, 'Request');
+        var fakeClock = sinon.useFakeTimers();
         var uri = urljoin(kgUrl, kgBaseUrl, '/api/kernels/12345');
 
         socketCloseCallback();
+        sinon.assert.notCalled(spy);
 
         setTimeout(function() {
             expect(spy).calledOnce;
@@ -210,8 +213,10 @@ describe('routes: api', function() {
                 expect(options.headers.Authorization).to.equal('token ' + kgAuthToken);
             }
             spy.restore();
+            fakeClock.restore();
             done();
-        }, 0);
+        }, kgKernelRetentionTime);
+        fakeClock.tick(kgKernelRetentionTime + 1000);
     });
 });
 
