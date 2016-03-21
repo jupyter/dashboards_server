@@ -79,32 +79,27 @@ function _renderDashboard(req, res, next, opts) {
     var hideChrome = !!(opts && opts.hideChrome);
     var stats = (opts && opts.stats) || nbstore.stat(dbpath);
 
-    Promise.resolve(stats).then(function(stats) {
-        if (stats.hasIndex) {
-            dbpath = path.join(dbpath, INDEX_NB_NAME);
-        } 
-        return nbstore.get(dbpath);
-    })
-    .then(function success(notebook) {
-        debug('Success loading nb');
+    return nbstore.get(dbpath, stats)
+        .then(function success(notebook) {
+            debug('Success loading nb');
 
-        res.status(200);
-        res.render('dashboard', {
-            title: path.basename(dbpath, DB_EXT),
-            notebook: notebook,
-            username: req.session.username,
-            hideChrome: hideChrome,
-            supportsDeclWidgets: stats.supportsDeclWidgets,
-            // need to set document.baseURI with trailing slash (i.e. "/dashboards/nb/") so
-            // that relative paths load correctly
-            baseURI: urljoin(req.originalUrl, '/')
+            res.status(200);
+            res.render('dashboard', {
+                title: path.basename(dbpath, DB_EXT),
+                notebook: notebook,
+                username: req.session.username,
+                hideChrome: hideChrome,
+                supportsDeclWidgets: stats.supportsDeclWidgets,
+                // need to set document.baseURI with trailing slash (i.e. "/dashboards/nb/") so
+                // that relative paths load correctly
+                baseURI: urljoin(req.originalUrl, '/')
+            });
+        })
+        .catch(function error(err) {
+            // TODO better way of determing the error
+            err.status = err.message.indexOf('loading') === -1 ? 500 : 404;
+            next(err);
         });
-    })
-    .catch(function error(err) {
-        // TODO better way of determing the error
-        err.status = err.message.indexOf('loading') === -1 ? 500 : 404;
-        next(err);
-    });
 }
 
 function _render(req, res, next, opts) {
