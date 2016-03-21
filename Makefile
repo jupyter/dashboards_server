@@ -31,7 +31,7 @@ help:
 
 clean:
 	@-rm -rf certs
-	@-rm -rf data/taxi-demo data/bundled-dashboard
+	@-rm -rf data/demo data/test
 	@-rm -rf ext
 	@-rm -rf node_modules
 	@-rm -rf public/components
