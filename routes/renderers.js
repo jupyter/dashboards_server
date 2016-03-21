@@ -76,6 +76,7 @@ function _renderList(req, res, next) {
 
 function _renderDashboard(req, res, next, opts) {
     var dbpath = (opts && opts.dbpath) || req.params[0];
+    var title =  path.basename(dbpath, DB_EXT);
     var hideChrome = !!(opts && opts.hideChrome);
     var stats = (opts && opts.stats) || nbstore.stat(dbpath);
 
@@ -85,7 +86,7 @@ function _renderDashboard(req, res, next, opts) {
 
             res.status(200);
             res.render('dashboard', {
-                title: path.basename(dbpath, DB_EXT),
+                title: title,
                 notebook: notebook,
                 username: req.session.username,
                 hideChrome: hideChrome,
