@@ -56,17 +56,7 @@ kill:
 
 ############### Dashboard server development on host
 
-ext/ipywidgets:
-	@-test -d node_modules && npm uninstall --quiet jupyter-js-widgets
-	@-rm -rf $@
-	@mkdir -p $@ ; \
-		git clone https://github.com/ipython/ipywidgets.git $@ ; \
-		cd $@ ; \
-		git checkout 851fd648195be1f42cab2560600c3b629bbe3330 ; \
-		cd jupyter-js-widgets ; \
-		npm install --quiet
-
-dev-install: ext/ipywidgets
+dev-install:
 	npm install --quiet
 
 dev: KG_IP?=$$(docker-machine ip $$(docker-machine active))
