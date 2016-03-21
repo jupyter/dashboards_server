@@ -17,7 +17,6 @@ var INDEX_NB_NAME = config.get('DB_INDEX');
 var ZIP_EXT = '.zip';
 
 var allowedUploadExts = [ DB_EXT, ZIP_EXT ];
-var hasIndex = new RegExp(INDEX_NB_NAME + '$');
 
 // cached notebook objects
 var store = {};
@@ -94,31 +93,38 @@ function stat(nbpath) {
 }
 
 // Read notebook from cache or from file
-function _loadNb(nbpath) {
-    nbpath = _appendExt(nbpath);
-    return new Promise(function(resolve, reject) {
-        var nbPath = path.join(DATA_DIR, nbpath);
-        fs.readFile(nbPath, 'utf8', function(err, rawData) {
-            if (err) {
-                reject(new Error('Error loading notebook: ' + err.message));
+function _loadNb(nbpath, stats) {
+    if (!stats) {
+        stats = stat(nbpath);
+    }
+    return Promise.resolve(stats)
+        .then(function(stats) {
+            var nbfile;
+            if (stats.hasIndex) {
+                nbfile = path.join(nbpath, INDEX_NB_NAME);
             } else {
-                try {
-                    var nb = JSON.parse(rawData);
-
-                    // cache notebook for future reads
-                    store[nbpath] = nb;
-                    if (hasIndex.test(nbpath)) {
-                        // cache bundled dashboard directory as well
-                        store[path.dirname(nbpath)] = nb;
-                    }
-
-                    resolve(nb);
-                } catch(e) {
-                    reject(new Error('Error parsing notebook JSON'));
-                }
+                nbfile = _appendExt(nbpath);
             }
+
+            return new Promise(function(resolve, reject) {
+                var nbAbsPath = path.join(DATA_DIR, nbfile);
+                fs.readFile(nbAbsPath, 'utf8', function(err, rawData) {
+                    if (err) {
+                        reject(new Error('Error loading notebook: ' + err.message));
+                    } else {
+                        try {
+                            var nb = JSON.parse(rawData);
+                            // cache notebook for future reads -- use given `nbpath` since that
+                            // is path from request. later calls will look up using request path.
+                            store[nbpath] = nb; 
+                            resolve(nb);
+                        } catch(e) {
+                            reject(new Error('Error parsing notebook JSON'));
+                        }
+                    }
+                });
+            });
         });
-    });
 }
 
 function list(dir) {
@@ -139,11 +145,11 @@ function list(dir) {
     });
 }
 
-function get(nbpath) {
+function get(nbpath, stats) {
     if (store.hasOwnProperty(nbpath)) {
         return Promise.resolve(store[nbpath]);
     } else {
-        return _loadNb(nbpath);
+        return _loadNb(nbpath, stats);
     }
 }
 
@@ -390,11 +396,6 @@ module.exports = {
      * @return {Promise} resolved with list of contents
      */
     list: list,
-    /**
-     * Deletes the specified notebook
-     * @param {String} nbpath - path to notebook to delete
-     */
-    remove: remove,
     /**
      * Runs `stat` on the specified path
      * @param {String} nbpath - path that may be a notebook or directory
