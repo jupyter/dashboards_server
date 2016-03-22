@@ -6,12 +6,12 @@ FROM jupyter-incubator/dashboard-server
 USER root
 
 # Xvfb Setup
-RUN chmod 744 scripts/run-tests-linux
+RUN chmod 744 etc/scripts/run-tests-linux
 ENV DISPLAY :9.0
 
 USER node
 
 # run-tests script runs Xvfb before tests so Electron will work properly
 # Tests are run via npm scripts with the script name specified with CMD
-ENTRYPOINT ["scripts/run-tests-linux"]
+ENTRYPOINT ["etc/scripts/run-tests-linux"]
 CMD ["test"]
