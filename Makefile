@@ -32,7 +32,6 @@ help:
 clean:
 	@-rm -rf certs
 	@-rm -rf data/demo data/test
-	@-rm -rf ext
 	@-rm -rf node_modules
 	@-rm -rf public/components
 	@-rm -rf public/css
