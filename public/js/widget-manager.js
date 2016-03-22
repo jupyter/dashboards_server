@@ -46,6 +46,22 @@ define([
 
     WidgetManager.prototype = Object.create(Widgets.ManagerBase.prototype);
 
+    //--------------------------------------------------------------------
+    // Class level
+    //--------------------------------------------------------------------
+
+    WidgetManager.register_widget_model = function(model_name, model_type) {
+        return Widgets.ManagerBase.register_widget_model.apply(this, arguments);
+    };
+
+    WidgetManager.register_widget_view = function(view_name, view_type) {
+        return Widgets.ManagerBase.register_widget_view.apply(this, arguments);
+    };
+
+
+    //--------------------------------------------------------------------
+    // Instance level
+    //--------------------------------------------------------------------
     /*
      * Called when a jupyter widget is added to the DOM.
      *
