@@ -120,6 +120,15 @@ requirejs([
         var nb = jup.notebook = jup.notebook || {};
         nb.base_url = document.baseURI;
         nb.events = nb.events || $({});
+
+        // setup module paths used by plugins
+        require.config({
+            map: {
+                '*': {
+                    'nbextensions/widgets/widgets/js/widget': 'jupyter-js-widgets'
+                }
+            }
+        });
     }
 
     function _setKernelShims(kernel) {
@@ -150,18 +159,19 @@ requirejs([
             var sep = path[path.length-1] === '/' ? '' : '/';
             require.config({
                 paths: {
-                    'urth_widgets': a.protocol + '//' + a.host + path + sep + 'urth_widgets'
+                    'nbextensions/urth_widgets': path + sep + 'urth_widgets'
                 }
             });
 
-            require(['urth_widgets/js/init/init'], function(DeclWidgets) {
+            require(['nbextensions/urth_widgets/js/init/init'], function(declWidgetsInit) {
                 // initialize Declarative Widgets
-                DeclWidgets({
-                    namespace: window.Jupyter,
-                    events: window.Jupyter.notebook.events,
-                    WidgetManager: WidgetManager,
-                    WidgetModel: Widgets.WidgetModel
-                }).then(deferred.resolve);
+                declWidgetsInit({
+                        namespace: window.Jupyter,
+                        events: window.Jupyter.notebook.events,
+                        WidgetManager: WidgetManager,       // backwards compatibility
+                        WidgetModel: Widgets.WidgetModel    // backwards compatibility
+                    })
+                    .then(deferred.resolve);
             });
         } else {
             console.log('Declarative Widgets not supported ("urth_components" directory not found)');
