@@ -5,11 +5,12 @@
 * Clean up examples directory and include an intro dashboard-notebook
 * Support matplotlib, bokeh, plot.ly (`make examples` for a demo)
 * Support PassportJS plugins for custom authentication (include Twitter and Box OAuth as examples)
-* Fix support for bundled dashboards using `jupyter_declarativewidgets>=0.4.0,<0.5.0`)
+* Fix support for bundled dashboards using `jupyter_declarativewidgets>=0.5.0.dev0`)
 * Fix traceback output formatting in the JS console
 * Fix caching of notebooks uploaded through the API
 * Delay kernel cleanup on Websocket disconnect to allow reconnect within a time window
 * Remove Gridstack and bower dependencies
+* Update `jupyter-js-widgets` dependency to 0.0.17
 
 ## 0.3.0 (2016-03-04)
 
