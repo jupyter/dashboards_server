@@ -30,14 +30,6 @@ RUN mkdir -p /home/node/app/ext
 
 WORKDIR /home/node/app
 
-# 'jupyter-js-widgets' isn't currently published as npm module, so download directly from repo
-RUN cd ext && \
-    git clone https://github.com/ipython/ipywidgets.git && \
-    cd ipywidgets && \
-    git checkout 851fd648195be1f42cab2560600c3b629bbe3330 && \
-    cd jupyter-js-widgets && \
-    npm install --quiet
-
 # npm install separately, so it is properly cached by docker and not affected by
 # changes in rest of source
 ADD package.json package.json

@@ -33,7 +33,7 @@ gulp.task('webpack:components', function(done) {
             entry: {
                 'jupyter-js-output-area': './node_modules/jupyter-js-notebook/lib/output-area/index.js',
                 'jupyter-js-services': './node_modules/jupyter-js-services/lib/index.js',
-                'jupyter-js-widgets': './node_modules/jupyter-js-widgets/src/index.js',
+                'jupyter-js-widgets': ['./node_modules/jupyter-js-widgets/src/index.js'],
                 'ansi-parser': './node_modules/ansi-parser/lib/index.js'
             },
             module: {
@@ -42,12 +42,7 @@ gulp.task('webpack:components', function(done) {
                     { test: /\.json$/, loader: 'json-loader' },
                     // jquery-ui loads some images
                     { test: /\.(jpg|png|gif)$/, loader: "file" }
-                ],
-
-                // NOTE: This is required when building `widgets` from src
-                // Disable handling of unknown requires
-                unknownContextRegExp: /$^/,
-                unknownContextCritical: false
+                ]
             },
             externals: [
                 // 'backbone',      // as of 2016-02-22, only used by *-widgets
