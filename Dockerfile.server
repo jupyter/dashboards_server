@@ -5,6 +5,21 @@ FROM node:5.5
 
 USER root
 
+# Install Xvfb and its dependencies needed to run Electron (Nightmare tests)
+RUN apt-get update && \
+    apt-get install -y \
+    libgtk2.0-0 \
+    libgconf-2-4 \
+    libasound2 \
+    libxtst6 \
+    libxss1 \
+    libnss3 \
+    libnotify-dev \
+    libnotify4 \
+    libgconf2-4 \
+    dbus-x11 \
+    xvfb
+
 # for debugging purposes, setup node-inspector
 RUN npm install -g node-inspector
 # add an unprivileged node user

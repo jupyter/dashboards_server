@@ -1,0 +1,10 @@
+#!/bin/bash
+# Copyright (c) Jupyter Development Team.
+# Distributed under the terms of the Modified BSD License.
+
+# Run Xvfb in the background
+if [ `which Xvfb` ]; then
+    Xvfb -ac -screen scrn 1280x2000x24 :9.0 &
+fi
+
+npm run ${1:-test}

@@ -3,8 +3,7 @@
  * Distributed under the terms of the Modified BSD License.
  */
 
-var sinon = require('sinon');
-var chai = require('chai').use(require('sinon-chai'));
+var chai = require('chai');
 var expect = chai.expect;
 var request = require('request');
 var fs = require('fs');
@@ -12,7 +11,6 @@ var path = require('path');
 var urljoin = require('url-join');
 
 var appUrl = process.env.APP_URL;
-var uploadUrl, getUrl;
 
 var resourcesDir = '../../resources';
 var notebookFile = path.join(resourcesDir, 'upload-notebook-test.ipynb');
@@ -117,7 +115,7 @@ describe('upload notebook', function() {
         var url = randomUrl();
         upload(url.postUrl, notebookFile, function(err, res) {
             expect(res.statusCode).to.equal(201);
-            
+
             upload(url.postUrl, notebookFile2, function(err, res) {
                 expect(res.statusCode).to.equal(201);
                 checkExists(url.getUrl, '2nd Upload notebook test', done);
@@ -125,7 +123,7 @@ describe('upload notebook', function() {
         });
     });
 
-    it('should upload a notebook to a subdirectory', function() {
+    it('should upload a notebook to a subdirectory', function(done) {
         // upload to /dashboards/it_dir
         var url = randomUrl('it_dir');
         upload(url.postUrl, notebookFile, function(err, res) {

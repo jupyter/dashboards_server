@@ -11,6 +11,8 @@ KG_IMAGE_NAME:=jupyter-incubator/kernel-gateway-extras
 KG_CONTAINER_NAME:=kernel-gateway
 HTTP_PORT?=3000
 HTTPS_PORT?=3001
+TEST_CONTAINER_NAME:=$(DASHBOARD_CONTAINER_NAME)-test
+TEST_IMAGE_NAME:=jupyter-incubator/$(TEST_CONTAINER_NAME)
 
 help:
 	@echo 'Make commands:'
@@ -47,12 +49,16 @@ dashboard-server-image:
 	@echo '-- Building dashboard server image'
 	@docker build -f Dockerfile.server -t $(DASHBOARD_IMAGE_NAME) .
 
-images: kernel-gateway-image dashboard-server-image
+test-image:
+	@echo '-- Building dashboard server test image'
+	@docker build -f Dockerfile.test -t $(TEST_IMAGE_NAME) .
+
+images: kernel-gateway-image dashboard-server-image test-image
 build: images
 
 kill:
 	@echo '-- Removing Docker containers'
-	@-docker rm -f $(DASHBOARD_CONTAINER_NAME) $(KG_CONTAINER_NAME) 2> /dev/null || true
+	@-docker rm -f $(DASHBOARD_CONTAINER_NAME) $(KG_CONTAINER_NAME) $(TEST_CONTAINER_NAME) 2> /dev/null || true
 
 ############### Dashboard server development on host
 
@@ -136,21 +142,21 @@ demo-container: | build kernel-gateway-container
 	$(DASHBOARD_IMAGE_NAME) $(CMD)
 
 debug-container: CMD=start-debug
-debug-container: run
+debug-container: demo-container
 
 logging-container: CMD=start-logging
-logging-container: run
+logging-container: demo-container
 
 ############### Unit and integration tests
 
 test-container: CMD?=test
-test-container: SERVER_NAME?=$(DASHBOARD_CONTAINER_NAME)
+test-container: SERVER_NAME?=$(TEST_CONTAINER_NAME)
 test-container: DOCKER_OPTIONS?=
 test-container:
 	@docker run -it --rm \
 		--name $(SERVER_NAME) \
 		$(DOCKER_OPTIONS) \
-		$(DASHBOARD_IMAGE_NAME) $(CMD)
+		$(TEST_IMAGE_NAME) $(CMD)
 
 test: | build test-container
 
