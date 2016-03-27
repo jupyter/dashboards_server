@@ -11,6 +11,7 @@ var exphbs  = require('express-handlebars');
 var debug = require('debug')('dashboard-proxy:server');
 var passport = require('passport');
 var ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
+var favicon = require('serve-favicon');
 var flash = require('connect-flash');
 
 var hbsHelpers = require('./app/handlebars-helpers');
@@ -52,6 +53,7 @@ app.use(logger('dev'));
 app.use(cookieParser());
 app.use(flash());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(favicon(__dirname + '/public/favicon.ico', { maxAge: 604800000})); // maxAge: 1 week
 
 // redirect trailing slash
 app.use(function(req, res, next) {
