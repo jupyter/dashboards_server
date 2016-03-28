@@ -3,17 +3,6 @@
 
 FROM jupyter/pyspark-notebook:0017b56d93c9
 
-USER root
-
-# install latest version of node & npm (this and git clone also requires ca-certs)
-RUN apt-get update && \
-    apt-get install -yq --no-install-recommends ca-certificates curl
-RUN curl -sL https://deb.nodesource.com/setup_5.x | bash -
-RUN apt-get update && \
-    apt-get install -yq --no-install-recommends git nodejs
-
-USER jovyan
-
 RUN pip install jupyter_kernel_gateway==0.3.1
 # install ipywidgets from github for now (5.x branch)
 RUN pip uninstall -y ipywidgets && \
