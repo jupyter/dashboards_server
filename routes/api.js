@@ -28,12 +28,13 @@ var apiRe = new RegExp('^/api(/.*$)');
 var kernelIdRe = new RegExp('^.*/kernels/([^/]*)');
 
 var proxy = httpProxy.createProxyServer({
-        target: urljoin(kgUrl, kgBaseUrl, '/api'),
-        changeOrigin: true,
-        hostRewrite: true,
-        autoRewrite: true,
-        protocolRewrite: true
-    });
+    target: urljoin(kgUrl, kgBaseUrl, '/api'),
+    changeOrigin: true,
+    hostRewrite: true,
+    autoRewrite: true,
+    protocolRewrite: true,
+    ssl: config.get('SSL_OPTIONS')
+});
 
 var substituteCodeCell = function(payload) {
     debug('PROXY: received message from client WS: ' + (payload));
