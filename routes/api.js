@@ -27,13 +27,16 @@ var disconnectedKernels = {};
 var apiRe = new RegExp('^/api(/.*$)');
 var kernelIdRe = new RegExp('^.*/kernels/([^/]*)');
 
+// Create the proxy server instance. Don't bother to configure SSL here because
+// it's not exposed directly. Rather, it's part of a proxyRoute that is used
+// by the top-level app.
 var proxy = httpProxy.createProxyServer({
-        target: urljoin(kgUrl, kgBaseUrl, '/api'),
-        changeOrigin: true,
-        hostRewrite: true,
-        autoRewrite: true,
-        protocolRewrite: true
-    });
+    target: urljoin(kgUrl, kgBaseUrl, '/api'),
+    changeOrigin: true,
+    hostRewrite: true,
+    autoRewrite: true,
+    protocolRewrite: true
+});
 
 var substituteCodeCell = function(payload) {
     debug('PROXY: received message from client WS: ' + (payload));
