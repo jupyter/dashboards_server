@@ -40,6 +40,9 @@
     KG_BASE_URL: ""
     // Delay kernel cleanup for this many milliseconds to allow a client to reconnect
     KG_KERNEL_RETENTIONTIME: 30000
+    // Forward auth strategy user profile to every kernel launched for every dashboard visited on the server
+    // e.g., so the kernel can re-use an auth token to access an external service
+    KG_FORWARD_USER_AUTH: false
 
     //////////////////////////////
     // Dashboard rendering options

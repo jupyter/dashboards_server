@@ -33,8 +33,7 @@ define([
             }
         };
 
-        return Services.startNewKernel(kernelOptions)
-            .then(function(kernel) {
+        return Services.startNewKernel(kernelOptions).then(function(kernel) {
                 _kernel = kernel;
 
                 // show a busy indicator when communicating with kernel

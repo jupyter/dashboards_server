@@ -61,33 +61,75 @@ var nbstoreStub = {
     }
 };
 
+var bodyParserStub = {
+    json: function() {
+        return (function(req, res, next) {
+            next();
+        });
+    }
+};
+
 var api = proxyquire('../../../routes/api', {
     'http-proxy': httpProxyStub,
+    'body-parser': bodyParserStub,
     '../app/notebook-store': nbstoreStub
 });
 
+// Get a handle to the server.on('upgrade', cb) callback function
+var serverUpgradeCallback = null;
+var req = {
+    method: 'GET',
+    connection: {
+        server: {
+            on: function(topic, callback) {
+                if (topic === 'upgrade') {
+                    serverUpgradeCallback = callback;
+                }
+            }
+        }
+    },
+    url: '/api/kernels/12345/channels'
+};
 
 //////////
 // TESTS
 //////////
 
+describe('kernel creation api', function() {
+    var createReq = Object.assign({}, req, {
+        method: 'POST',
+        url: '/kernels',
+        user: {username: 'fake-user'},
+        body: {name: 'fake-kernel'},
+        headers: {}
+    });
+    var spy;
 
-describe('routes: api', function() {
+    before(function() {
+        spy = sinon.spy(request, 'Request');
+    });
+    
+    after(function() {
+        spy.restore();
+        config.set('KG_FORWARD_USER_AUTH', false);
+    });
+    
+    it('should not include user auth', function() {
+        config.set('KG_FORWARD_USER_AUTH', false);
+        api.handle(createReq, {}, null)
+        expect(createReq.body.env).to.be.undefined;
+    });
+    
+    it('should include user auth', function() {
+        config.set('KG_FORWARD_USER_AUTH', true);
+        api.handle(createReq, {}, null)
+        var env = createReq.body.env;
+        expect(env).to.have.property('KERNEL_USER_AUTH');
+        expect(JSON.parse(env.KERNEL_USER_AUTH)).to.deep.equal(createReq.user);
+    });
+});
 
-    // Get a handle to the server.on('upgrade', cb) callback function
-    var serverUpgradeCallback = null;
-    var req = {
-        connection: {
-            server: {
-                on: function(topic, callback) {
-                    if (topic === 'upgrade') {
-                        serverUpgradeCallback = callback;
-                    }
-                }
-            }
-        },
-        url: '/api/kernels/12345'
-    };
+describe('websocket proxy api', function() {
     // Get a handle to the socket.on('close', cb) callback function
     var emitSpy = sinon.spy();
     var socketCloseCallback = null;
@@ -102,7 +144,7 @@ describe('routes: api', function() {
 
     before(function() {
         // initialize state of websocket handling
-        api(req, {}, null);
+        api.handle(req, sinon.spy(), null);
         // should have added a server upgrade handler
         expect(serverUpgradeCallback).to.not.be.null;
         serverUpgradeCallback(req, socket, null);
