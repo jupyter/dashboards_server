@@ -1,4 +1,3 @@
-.git
-bower_components
-ext
-node_modules
+.git/
+node_modules/
+etc/notebooks/
