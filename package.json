@@ -1,6 +1,9 @@
 {
   "name": "jupyter-dashboard-server",
   "version": "0.5.0-dev",
+  "engines": {
+    "node": "5.10.0"
+  },
   "private": true,
   "scripts": {
     "build": "gulp build",
