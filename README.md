@@ -29,38 +29,37 @@ The behavior of the application is similar to that of [Thebe](https://github.com
 * The browser client can only send [Jupyter comm messages](http://jupyter-client.readthedocs.org/en/latest/messaging.html#opening-a-comm) to kernels (*not* arbitrary code).
 * The application uses the [jupyter-js-services](https://github.com/jupyter/jupyter-js-services) and [jupyter-js-widgets](https://github.com/ipython/ipywidgets/tree/master/jupyter-js-widgets) libraries for communication with kernels.
 
-## Detailed Documentation
-
-* [Server API](https://github.com/jupyter-incubator/dashboards_server/wiki/Server-API) - server endpoints
-    - Also contains information about **bundled dashboards** (allowing specification of external resources).
-* [Authentication](https://github.com/jupyter-incubator/dashboards_server/wiki/Authentication) - examples of integrating 3rd-party authentication strategies
-
 ## Try It
 
-We have not yet made a standalone release of this project (e.g., on npm). If you want to try it today, you can run the demos here in Docker. A simple way to run [Docker](https://www.docker.com/) is to use [docker-machine](https://docs.docker.com/machine/get-started/). After setting up Docker, do the following:
+If you want to see the dashboard server in action, you can run a handful of demos we included in this project in a Docker container. After setting up Docker (e.g. using [docker-machine](https://docs.docker.com/machine/get-started/)), do the following in a git clone of this repo:
 
 ```
 make build
+make examples
 make demo-container
 ```
 
 Open your web browser and point it to the dashboards server running on your Docker host at `http://<docker host ip>:3000/`.
 
-To see another notebook as a dashboard:
-
-1. Create a dashboard layout in Jupyter Notebook using the `jupyter_dashboards` extension.
-2. Copy the `*.ipynb` file to the `data/` directory in the project root.
-3. Run `make demo-container` again -- this will rebuild the Docker image and restart the Node application container.
-
-**Note** that this project is a work in progress and so many notebooks with dashboard layouts and interactive widgets will not work here yet.
-
 ## Deploy It
 
-A minimal deployment of the dashboards server has the following components:
+The dashboard server is meant to enable the following workflow:
+
+1. Alice authors a notebook document using Jupyter Notebook.
+2. Alice adds a dashboard layout to her notebook using the `jupyter_dashboards` extension.
+3. Alice [associates required frontend assets](https://github.com/jupyter-incubator/contentmanagement/blob/master/etc/notebooks/associations_demo/associations_demo.ipynb) with her notebook.
+4. Alice one-click deploys her notebook and associated assets to a `jupyter_dashboards_server` using `jupyter_dashboards_bundlers`.
+5. Bob visits the dashboards server.
+6. Bob interacts with Alice's notebook as a dashboard.
+7. Alice updates her notebook and redeploys it to the dashboards server.
+
+This workflow requires multiple components working in concert like so:
 
 ![Minimal dashboard app deployment diagram](etc/simple_deploy.png)
 
-For more details, including use cases and alternative deployments, see the [dashboards deployment roadmap](https://github.com/jupyter-incubator/dashboards/wiki/Deployment-Roadmap).
+To bring all of these pieces together, start with the [`docker-compose` recipe outlined in this gist](https://gist.github.com/parente/527cea0481afe9fabbcd). Modify it to suit your needs, or bring your own DevOps tooling to bear. (We'll gladly take PRs that reduce the complexity of getting everything set up!)
+
+See the [dashboards deployment roadmap](https://github.com/jupyter-incubator/dashboards/wiki/Deployment-Roadmap) for additional use cases and potential deployments.
 
 ## Develop It
 
@@ -137,3 +136,9 @@ make test
 # backend integration tests
 make integration-test
 ```
+
+## Detailed Developer Documentation
+
+* [Server API](https://github.com/jupyter-incubator/dashboards_server/wiki/Server-API) - server endpoints
+    - Also contains information about **bundled dashboards** (allowing specification of external resources).
+* [Authentication](https://github.com/jupyter-incubator/dashboards_server/wiki/Authentication) - examples of integrating 3rd-party authentication strategies
