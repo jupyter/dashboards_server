@@ -126,7 +126,7 @@ gulp.task('watch', function() {
 });
 
 var nodemonOptions = {
-    script: 'bin/www',
+    script: 'bin/jupyter-dashboards-server',
     ext: 'js handlebars coffee',
     stdout: false
 };
