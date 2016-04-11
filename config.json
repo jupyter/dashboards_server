@@ -1,4 +1,9 @@
-// Hjson format, see http://hjson.org for syntax
+// nconf default options expressed in hjson format
+// Order of precendence is:
+// 1. Command line arguments
+// 2. Environment variables
+// 3. Values in the package config.json (shown below)
+
 {
     ///////////////////////////
     // Dashboard Server options

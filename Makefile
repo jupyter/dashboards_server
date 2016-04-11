@@ -191,7 +191,7 @@ integration-test-auth-local: | kill build
 	@echo '-- Running system integration tests using local user auth...'
 	$(RUN_INTEGRATION_TEST)
 	
-install-test:
+install-test: ## Run install/uninstall test in a container
 	@echo '-- Running global install/uninstall test...'
 	$(DASHBOARD_SERVER) -it --rm \
 		-v `pwd`:/src \
@@ -201,6 +201,7 @@ install-test:
 		-c 'cd /tmp && \
 			npm install --quiet /src && \
 			test -f ./node_modules/.bin/jupyter-dashboards-server && \
+			./node_modules/.bin/jupyter-dashboards-server --help && \
 			npm uninstall --quiet jupyter-dashboards-server'
 
 ############### Self-signed HTTPS certs

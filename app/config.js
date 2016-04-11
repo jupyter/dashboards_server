@@ -13,6 +13,13 @@ var config = nconf.use('memory')
                   .env()
                   .file({ file: 'config.json', format: hjson });
 
+// Show the config defaults for --help
+if(config.get('help')) {
+    var text = fs.readFileSync(path.join(__dirname, '..', 'config.json'), 'utf-8');
+    console.log(text);
+    process.exit(0);
+}
+
 // Shortcut to set local auth strategy with a shared username/password.
 // Validation of username/password happens in the auth-local module since it's
 // specific to this strategy.
