@@ -190,6 +190,18 @@ integration-test-auth-local: PASSWORD=testpass
 integration-test-auth-local: | kill build
 	@echo '-- Running system integration tests using local user auth...'
 	$(RUN_INTEGRATION_TEST)
+	
+install-test:
+	@echo '-- Running global install/uninstall test...'
+	$(DASHBOARD_SERVER) -it --rm \
+		-v `pwd`:/src \
+		--user root \
+		--entrypoint /bin/bash \
+		$(DASHBOARD_IMAGE_NAME) \
+		-c 'cd /tmp && \
+			npm install --quiet /src && \
+			test -f ./node_modules/.bin/jupyter-dashboards-server && \
+			npm uninstall --quiet jupyter-dashboards-server'
 
 ############### Self-signed HTTPS certs
 
