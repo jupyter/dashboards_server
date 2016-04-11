@@ -6,8 +6,10 @@ var nconf = require('nconf');
 var hjson = require('hjson');
 var path = require('path');
 var fs = require('fs');
+var debug = require('debug')('dashboard-proxy:config');
 
-var config = nconf.argv()
+var config = nconf.use('memory')
+                  .argv()
                   .env()
                   .file({ file: 'config.json', format: hjson });
 
@@ -21,7 +23,25 @@ if (hasUsername && hasPassword && !config.get('AUTH_STRATEGY')) {
 }
 
 // build the full path to the data directory
-config.set('NOTEBOOKS_DIR', path.join(__dirname, '..', config.get('NOTEBOOKS_DIR')));
+var nbDir = config.get('NOTEBOOKS_DIR');
+if(!nbDir) {
+    // Use the example data directory in the package by default
+    nbDir = path.join(__dirname, '..', 'data');
+    config.set('NOTEBOOKS_DIR', nbDir);
+} else {
+    // Resolve user provided paths relative to the current working dir
+    nbDir = path.resolve(nbDir);
+    // Create directory if it does not exist
+    try {
+        fs.mkdirSync(nbDir);
+    } catch(e) {
+        if(e.code !== 'EEXIST') {
+            throw e;
+        }
+    }
+    config.set('NOTEBOOKS_DIR', nbDir);
+}
+debug('resolved NOTEBOOKS_DIR: ' + config.get('NOTEBOOKS_DIR'));
 
 // TODO Move vars to own module
 config.set('DB_FILE_EXT', '.ipynb');

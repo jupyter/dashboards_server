@@ -2,6 +2,7 @@
 .travis.yml
 .gitignore
 Dockerfile.*
+*.log
 etc/
 certs/
 test/

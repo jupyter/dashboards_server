@@ -15,6 +15,7 @@ var DB_EXT = config.get('DB_FILE_EXT');
 var DATA_DIR = config.get('NOTEBOOKS_DIR');
 var INDEX_NB_NAME = config.get('DB_INDEX');
 var ZIP_EXT = '.zip';
+debug('store dir: ' + DATA_DIR);
 
 var allowedUploadExts = [ DB_EXT, ZIP_EXT ];
 

@@ -2,3 +2,5 @@
 node_modules/
 etc/
 data/
+!data/INTRO
+*.log

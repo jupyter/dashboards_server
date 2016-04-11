@@ -16,8 +16,10 @@
     HTTPS_KEY_FILE: null
     // Optional HTTPS certificate
     HTTPS_CERT_FILE: null
-    // Directory that contains notebooks to serve as dashboards
-    NOTEBOOKS_DIR: ./data/
+    // Directory that contains notebooks to serve as dashboards relative to
+    // the current working directory. Defaults to <package-dir>/data if left 
+    // unset.
+    NOTEBOOKS_DIR: ""
     // Secret for authentication tokens
     AUTH_TOKEN: null
     // User auth strategy (default: no auth)

@@ -6,3 +6,4 @@ public/urth_components/
 .DS_Store
 data/demo/
 data/test/
+*.log
