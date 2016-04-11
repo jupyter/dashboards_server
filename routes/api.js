@@ -7,6 +7,7 @@ var debug = require('debug')('dashboard-proxy:server');
 var error = require('debug')('dashboard-proxy:server:error');
 var Buffer = require('buffer').Buffer;
 var BufferList = require('../node_modules/websocket/vendor/FastBufferList');
+var bodyParser = require('body-parser');
 var WebSocketFrame = require('websocket').frame;
 var nbstore = require('../app/notebook-store');
 var config = require('../app/config');
@@ -15,6 +16,7 @@ var request = require('request');
 var url = require('url');
 var urljoin = require('url-join');
 var urlToDashboard = require('./url-to-dashboard');
+var router = require('express').Router();
 
 var kgUrl = config.get('KERNEL_GATEWAY_URL');
 var kgAuthToken = config.get('KG_AUTH_TOKEN');
@@ -238,14 +240,70 @@ var removeSession = function(sessionId) {
     return delete sessions[sessionId];
 };
 
-var proxyRoute = function(req, res, next) {
-    proxy.web(req, res);
-
+// Create a kernel. Does not use the proxy instance because it must parse the
+// and reserialize the request body with additional information in certain
+// configurations.
+router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, res) {
+    if(kgAuthToken) {
+        req.headers['Authorization'] = 'token ' + kgAuthToken;
+    }
+    
+    // Configure the proxy for websocket connections BEFORE the first websocket
+    // request. Take the opportunity to do so here.
     if (!server) {
         setupWSProxy(req.connection.server);
     }
-};
+    
+    // Forward the user object in the session to the kernel gateway.
+    if(config.get('KG_FORWARD_USER_AUTH') && req.user) {
+        req.body.env = {
+             KERNEL_USER_AUTH: JSON.stringify(req.user)
+        }
+        // Make sure to reset the length and let the client recompute it.
+        delete req.headers['content-length'];
+    }
 
+    // Pass the (modified) request to the kernel gateway.
+    request({
+        url: urljoin(kgUrl, kgBaseUrl, '/api/kernels'),
+        method: 'POST',
+        headers: req.headers,
+        json: req.body
+    }, function(err, response, body) {
+        // Store the notebook path for use within the WS proxy.
+        var notebookPathHeader = req.headers['x-jupyter-notebook-path'];
+        var sessionId = req.headers['x-jupyter-session-id'];
+        if (!notebookPathHeader || !sessionId) {
+            error('Missing notebook path or session ID headers');
+            return res.status(500).end();
+        }
+        var matches = notebookPathHeader.match(/^\/(?:dashboards(-plain)?)?(.*)$/);
+        if (!matches) {
+            error('Invalid notebook path header');
+            return res.status(500).end();
+        }
+        // Store notebook path for later use
+        sessions[sessionId] = matches[2];
+        
+        // Pass the kernel gateway response back to the client.
+        res.set(response.headers);
+        res.status(response.statusCode).json(body);
+    });
+});
+
+// Proxy all unhandled requests to the kernel gateway.
+router.use(function(req, res, next) {
+    // NOTE: Before invoking proxy.web with a websocket upgrade request for 
+    // for the first time, setupWSProxy must be called on a prior request to
+    // properly register for upgrade events. Otherwise, the event handler is
+    // not registered in time.
+    proxy.web(req, res);
+    if (!server) {
+        setupWSProxy(req.connection.server);
+    }
+});
+
+// Add the kernel gateway authorization token before proxying.
 proxy.on('proxyReq', function(proxyReq, req, res, options) {
     if (kgAuthToken) {
         proxyReq.setHeader('Authorization', 'token ' + kgAuthToken);
@@ -253,6 +311,7 @@ proxy.on('proxyReq', function(proxyReq, req, res, options) {
     debug('PROXY: ' + proxyReq.method + ' ' + proxyReq.path);
 });
 
+// Add the kernel gateway authorization token before proxying.
 proxy.on('proxyReqWs', function(proxyReq, req, socket, options, head) {
     if (kgAuthToken) {
         proxyReq.setHeader('Authorization', 'token ' + kgAuthToken);
@@ -260,36 +319,20 @@ proxy.on('proxyReqWs', function(proxyReq, req, socket, options, head) {
     debug('PROXY: WebSocket: ' + req.method + ' ' + proxyReq.path);
 });
 
+// Debug log all proxy responses.
 proxy.on('proxyRes', function (proxyRes, req, res) {
     debug('PROXY: response from ' + req.method + " "+ req.originalUrl,
         JSON.stringify(proxyRes.headers, true, 2));
-
-    // Store the notebook path for use within the WS proxy.
-    if (url.parse(req.originalUrl).pathname === '/api/kernels') {
-        var notebookPathHeader = req.headers['x-jupyter-notebook-path'];
-        var sessionId = req.headers['x-jupyter-session-id'];
-        if (!notebookPathHeader || !sessionId) {
-            // TODO return error status, need notebook path to execute code
-            error('Missing notebook path or session ID headers');
-            return;
-        }
-        var matches = notebookPathHeader.match(/^\/(?:dashboards(-plain)?)?(.*)$/);
-        if (!matches) {
-            // TODO error handling
-            error('Invalid notebook path header');
-            return;
-        }
-        sessions[sessionId] = matches[2]; // store notebook path for later use
-    }
 });
 
+// Log all proxy errors.
 proxy.on('error', function(err, req, res) {
-    debug('PROXY: Error with proxy server ' + err);
+    error('PROXY: Error with proxy server ' + err);
 });
 
+// Debug log all proxy disconnections.
 proxy.on('close', function (proxyRes, proxySocket, proxyHead) {
-    // view disconnected websocket connections
     debug('PROXY: WS client disconnected');
 });
 
-module.exports = proxyRoute;
+module.exports = router;

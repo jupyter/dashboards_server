@@ -38,7 +38,9 @@ RUN npm install --quiet
 # add everything else
 USER root
 ADD . /home/node/app
-RUN chown -R node:node /home/node/app
+RUN chown node:node /home/node/app && \
+    chown -R node:node /home/node/app/data && \
+    chown -R node:node /home/node/app/public
 USER node
 
 # build our node app
