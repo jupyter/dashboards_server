@@ -101,16 +101,20 @@ describe('kernel creation api', function() {
         url: '/kernels',
         user: {username: 'fake-user'},
         body: {name: 'fake-kernel'},
-        headers: {}
+        headers: {
+            'x-jupyter-notebook-path' : '/dashboards/fake/path',
+            'x-jupyter-session-id' : 'fake-session-1235'
+        }
     });
-    var spy;
+    var stub;
 
     before(function() {
-        spy = sinon.spy(request, 'Request');
+        // Override request entirely since we don't care about its behavior
+        stub = sinon.stub(request, 'Request');
     });
     
     after(function() {
-        spy.restore();
+        stub.restore();
         config.set('KG_FORWARD_USER_AUTH', false);
     });
     
@@ -141,10 +145,13 @@ describe('websocket proxy api', function() {
             }
         }
     };
+    var stub;
 
     before(function() {
+        // Override request entirely since we don't care about its behavior
+        stub = sinon.stub(request, 'Request');
         // initialize state of websocket handling
-        api.handle(req, sinon.spy(), null);
+        api.handle(req, {}, null);
         // should have added a server upgrade handler
         expect(serverUpgradeCallback).to.not.be.null;
         serverUpgradeCallback(req, socket, null);
@@ -154,6 +161,10 @@ describe('websocket proxy api', function() {
 
     beforeEach(function() {
         emitSpy.reset();
+    });
+    
+    after(function() {
+        stub.restore();
     });
 
     it('should allow execute request with integer', function(done) {
@@ -239,22 +250,20 @@ describe('websocket proxy api', function() {
     });
 
     it('should kill kernel some time after the socket closed event', function(done) {
-        var spy = sinon.spy(request, 'Request');
         var fakeClock = sinon.useFakeTimers();
         var uri = urljoin(kgUrl, kgBaseUrl, '/api/kernels/12345');
 
         socketCloseCallback();
-        sinon.assert.notCalled(spy);
+        sinon.assert.notCalled(stub);
 
         setTimeout(function() {
-            expect(spy).calledOnce;
-            var options = spy.firstCall.args[0];
+            expect(stub).calledOnce;
+            var options = stub.firstCall.args[0];
             expect(options.url).to.equal(uri);
             expect(options.method).to.equal('DELETE');
             if (kgAuthToken) {
                 expect(options.headers.Authorization).to.equal('token ' + kgAuthToken);
             }
-            spy.restore();
             fakeClock.restore();
             done();
         }, kgKernelRetentionTime);

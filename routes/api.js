@@ -244,8 +244,9 @@ var removeSession = function(sessionId) {
 // and reserialize the request body with additional information in certain
 // configurations.
 router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, res) {
+    var headers = {};
     if(kgAuthToken) {
-        req.headers['Authorization'] = 'token ' + kgAuthToken;
+        headers['Authorization'] = 'token ' + kgAuthToken;
     }
     
     // Configure the proxy for websocket connections BEFORE the first websocket
@@ -259,17 +260,19 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
         req.body.env = {
              KERNEL_USER_AUTH: JSON.stringify(req.user)
         }
-        // Make sure to reset the length and let the client recompute it.
-        delete req.headers['content-length'];
     }
 
     // Pass the (modified) request to the kernel gateway.
     request({
         url: urljoin(kgUrl, kgBaseUrl, '/api/kernels'),
         method: 'POST',
-        headers: req.headers,
+        headers: headers,
         json: req.body
     }, function(err, response, body) {
+        if(err) {
+            error('Error proxying kernel creation request:' + err.toString());
+            return res.status(500).end();
+        }
         // Store the notebook path for use within the WS proxy.
         var notebookPathHeader = req.headers['x-jupyter-notebook-path'];
         var sessionId = req.headers['x-jupyter-session-id'];
