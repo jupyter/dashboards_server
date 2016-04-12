@@ -4,7 +4,7 @@
  */
 
 /**
- * Match notebook styles for rendered html
+ * Match notebook styles
  */
 
 @rendered_html_border_color: #333;
@@ -55,4 +55,31 @@
             margin-top: 1em;
         }
     }
+}
+
+.jp-OutputArea {
+    pre {
+        background-color: transparent;
+        border: none;
+        font-family: monospace;
+        font-size: 1em;
+        line-height: 1.21429em; // match notebook pre font size
+        margin: 0;
+        padding: 0;
+    }
+
+    .p-Widget {
+        padding: 0.4em;
+    }
+}
+
+.dashboard-cell {
+    &.text-cell {
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+}
+
+label {
+    font-weight: normal;
 }
