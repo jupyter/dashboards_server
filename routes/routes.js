@@ -9,11 +9,6 @@ var config = require('../app/config');
 var renderers = require('./renderers');
 var router = require('express').Router();
 
-/* GET / - index notebook or list of files */
-router.get('/', function(req, res, next) {
-    renderers.render(req, res, next);
-});
-
 /* GET /dashboards/* - a single dashboard or list of files (subdirectories) */
 router.get('/dashboards(/*)?', function(req, res, next) {
     renderers.render(req, res, next);
@@ -24,6 +19,11 @@ router.get('/dashboards-plain(/*)?', function(req, res, next) {
     renderers.render(req, res, next, {
         hideChrome: true
     });
+});
+
+/* GET / - same as /dashboards/* for user convenience */
+router.get('/(*)?', function(req, res, next) {
+    renderers.render(req, res, next);
 });
 
 module.exports = router;

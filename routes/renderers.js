@@ -13,8 +13,9 @@ var path = require('path');
 var Promise = require('es6-promise').Promise;
 var urljoin = require('url-join');
 
+var DB_INDEX = config.get('DB_INDEX')
+var DB_INDEX_DIR = config.get('DB_INDEX_DIR')
 var DB_EXT = config.get('DB_FILE_EXT');
-var INDEX_NB_NAME = config.get('DB_INDEX');
 var reNbExt = new RegExp('\\' + DB_EXT + '$');
 
 function _renderList(req, res, next) {
@@ -108,40 +109,62 @@ function _render(req, res, next, opts) {
     var hideChrome = !!(opts && opts.hideChrome);
     var errorOnList = !!(opts && opts.errorOnList);
 
-    // first, check if notebook file (with '.ipynb') exists for this path
+    // First, check if this path refers to a notebook file of the same name
+    // whether or not the oriinal request had an .ipynb on the end of it or not.
+    // We do this so users can visit URLs without adding ipynb at the cost of 
+    // masking folders with the same name as notebook files.
     var dbpathWithExt = dbpath + (reNbExt.test(dbpath) ? '' : DB_EXT);
     nbstore.stat(dbpathWithExt)
         .catch(function(err) {
             if (dbpath === dbpathWithExt) {
                 throw err;
             }
-
-            // with extension didn't exist; try path directly
+            // If the path does not refer to a notebook, stat the path 
+            // directly.
             return nbstore.stat(dbpath);
         })
         .then(function success(stats) {
-            // found file or directory -- render appropriate HTML
             if (stats.isDashboard) {
+                // If the path exists on disk and is a bundled dashboard 
+                // directory, render the appropriate HTML.
                 _renderDashboard(req, res, next, {
                     dbpath: dbpath,
                     hideChrome: hideChrome,
                     stats: stats
-                });
+                }); 
             } else if (stats.isDirectory()) {
-                if (errorOnList) {
-                    var err = new Error('List not supported');
-                    err.status = 404;
-                    next(err);
-                    return;
-                }
-                _renderList(req, res, next);
+                // check if an index bundle exists in this path
+                var dbpathIndex = path.join(dbpath, DB_INDEX_DIR, DB_INDEX);
+
+                // If the path exists on disk and is a normal directory, check
+                // if it contains an index bundle.
+                nbstore.stat(dbpathIndex)
+                    .then(function() {
+                        // If it does contain an index bundle, redirect to it.
+                        // We can't render it from because requests for static
+                        // assets from the frontend will fail (off by one path).
+                        res.redirect(path.join(req.path, DB_INDEX_DIR));
+                    })
+                    .catch(function() { 
+                        // If the directory does not contain an index bundle,
+                        // check if we can render a directory listing or not
+                        // according to our settings.
+                        if (errorOnList) {
+                            var err = new Error('List not supported');
+                            err.status = 404;
+                            next(err);
+                        } else {
+                            _renderList(req, res, next);
+                        }
+                    });
             } else {
-                // plain file -- return contents
+                // If the path is neither a dashboard or a directory, send it
+                // as a regular file.
                 res.sendFile(stats.fullpath);
             }
         })
         .catch(function failure(err) {
-            // nothing found for given path
+            // If path on disk does not exist at all, return 404 not found.
             if (err.code === 'ENOENT') {
                 err.status = 404;
             }
