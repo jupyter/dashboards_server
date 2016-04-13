@@ -6,9 +6,11 @@ var httpProxy = require('http-proxy');
 var debug = require('debug')('dashboard-proxy:server');
 var error = require('debug')('dashboard-proxy:server:error');
 var Buffer = require('buffer').Buffer;
-var BufferList = require('../node_modules/websocket/vendor/FastBufferList');
+// var BufferList = require('../node_modules/websocket/vendor/FastBufferList');
 var bodyParser = require('body-parser');
-var WebSocketFrame = require('websocket').frame;
+// var WebSocketFrame = require('websocket').frame;
+var WebSocketServer = require('websocket').server;
+var WebSocketClient = require('websocket').client;
 var nbstore = require('../app/notebook-store');
 var config = require('../app/config');
 var Promise = require('es6-promise').Promise;
@@ -41,7 +43,7 @@ var proxy = httpProxy.createProxyServer({
 });
 
 var substituteCodeCell = function(payload) {
-    debug('PROXY: received message from client WS: ' + (payload));
+    debug('eceived message from client WS: ' + (payload));
     var transformedData = payload;
 
     // substitute in code if necessary
@@ -88,20 +90,78 @@ var substituteCodeCell = function(payload) {
 };
 
 // reusable objects required by WebSocketFrame
-var maskBytes = new Buffer(4);
-var frameHeader = new Buffer(10);
-var bufferList = new BufferList();
-var wsconfig = {
-    maxReceivedFrameSize: 0x100000  // 1MiB max frame size.
-};
+// var maskBytes = new Buffer(4);
+// var frameHeader = new Buffer(10);
+// var bufferList = new BufferList();
+// var wsconfig = {
+//     maxReceivedFrameSize: 0x100000  // 1MiB max frame size.
+// };
+
+function sendSocketData(conn, data) {
+    if (data.type === 'utf8') {
+        conn.sendUTF(data.utf8Data);
+    } else {
+        conn.sendBytes(data.binaryData);
+    }
+}
 
 function setupWSProxy(_server) {
     debug('setting up WebSocket proxy');
     server = _server;
 
+
+    var wsserver = new WebSocketServer({
+        httpServer: _server,
+        autoAcceptConnections: false
+    });
+
+    wsserver.on('request', function(request) {
+        debug('ws connection request');
+
+        // XXX verify request.origin
+        var servConn = request.accept(null, request.origin);
+
+        servConn.on('close', function(reasonCode, desc) {
+            debug('closing WS server connection:', reasonCode, desc);
+        });
+
+        var client = new WebSocketClient();
+
+        client.on('connect', function(clientConn) {
+            debug('ws client connected');
+
+            // INCOMING: kernel-gateway -> proxy -> client
+            clientConn.on('message', function(data) {
+                debug('INCOMING msg:', data);
+                sendSocketData(servConn, data);
+            });
+            // OUTGOING: client -> proxy -> kernel-gateway
+            servConn.on('message', function(data) {
+                debug('OUTGOING msg:', data);
+                sendSocketData(clientConn, data);
+            });
+        });
+
+        client.on('connectFailed', function(e) {
+            error('ws client failure', e);
+        });
+        client.on('error', function(e) {
+            error('ws client error', e);
+        });
+        client.on('close', function() {
+            debug('closing WS client connection');
+        });
+
+        var wsKgUrl = urljoin(kgUrl, kgBaseUrl, request.resourceURL.path).replace(/^http/, 'ws');
+        client.connect(wsKgUrl, null, request.httpRequest.headers.origin, request.httpRequest.headers);
+    });
+
+    return;
+
+
     // Listen to the `upgrade` event and proxy the WebSocket requests as well.
     _server.on('upgrade', function(req, socket, head) {
-        debug('PROXY: WS upgrading session ' + url.parse(req.url, true).query['session_id']);
+        debug('WS upgrading session ' + url.parse(req.url, true).query['session_id']);
         var _emit = socket.emit;
         socket.emit = function(eventName, data) {
 
@@ -186,7 +246,7 @@ function setupWSProxy(_server) {
 
         // Check if this is a reconnection
         if (disconnectedKernels[sessionId]) {
-            debug('PROXY: WS reattaching to ' + sessionId);
+            debug('WS reattaching to ' + sessionId);
             clearTimeout(disconnectedKernels[sessionId]);
             delete disconnectedKernels[sessionId];
         }
@@ -195,9 +255,9 @@ function setupWSProxy(_server) {
         // a timeout to give clients that accidentally disconnected time to
         // reconnect.
         socket.on('close', function() {
-            debug('PROXY: WS will kill kernel ' + kernelId + ' session ' + sessionId + ' soon');
+            debug('WS will kill kernel ' + kernelId + ' session ' + sessionId + ' soon');
             var waiting = setTimeout(function(sessionId, kernelId) {
-                debug('PROXY: WS closed for ' + sessionId);
+                debug('WS closed for ' + sessionId);
                 delete disconnectedKernels[sessionId];
                 removeSession(sessionId);
                 if (kernelId) {
@@ -216,7 +276,7 @@ function setupWSProxy(_server) {
 
 // Kill kernel on backend kernel gateway.
 var killKernel = function(kernelId) {
-    debug('PROXY: killing kernel ' + kernelId);
+    debug('killing kernel ' + kernelId);
     var endpoint = urljoin(kgUrl, kgBaseUrl, '/api/kernels/', kernelId);
     var headers = {};
     if (kgAuthToken) {
@@ -228,7 +288,7 @@ var killKernel = function(kernelId) {
         headers: headers
     }, function(err, response, body) {
         if (response) {
-          debug('PROXY: kill kernel response: ' +
+          debug('kill kernel response: ' +
               response.statusCode + ' ' + response.statusMessage);
         }
     });
@@ -236,7 +296,7 @@ var killKernel = function(kernelId) {
 
 // Cleanup session
 var removeSession = function(sessionId) {
-    debug('PROXY: Removing session ' + sessionId);
+    debug('Removing session ' + sessionId);
     return delete sessions[sessionId];
 };
 
@@ -311,7 +371,7 @@ proxy.on('proxyReq', function(proxyReq, req, res, options) {
     if (kgAuthToken) {
         proxyReq.setHeader('Authorization', 'token ' + kgAuthToken);
     }
-    debug('PROXY: ' + proxyReq.method + ' ' + proxyReq.path);
+    debug(proxyReq.method + ' ' + proxyReq.path);
 });
 
 // Add the kernel gateway authorization token before proxying.
@@ -319,12 +379,12 @@ proxy.on('proxyReqWs', function(proxyReq, req, socket, options, head) {
     if (kgAuthToken) {
         proxyReq.setHeader('Authorization', 'token ' + kgAuthToken);
     }
-    debug('PROXY: WebSocket: ' + req.method + ' ' + proxyReq.path);
+    debug('WebSocket: ' + req.method + ' ' + proxyReq.path);
 });
 
 // Debug log all proxy responses.
 proxy.on('proxyRes', function (proxyRes, req, res) {
-    debug('PROXY: response from ' + req.method + " "+ req.originalUrl,
+    debug('response from ' + req.method + " "+ req.originalUrl,
         JSON.stringify(proxyRes.headers, true, 2));
 });
 
@@ -335,7 +395,7 @@ proxy.on('error', function(err, req, res) {
 
 // Debug log all proxy disconnections.
 proxy.on('close', function (proxyRes, proxySocket, proxyHead) {
-    debug('PROXY: WS client disconnected');
+    debug('WS client disconnected');
 });
 
 module.exports = router;
