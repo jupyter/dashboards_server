@@ -15,21 +15,33 @@
 </noscript>
 
 <div id="outer-dashboard">
-    <div id="dashboard-container" class="invisible center-container">
-        {{#each notebook.cells}}
-            {{#if metadata.urth.dashboard.layout}}
-                {{#with metadata.urth.dashboard.layout}}
-                    <div class="cell dashboard-cell {{mapCellType ../cell_type}}"
-                        data-cell-index={{@index}}
-                        data-x={{col}}
-                        data-y={{row}}
-                        data-width={{width}}
-                        data-height={{height}}>{{{markdownContent ../cell_type ../source}}}</div>
-                {{/with}}
-            {{else}}
-                <div class="cell dashboard-cell hidden {{mapCellType cell_type}}" data-cell-index={{@index}}></div>
-            {{/if}}
-        {{/each}}
+    {{! Might need to refactor this line to better handle author mode?}}
+    <div id="dashboard-container" class="{{#if hasDashboardLayout}} invisible center-container{{else}}no-layout{{/if}}">
+        {{#if hasDashboardLayout}}
+            {{#each notebook.cells}}
+                {{#if metadata.urth.dashboard.layout}}
+                    {{#with metadata.urth.dashboard.layout}}
+                        <div class="cell dashboard-cell {{mapCellType ../cell_type}}"
+                            data-cell-index={{@index}}
+                            data-x={{col}}
+                            data-y={{row}}
+                            data-width={{width}}
+                            data-height={{height}}>{{{markdownContent ../cell_type ../source}}}</div>
+                    {{/with}}
+                {{! If some cell in the notebook has dashboard metadata, but another cell is missing it, then simply hide the cell }}
+                {{else}}
+                    <div class="cell dashboard-cell hidden {{mapCellType cell_type}}" data-cell-index={{@index}}></div>
+                {{/if}}
+            {{/each}}
+        {{! Notebook has no dashboard metadata, render as normal notebook }}
+        {{else}}
+
+            {{#each notebook.cells}}
+                <div class="cell dashboard-cell {{mapCellType cell_type}}" 
+                    data-cell-index={{@index}}>
+                    </div>
+            {{/each}}
+        {{/if}}
     </div>
 
     <div class="busy-indicator progress">

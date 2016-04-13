@@ -51,10 +51,18 @@ body {
             img {
                 max-width: 100%;
                 height: auto;
+                // margin-left: auto; // possible solution to #146
+                // margin-right: auto;
             }
 
             .widget-subarea:empty {
                 display: none;
+            }
+        }
+
+        &.no-layout {
+            .dashboard-cell{
+                position: relative;
             }
         }
 
