@@ -121,6 +121,11 @@ function setupWSProxy(_server) {
         // XXX verify request.origin
         var servConn = request.accept(null, request.origin);
 
+        var pendingServMsgs = [];
+        var bufferServMsgs = function(data) {
+            pendingServMsgs.push(data);
+        };
+        servConn.on('message', bufferServMsgs);
         servConn.on('close', function(reasonCode, desc) {
             debug('closing WS server connection:', reasonCode, desc);
         });
@@ -135,9 +140,16 @@ function setupWSProxy(_server) {
                 debug('INCOMING msg:', data);
                 sendSocketData(servConn, data);
             });
+
             // OUTGOING: client -> proxy -> kernel-gateway
             servConn.on('message', function(data) {
                 debug('OUTGOING msg:', data);
+                sendSocketData(clientConn, data);
+            });
+
+            // handle any buffered messages
+            servConn.removeListener('message', bufferServMsgs);
+            pendingServMsgs.forEach(function(data) {
                 sendSocketData(clientConn, data);
             });
         });
@@ -153,7 +165,7 @@ function setupWSProxy(_server) {
         });
 
         var wsKgUrl = urljoin(kgUrl, kgBaseUrl, request.resourceURL.path).replace(/^http/, 'ws');
-        client.connect(wsKgUrl, null, request.httpRequest.headers.origin, request.httpRequest.headers);
+        client.connect(wsKgUrl, null);
     });
 
     return;
