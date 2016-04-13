@@ -46,10 +46,8 @@ requirejs([
 ) {
     'use strict';
 
-    var OutputType = OutputArea.OutputType;
     var OutputAreaModel = OutputArea.OutputAreaModel;
     var OutputAreaWidget = OutputArea.OutputAreaWidget;
-    var StreamName = OutputArea.StreamName;
     var Config = window.jupyter_dashboard.Config;
 
     var $container = $('#dashboard-container');
@@ -78,9 +76,8 @@ requirejs([
             _getCodeCells().each(function() {
                 var $cell = $(this);
 
-                // create a jupyter output area mode and widget view for each
-                // dashboard code cell
                 var model = new OutputAreaModel();
+                model.trusted = true; // always trust notebooks
                 var view = new OutputAreaWidget(model);
                 model.outputs.changed.connect(function(sender, args) {
                     if (args.newValue.data &&
@@ -111,6 +108,8 @@ requirejs([
                 widgetManager.trackPending(kernelFuture, $widgetSubArea.get(0), model);
             });
         });
+    }, function(err) {
+        console.error('Failed to start kernel:', err);
     });
 
     // shim Jupyter Notebook objects for backwards compatibility
@@ -139,8 +138,20 @@ requirejs([
             return kernel.status === KernelStatus.Busy || kernel.status === KernelStatus.Idle;
         };
 
-        // kernel has already started
-        nb.events.trigger('kernel_ready.Kernel');
+        // if the kernel is not already started and idle, wait for it to be
+        if (kernel.status !== KernelStatus.Idle) {
+            var puller = function(kernel, status) {
+                if (status === Services.KernelStatus.Idle) {
+                    nb.kernel.statusChanged.disconnect(puller);
+                    nb.events.trigger('kernel_ready.Kernel');
+                }
+            }
+            nb.kernel.statusChanged.connect(puller);
+        }
+        else {
+            // kernel has already started
+            nb.events.trigger('kernel_ready.Kernel');
+        }
     }
 
     /**
@@ -191,7 +202,7 @@ requirejs([
         },
         stream: function(msg, outputAreaModel) {
             var output = {};
-            output.outputType = OutputType.Stream;
+            output.output_type = "stream";
             output.text = msg.content.text;
             switch(msg.content.name) {
                 case "stderr":
@@ -199,7 +210,7 @@ requirejs([
                   console.error(msg.content.name, msg.content.text);
                   break;
                 case "stdout":
-                  output.name = StreamName.StdOut;
+                  output.name = "stdout";
                   outputAreaModel.add(output);
                   break;
                 default:
@@ -208,14 +219,14 @@ requirejs([
         },
         display_data: function(msg, outputAreaModel) {
             var output = {};
-            output.outputType = OutputType.DisplayData;
+            output.output_type = "display_data";
             output.data = msg.content.data;
             output.metadata = msg.content.metadata;
             outputAreaModel.add(output);
         },
         execute_result: function(msg, outputAreaModel) {
             var output = {};
-            output.outputType = OutputType.ExecuteResult;
+            output.output_type = "execute_result";
             output.data = msg.content.data;
             output.metadata = msg.content.metadata;
             output.execution_count = msg.content.execution_count;
