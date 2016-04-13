@@ -9,14 +9,6 @@ var config = require('../app/config');
 var renderers = require('./renderers');
 var router = require('express').Router();
 
-/* GET / - index notebook */
-router.get('/', function(req, res, next) {
-    renderers.render(req, res, next, {
-        hideChrome: true,
-        errorOnList: true
-    });
-});
-
 /* GET /dashboards/* - a single dashboard. */
 router.get('/dashboards(/*)?', function(req, res, next) {
     renderers.render(req, res, next, {
@@ -24,5 +16,14 @@ router.get('/dashboards(/*)?', function(req, res, next) {
         errorOnList: true
     });
 });
+
+/* GET / - same as /dashboards/* for user convenience */
+router.get('/(*)?', function(req, res, next) {
+    renderers.render(req, res, next, {
+        hideChrome: true,
+        errorOnList: true
+    });
+});
+
 
 module.exports = router;
