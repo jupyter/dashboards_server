@@ -190,8 +190,36 @@ integration-test-auth-local: PASSWORD=testpass
 integration-test-auth-local: | kill build
 	@echo '-- Running system integration tests using local user auth...'
 	$(RUN_INTEGRATION_TEST)
-	
-install-test: ## Run install/uninstall test in a container
+
+install-test: CMD=integration-test
+install-test: ## Run basic integration tests after npm install in a container
+	@$(MAKE) kill
+	$(RUN_KERNEL_GATEWAY)
+	@echo '-- Installing and running dashboard server...'
+	$(DASHBOARD_SERVER) -d \
+		-v `pwd`:/src \
+		--entrypoint /bin/bash \
+		-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
+		--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
+		$(DASHBOARD_IMAGE_NAME) \
+		-c 'cd /tmp && \
+			npm install --quiet /src && \
+			test -f ./node_modules/.bin/jupyter-dashboards-server && \
+			./node_modules/.bin/jupyter-dashboards-server'
+	@echo '-- Waiting 60 seconds for install to complete and server to start...'
+	@sleep 60
+	@$(MAKE) test-container \
+		CMD=$(CMD) \
+		SERVER_NAME=$(IT_SERVER_NAME) \
+		DOCKER_OPTIONS="-e APP_URL=http://$(IT_IP):$(HTTP_PORT) \
+			-e KERNEL_GATEWAY_URL=http://$(IT_IP):$(IT_KG_PORT) \
+			-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
+			-e AUTH_TOKEN=$(AUTH_TOKEN) \
+			-e TEST_USERNAME=$(USERNAME) \
+			-e TEST_PASSWORD=$(PASSWORD)";
+	@$(MAKE) kill
+
+quick-install-test: ## Run npm install/uninstall in a container
 	@echo '-- Running global install/uninstall test...'
 	$(DASHBOARD_SERVER) -it --rm \
 		-v `pwd`:/src \
