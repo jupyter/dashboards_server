@@ -9,6 +9,7 @@ var Buffer = require('buffer').Buffer;
 var BufferList = require('../node_modules/websocket/vendor/FastBufferList');
 var bodyParser = require('body-parser');
 var WebSocketFrame = require('websocket').frame;
+var WebSocketConnection = require('websocket').connection;
 var nbstore = require('../app/notebook-store');
 var config = require('../app/config');
 var Promise = require('es6-promise').Promise;
@@ -88,11 +89,24 @@ var substituteCodeCell = function(payload) {
 };
 
 // reusable objects required by WebSocketFrame
-var maskBytes = new Buffer(4);
-var frameHeader = new Buffer(10);
-var bufferList = new BufferList();
+// var maskBytes = new Buffer(4);
+// var frameHeader = new Buffer(10);
+// var bufferList = new BufferList();
 var wsconfig = {
-    maxReceivedFrameSize: 0x100000  // 1MiB max frame size.
+    maxReceivedFrameSize: 0x10000,
+    maxReceivedMessageSize: 0x100000,
+    fragmentOutgoingMessages: true,
+    fragmentationThreshold: 0x4000,
+    keepalive: true,
+    keepaliveInterval: 20000,
+    dropConnectionOnKeepaliveTimeout: true,
+    keepaliveGracePeriod: 10000,
+    useNativeKeepalive: false,
+    assembleFragments: true,
+    autoAcceptConnections: false,
+    ignoreXForwardedFor: false,
+    disableNagleAlgorithm: true,
+    closeTimeout: 5000
 };
 
 function setupWSProxy(_server) {
@@ -102,73 +116,115 @@ function setupWSProxy(_server) {
     // Listen to the `upgrade` event and proxy the WebSocket requests as well.
     _server.on('upgrade', function(req, socket, head) {
         debug('PROXY: WS upgrading session ' + url.parse(req.url, true).query['session_id']);
+
         var _emit = socket.emit;
         socket.emit = function(eventName, data) {
-
-            // Handle TCP data
             if (eventName === 'data') {
-                // Decode one or more websocket frames
-                bufferList.write(data);
-                var dataqueue = [];
-                while (bufferList.length > 0) {
-                    // Parse data. `addData` returns false if we are waiting for
-                    // more data to be sent (fragmented frame).
-                    var frame = new WebSocketFrame(maskBytes, frameHeader, wsconfig);
-
-                    var msgProcessed = true;
-                    if (!frame.addData(bufferList) || !frame.fin) {
-                        error('insufficient data for frame');
-                        // TODO handle large data spread across multiple frames
-                        msgProcessed = false;
-                    }
-                    if (frame.protocolError || frame.frameTooLarge) {
-                        error('an error occurred during parsing of WS data', frame.dropReason);
-                        // cannot handle this message -- close socket
-                        this.end();
-                        return;
-                    }
-
-                    var newdata;
-                    if (msgProcessed && frame.opcode === 0x01) { // TEXT FRAME
-                        newdata = Promise.resolve(
-                                substituteCodeCell(frame.binaryPayload.toString('utf8'))
-                            )
-                            .then(function success(data) {
-                                data = new Buffer(data, 'utf8');
-                                if (data.length > wsconfig.maxReceivedFrameSize) {
-                                    // TODO spread large data across multiple frames
-                                    error('buffer is too big after code substitution');
-                                    // don't send data
-                                    data = new Buffer('');
-                                }
-
-                                var outframe = new WebSocketFrame(maskBytes, frameHeader, wsconfig);
-                                outframe.opcode = 0x01; // TEXT FRAME
-                                outframe.binaryPayload = data;
-                                outframe.mask = frame.mask;
-                                outframe.fin = true;
-                                return outframe.toBuffer();
-                            })
-                            .catch(function failure(err) {
-                                error('Failure when substituting code or re-encoding WS msg', err);
-                                return new Buffer('');
-                            });
-                    } else {
-                        newdata = frame.toBuffer();
-                    }
-
-                    dataqueue.push(newdata);
-                }
-
-                data = Promise.all(dataqueue).then(function(arr) {
-                    return Buffer.concat(arr);
-                });
+                console.log('++ socket.emit(', eventName, data, ')');
             }
-
-            Promise.resolve(data).then(function(data) {
-                _emit.call(socket, eventName, data);
-            });
+            _emit.apply(socket, arguments);
         };
+
+        var conn = new WebSocketConnection(socket, [], null, false /*maskOutgoingPackets*/, wsconfig);
+        // XXX maskOutgoingPackets -- to client, MUST NOT be masked; to server, MAY NEED to be masked
+
+        // fix WS logger to print as soon as message is logged
+        var oldlogfunc = conn._debug;
+        conn._debug = function() {
+            var logger = oldlogfunc.apply(oldlogfunc, arguments);
+            oldlogfunc.printOutput();
+            logger.clear();
+        };
+
+        conn.on('message', function(message) {
+            console.log('++ message:', message);
+        });
+        conn.on('frame', function(frame) {
+            console.log('++ frame:', frame);
+        });
+        conn.on('close', function(reasonCode, desc) {
+            console.log('++ close:', reasonCode, desc);
+        });
+        conn.on('error', function(error) {
+            console.error('++ error:', error);
+        });
+        conn.on('ping', function(cancel, data) {
+            console.log('++ ping:', data);
+        });
+        conn.on('pong', function(data) {
+            console.log('++ pong:', data);
+        });
+
+        conn._addSocketEventListeners();
+
+
+        // var _emit = socket.emit;
+        // socket.emit = function(eventName, data) {
+        //
+        //     // Handle TCP data
+        //     if (eventName === 'data') {
+        //         // Decode one or more websocket frames
+        //         bufferList.write(data);
+        //         var dataqueue = [];
+        //         while (bufferList.length > 0) {
+        //             // Parse data. `addData` returns false if we are waiting for
+        //             // more data to be sent (fragmented frame).
+        //             var frame = new WebSocketFrame(maskBytes, frameHeader, wsconfig);
+        //
+        //             var msgProcessed = true;
+        //             if (!frame.addData(bufferList) || !frame.fin) {
+        //                 error('insufficient data for frame');
+        //                 // TODO handle large data spread across multiple frames
+        //                 msgProcessed = false;
+        //             }
+        //             if (frame.protocolError || frame.frameTooLarge) {
+        //                 error('an error occurred during parsing of WS data', frame.dropReason);
+        //                 // cannot handle this message -- close socket
+        //                 this.end();
+        //                 return;
+        //             }
+        //
+        //             var newdata;
+        //             if (msgProcessed && frame.opcode === 0x01) { // TEXT FRAME
+        //                 newdata = Promise.resolve(
+        //                         substituteCodeCell(frame.binaryPayload.toString('utf8'))
+        //                     )
+        //                     .then(function success(data) {
+        //                         data = new Buffer(data, 'utf8');
+        //                         if (data.length > wsconfig.maxReceivedFrameSize) {
+        //                             // TODO spread large data across multiple frames
+        //                             error('buffer is too big after code substitution');
+        //                             // don't send data
+        //                             data = new Buffer('');
+        //                         }
+        //
+        //                         var outframe = new WebSocketFrame(maskBytes, frameHeader, wsconfig);
+        //                         outframe.opcode = 0x01; // TEXT FRAME
+        //                         outframe.binaryPayload = data;
+        //                         outframe.mask = frame.mask;
+        //                         outframe.fin = true;
+        //                         return outframe.toBuffer();
+        //                     })
+        //                     .catch(function failure(err) {
+        //                         error('Failure when substituting code or re-encoding WS msg', err);
+        //                         return new Buffer('');
+        //                     });
+        //             } else {
+        //                 newdata = frame.toBuffer();
+        //             }
+        //
+        //             dataqueue.push(newdata);
+        //         }
+        //
+        //         data = Promise.all(dataqueue).then(function(arr) {
+        //             return Buffer.concat(arr);
+        //         });
+        //     }
+        //
+        //     Promise.resolve(data).then(function(data) {
+        //         _emit.call(socket, eventName, data);
+        //     });
+        // };
 
         // Add handler for reaping a kernel and removing sessions if the client
         // socket closes.
@@ -248,13 +304,13 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
     if(kgAuthToken) {
         headers['Authorization'] = 'token ' + kgAuthToken;
     }
-    
+
     // Configure the proxy for websocket connections BEFORE the first websocket
     // request. Take the opportunity to do so here.
     if (!server) {
         setupWSProxy(req.connection.server);
     }
-    
+
     // Forward the user object in the session to the kernel gateway.
     if(config.get('KG_FORWARD_USER_AUTH') && req.user) {
         req.body.env = {
@@ -287,7 +343,7 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
         }
         // Store notebook path for later use
         sessions[sessionId] = matches[2];
-        
+
         // Pass the kernel gateway response back to the client.
         res.set(response.headers);
         res.status(response.statusCode).json(body);
@@ -296,7 +352,7 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
 
 // Proxy all unhandled requests to the kernel gateway.
 router.use(function(req, res, next) {
-    // NOTE: Before invoking proxy.web with a websocket upgrade request for 
+    // NOTE: Before invoking proxy.web with a websocket upgrade request for
     // for the first time, setupWSProxy must be called on a prior request to
     // properly register for upgrade events. Otherwise, the event handler is
     // not registered in time.
