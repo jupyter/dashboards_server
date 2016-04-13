@@ -134,7 +134,7 @@ function _render(req, res, next, opts) {
                 }); 
             } else if (stats.isDirectory()) {
                 // check if an index bundle exists in this path
-                var dbpathIndex = path.join(dbpath, DB_INDEX_DIR, DB_INDEX);
+                var dbpathIndex = urljoin(dbpath, DB_INDEX_DIR, DB_INDEX);
 
                 // If the path exists on disk and is a normal directory, check
                 // if it contains an index bundle.
@@ -143,7 +143,7 @@ function _render(req, res, next, opts) {
                         // If it does contain an index bundle, redirect to it.
                         // We can't render it from because requests for static
                         // assets from the frontend will fail (off by one path).
-                        res.redirect(path.join(req.path, DB_INDEX_DIR));
+                        res.redirect(urljoin(req.path, DB_INDEX_DIR));
                     })
                     .catch(function() { 
                         // If the directory does not contain an index bundle,
@@ -158,7 +158,7 @@ function _render(req, res, next, opts) {
                         }
                     });
             } else {
-                // If the path is neither a dashboard or a directory, send it
+                // If the path is neither a dashboard nor a directory, send it
                 // as a regular file.
                 res.sendFile(stats.fullpath);
             }
