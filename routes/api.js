@@ -42,8 +42,10 @@ var proxy = httpProxy.createProxyServer({
     protocolRewrite: true
 });
 
+/**
+ * @return {Promise<Object>}         message data -- may have been changed
+ */
 var substituteCodeCell = function(payload) {
-    debug('eceived message from client WS: ' + (payload));
     var transformedData = payload;
 
     // substitute in code if necessary
@@ -86,7 +88,7 @@ var substituteCodeCell = function(payload) {
             transformedData = '';
         }
     }
-    return transformedData;
+    return Promise.resolve(transformedData);
 };
 
 // reusable objects required by WebSocketFrame
@@ -95,6 +97,10 @@ var substituteCodeCell = function(payload) {
 // var bufferList = new BufferList();
 // var wsconfig = {
 //     maxReceivedFrameSize: 0x100000  // 1MiB max frame size.
+// };
+
+// var wsconfig = {
+//     maxReceivedFrameSize: Math.pow(2, 64)
 // };
 
 function sendSocketData(conn, data) {
@@ -112,7 +118,8 @@ function setupWSProxy(_server) {
 
     var wsserver = new WebSocketServer({
         httpServer: _server,
-        autoAcceptConnections: false
+        autoAcceptConnections: false,
+        maxReceivedFrameSize: Number.MAX_SAFE_INTEGER
     });
 
     wsserver.on('request', function(request) {
@@ -130,21 +137,25 @@ function setupWSProxy(_server) {
             debug('closing WS server connection:', reasonCode, desc);
         });
 
-        var client = new WebSocketClient();
+        var client = new WebSocketClient({
+            maxReceivedFrameSize: Number.MAX_SAFE_INTEGER
+        });
 
         client.on('connect', function(clientConn) {
             debug('ws client connected');
 
             // INCOMING: kernel-gateway -> proxy -> client
             clientConn.on('message', function(data) {
-                debug('INCOMING msg:', data);
+                debug('INCOMING msg :: data length =', (data.utf8Data||data.binaryData).length);
                 sendSocketData(servConn, data);
             });
 
             // OUTGOING: client -> proxy -> kernel-gateway
             servConn.on('message', function(data) {
-                debug('OUTGOING msg:', data);
-                sendSocketData(clientConn, data);
+                debug('OUTGOING msg :: data length =', (data.utf8Data||data.binaryData).length);
+                processOutgoingMsg(data, function(newdata) {
+                    sendSocketData(clientConn, newdata);
+                });
             });
 
             // handle any buffered messages
@@ -285,6 +296,20 @@ function setupWSProxy(_server) {
     });
 }
 
+function processOutgoingMsg(data, cb) {
+    if (data.type === 'utf8') {
+        data = substituteCodeCell(data.utf8Data).then(function(newPayload) {
+            return {
+                type: 'utf8',
+                utf8Data: newPayload
+            };
+        });
+    }
+    Promise.resolve(data).then(function(data) {
+        cb(data);
+    });
+}
+
 
 // Kill kernel on backend kernel gateway.
 var killKernel = function(kernelId) {
@@ -320,13 +345,13 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
     if(kgAuthToken) {
         headers['Authorization'] = 'token ' + kgAuthToken;
     }
-    
+
     // Configure the proxy for websocket connections BEFORE the first websocket
     // request. Take the opportunity to do so here.
     if (!server) {
         setupWSProxy(req.connection.server);
     }
-    
+
     // Forward the user object in the session to the kernel gateway.
     if(config.get('KG_FORWARD_USER_AUTH') && req.user) {
         req.body.env = {
@@ -359,7 +384,7 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
         }
         // Store notebook path for later use
         sessions[sessionId] = matches[2];
-        
+
         // Pass the kernel gateway response back to the client.
         res.set(response.headers);
         res.status(response.statusCode).json(body);
@@ -368,7 +393,7 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
 
 // Proxy all unhandled requests to the kernel gateway.
 router.use(function(req, res, next) {
-    // NOTE: Before invoking proxy.web with a websocket upgrade request for 
+    // NOTE: Before invoking proxy.web with a websocket upgrade request for
     // for the first time, setupWSProxy must be called on a prior request to
     // properly register for upgrade events. Otherwise, the event handler is
     // not registered in time.
