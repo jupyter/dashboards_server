@@ -85,6 +85,13 @@ function _renderDashboard(req, res, next, opts) {
         .then(function success(notebook) {
             debug('Success loading nb');
 
+            // Check if some cell in the notebook has the dashboard metadata
+            var hasDashboardLayout = notebook.cells.some(function(currentCell){
+                return ( currentCell.hasOwnProperty('metadata') &&
+                         currentCell.metadata.hasOwnProperty('urth') &&
+                         currentCell.metadata.urth.hasOwnProperty('dashboard') );
+            });
+
             res.status(200);
             res.render('dashboard', {
                 title: title,
@@ -92,6 +99,7 @@ function _renderDashboard(req, res, next, opts) {
                 username: req.session.username,
                 hideChrome: hideChrome,
                 supportsDeclWidgets: stats.supportsDeclWidgets,
+                hasDashboardLayout: hasDashboardLayout,
                 // need to set document.baseURI with trailing slash (i.e. "/dashboards/nb/") so
                 // that relative paths load correctly
                 baseURI: urljoin(req.originalUrl, '/')
