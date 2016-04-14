@@ -19,7 +19,7 @@ var kgAuthToken = config.get('KG_AUTH_TOKEN');
 var kgBaseUrl = config.get('KG_BASE_URL');
 var kgKernelRetentionTime = config.get('KG_KERNEL_RETENTIONTIME');
 
-var isWsProxySetup = false;
+var wsProxy;
 var sessions = {};
 var disconnectedKernels = {};
 var apiRe = new RegExp('^/api(/.*$)');
@@ -36,27 +36,16 @@ var proxy = httpProxy.createProxyServer({
     protocolRewrite: true
 });
 
-function setupWSProxy(server) {
-    if (!isWsProxySetup) {
-        WsRewriter.setup({
+function initWsProxy(server) {
+    if (!wsProxy) {
+        wsProxy = new WsRewriter({
             server: server,
             host: kgUrl,
             basePath: kgBaseUrl,
-            sessionToNbPathCb: function(session) {
+            sessionToNbPath: function(session) {
                 return urlToDashboard(sessions[session]);
             }
         });
-        isWsProxySetup = true;
-     }
-}
-
-function REFACTOR_ME() {
-    // Listen to the `upgrade` event and proxy the WebSocket requests as well.
-    _server.on('upgrade', function(req, socket, head) {
-        debug('WS upgrading session ' + url.parse(req.url, true).query['session_id']);
-        var _emit = socket.emit;
-        socket.emit = function(eventName, data) {
-        };
 
         // Add handler for reaping a kernel and removing sessions if the client
         // socket closes.
@@ -64,41 +53,40 @@ function REFACTOR_ME() {
         // Assumes kernel ID and session ID are part of request url as follows:
         //
         // /api/kernels/8c51e1d7-7a1c-4ceb-a7dd-3a567f1505b9/channels?session_id=448e417f4c9a582bcaed2905541dcff0
-        var kernelIdMatched = kernelIdRe.exec(req.url);
-        var kernelId = null;
-        if (kernelIdMatched) {
-            kernelId = kernelIdMatched[1];
-        }
-        var query = url.parse(req.url, true).query;
-        var sessionId = query['session_id'];
+        wsProxy.on('request', function(req, conn) {
+            var resUrl = req.resource;
+            var kernelIdMatched = kernelIdRe.exec(resUrl);
+            var kernelId = null;
+            if (kernelIdMatched) {
+                kernelId = kernelIdMatched[1];
+            }
+            var query = url.parse(resUrl, true).query;
+            var sessionId = query['session_id'];
 
-        // Check if this is a reconnection
-        if (disconnectedKernels[sessionId]) {
-            debug('WS reattaching to ' + sessionId);
-            clearTimeout(disconnectedKernels[sessionId]);
-            delete disconnectedKernels[sessionId];
-        }
-
-        // Setup a handler that schedules deletion of running kernels after
-        // a timeout to give clients that accidentally disconnected time to
-        // reconnect.
-        socket.on('close', function() {
-            debug('WS will kill kernel ' + kernelId + ' session ' + sessionId + ' soon');
-            var waiting = setTimeout(function(sessionId, kernelId) {
-                debug('WS closed for ' + sessionId);
+            // Check if this is a reconnection
+            if (disconnectedKernels[sessionId]) {
+                debug('WS reattaching to ' + sessionId);
+                clearTimeout(disconnectedKernels[sessionId]);
                 delete disconnectedKernels[sessionId];
-                removeSession(sessionId);
-                if (kernelId) {
-                    killKernel(kernelId);
-                }
-            }, kgKernelRetentionTime, sessionId, kernelId);
-            disconnectedKernels[sessionId] = waiting;
-        });
+            }
 
-        // remove '/api', otherwise proxies to '/api/api/...'
-        req.url = apiRe.exec(req.url)[1];
-        proxy.ws(req, socket, head);
-    });
+            // Setup a handler that schedules deletion of running kernels after
+            // a timeout to give clients that accidentally disconnected time to
+            // reconnect.
+            conn.on('close', function() {
+                debug('WS will kill kernel ' + kernelId + ' session ' + sessionId + ' soon');
+                var waiting = setTimeout(function(sessionId, kernelId) {
+                    debug('WS closed for ' + sessionId);
+                    delete disconnectedKernels[sessionId];
+                    removeSession(sessionId);
+                    if (kernelId) {
+                        killKernel(kernelId);
+                    }
+                }, kgKernelRetentionTime, sessionId, kernelId);
+                disconnectedKernels[sessionId] = waiting;
+            });
+        });
+     }
 }
 
 // Kill kernel on backend kernel gateway.
@@ -138,7 +126,7 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
 
     // Configure the proxy for websocket connections BEFORE the first websocket
     // request. Take the opportunity to do so here.
-    setupWSProxy(req.connection.server);
+    initWsProxy(req.connection.server);
 
     // Forward the user object in the session to the kernel gateway.
     if(config.get('KG_FORWARD_USER_AUTH') && req.user) {
@@ -181,7 +169,7 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
 
 // Proxy all unhandled requests to the kernel gateway.
 router.use(function(req, res, next) {
-    setupWSProxy(req.connection.server);
+    initWsProxy(req.connection.server);
     proxy.web(req, res);
 });
 

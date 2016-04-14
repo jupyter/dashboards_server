@@ -4,32 +4,42 @@
  */
 var debug = require('debug')('dashboard-proxy:server');
 var error = require('debug')('dashboard-proxy:server:error');
+var EventEmitter = require('events').EventEmitter;
 var nbstore = require('./notebook-store');
 var Promise = require('es6-promise').Promise;
 var urljoin = require('url-join');
+var util = require('util');
 var WebSocketServer = require('websocket').server;
 var WebSocketClient = require('websocket').client;
 
-var sessionToNbPathCb;
+var sessionToNbPath;
 
 // TODO:
 //  - override websocket lib's BufferingLogger
 
 /**
- * Initialize websocket proxy between client/browser and kernel gateway
+ * Websocket proxy between client/browser and kernel gateway which rewrites execution requests to
+ * the gateway, replacing numeric index values with the associated code block.
+ *
+ * Emits the following events:
+ * 		'request': function(req: WebSocketRequest, conn: WebSocketConnection)
+ * 			Fired when the websocket server handles a request from the client/browser.
+ *
  * @param  {Object} args
  * @param  {Server} args.server - HTTP(S) server instance
  * @param  {String} args.host - kernel gateway host/domain
  * @param  {String} args.basePath - kernel gateway base URL
- * @param  {Function} args.sessionToNbPathCb - callback to return a notebook path for the session ID
+ * @param  {Function} args.sessionToNbPath - callback to return a notebook path for the session ID
  */
-function setupWSProxy(args) {
+function WsRewriter(args) {
+    EventEmitter.call(this);
+
     debug('setting up WebSocket proxy');
 
     var server = args.server;
     var host = args.host;
     var basePath = args.basePath;
-    sessionToNbPathCb = args.sessionToNbPathCb;
+    sessionToNbPath = args.sessionToNbPath;
 
     // create a websocket server which will listen for requests coming from the client/browser
     var wsserver = new WebSocketServer({
@@ -38,23 +48,32 @@ function setupWSProxy(args) {
         maxReceivedFrameSize: Number.MAX_SAFE_INTEGER
     });
 
-    wsserver.on('request', function(request) {
+    var rewriter = this;
+    wsserver.on('request', function(req) {
         debug('ws-server connection request');
 
-        // XXX verify request.origin?
-        var servConn = request.accept(null, request.origin);
+        var clientConn = createDeferred();
 
-        // for now, cache any incoming WS messages, until we've established connection with
-        // the kernel gateway
-        var pendingServMsgs = [];
-        var bufferServMsgs = function(data) {
-            pendingServMsgs.push(data);
-        };
-        servConn.on('message', bufferServMsgs);
+        // XXX verify request.origin?
+        var servConn = req.accept(null, req.origin);
+
+        // OUTGOING: client -> proxy -> kernel-gateway
+        servConn.on('message', function(data) {
+            clientConn.then(function(clientConn) {
+                debug('OUTGOING msg :: data length = ' + (data.utf8Data||data.binaryData).length);
+                processOutgoingMsg(data, function(newdata) {
+                    sendSocketData(clientConn, newdata);
+                });
+            });
+        });
 
         servConn.on('close', function(reasonCode, desc) {
-            // XXX TODO
             debug('closing WS server connection:', reasonCode, desc);
+            clientConn.then(function(clientConn) {
+                if (clientConn.connected) {
+                    clientConn.close(reasonCode, desc);
+                }
+            });
         });
 
         // for every WS connection request from the client/browser, create a new connection to
@@ -63,28 +82,22 @@ function setupWSProxy(args) {
             maxReceivedFrameSize: Number.MAX_SAFE_INTEGER
         });
 
-        wsclient.on('connect', function(clientConn) {
-            debug('ws-client connected');
+        wsclient.on('connect', function(_clientConn) {
             // connected to kernel gateway -- now setup proxying between client/browser & gateway
+            debug('ws-client connected');
+            clientConn.resolve(_clientConn);
 
             // INCOMING: kernel-gateway -> proxy -> client
-            clientConn.on('message', function(data) {
+            _clientConn.on('message', function(data) {
                 debug('INCOMING msg :: data length = ' + (data.utf8Data||data.binaryData).length);
                 sendSocketData(servConn, data);
             });
 
-            // OUTGOING: client -> proxy -> kernel-gateway
-            servConn.on('message', function(data) {
-                debug('OUTGOING msg :: data length = ' + (data.utf8Data||data.binaryData).length);
-                processOutgoingMsg(data, function(newdata) {
-                    sendSocketData(clientConn, newdata);
-                });
-            });
-
-            // handle any previously cached messages
-            servConn.removeListener('message', bufferServMsgs);
-            pendingServMsgs.forEach(function(data) {
-                sendSocketData(clientConn, data);
+            _clientConn.on('close', function(reasonCode, desc) {
+                debug('closing WS client connection:', reasonCode, desc);
+                if (servConn.connected) {
+                    servConn.close(reasonCode, desc);
+                }
             });
         });
 
@@ -96,15 +109,28 @@ function setupWSProxy(args) {
             // XXX TODO
             error('ws client error', e);
         });
-        wsclient.on('close', function() {
-            // XXX TODO
-            debug('closing WS client connection');
-        });
 
         // kick off connection to kernel gateway WS
-        var url = urljoin(host, basePath, request.resourceURL.path).replace(/^http/, 'ws');
+        var url = urljoin(host, basePath, req.resourceURL.path).replace(/^http/, 'ws');
         wsclient.connect(url, null);
+
+        rewriter.emit('request', req, servConn);
     });
+}
+util.inherits(WsRewriter, EventEmitter);
+
+function createDeferred() {
+    var _resolve;
+    var _reject;
+
+    var promise = new Promise(function(resolve, reject) {
+        _resolve = resolve;
+        _reject = reject;
+    });
+
+    promise.resolve = _resolve;
+    promise.reject = _reject;
+    return promise;
 }
 
 /**
@@ -155,7 +181,7 @@ var substituteCodeCell = function(payload) {
             payload = JSON.parse(payload);
             if (payload.header.msg_type === 'execute_request') {
                 // get notebook data for current session
-                var nbpath = sessionToNbPathCb(payload.header.session);
+                var nbpath = sessionToNbPath(payload.header.session);
                 transformedData = nbstore.get(nbpath).then(
                     function success(nb) {
                         // get code string for cell at index and update WS message
@@ -193,6 +219,4 @@ var substituteCodeCell = function(payload) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-module.exports = {
-    setup: setupWSProxy
-};
+module.exports = WsRewriter;
