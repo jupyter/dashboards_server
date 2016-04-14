@@ -2,30 +2,24 @@
  * Copyright (c) Jupyter Development Team.
  * Distributed under the terms of the Modified BSD License.
  */
-var httpProxy = require('http-proxy');
+var bodyParser = require('body-parser');
 var debug = require('debug')('dashboard-proxy:server');
 var error = require('debug')('dashboard-proxy:server:error');
-var Buffer = require('buffer').Buffer;
-// var BufferList = require('../node_modules/websocket/vendor/FastBufferList');
-var bodyParser = require('body-parser');
-// var WebSocketFrame = require('websocket').frame;
-var WebSocketServer = require('websocket').server;
-var WebSocketClient = require('websocket').client;
-var nbstore = require('../app/notebook-store');
+var httpProxy = require('http-proxy');
 var config = require('../app/config');
-var Promise = require('es6-promise').Promise;
 var request = require('request');
+var router = require('express').Router();
 var url = require('url');
 var urljoin = require('url-join');
-var urlToDashboard = require('./url-to-dashboard');
-var router = require('express').Router();
+var urlToDashboard = require('../app/url-to-dashboard');
+var WsRewriter = require('../app/ws-rewriter');
 
 var kgUrl = config.get('KERNEL_GATEWAY_URL');
 var kgAuthToken = config.get('KG_AUTH_TOKEN');
 var kgBaseUrl = config.get('KG_BASE_URL');
 var kgKernelRetentionTime = config.get('KG_KERNEL_RETENTIONTIME');
 
-var server = null;
+var isWsProxySetup = false;
 var sessions = {};
 var disconnectedKernels = {};
 var apiRe = new RegExp('^/api(/.*$)');
@@ -42,215 +36,26 @@ var proxy = httpProxy.createProxyServer({
     protocolRewrite: true
 });
 
-/**
- * @return {Promise<Object>}         message data -- may have been changed
- */
-var substituteCodeCell = function(payload) {
-    var transformedData = payload;
-
-    // substitute in code if necessary
-    // for performance reasons, first do a quick string check before JSON parsing
-    if (payload.indexOf('execute_request') !== -1) {
-        try {
-            payload = JSON.parse(payload);
-            if (payload.header.msg_type === 'execute_request') {
-                // get notebook data for current session
-                var nbpath = urlToDashboard(sessions[payload.header.session]);
-                transformedData = nbstore.get(nbpath).then(
-                    function success(nb) {
-                        // get code string for cell at index and update WS message
-
-                        // code must be an integer corresponding to a cell index
-                        var cellIdx = parseInt(payload.content.code, 10);
-
-                        // code must only consist of a non-negative integer
-                        if (cellIdx.toString(10) === payload.content.code &&
-                                cellIdx >= 0) {
-
-                            // substitute cell's actual code into the message
-                            var code = nb.cells[cellIdx].source.join('');
-                            payload.content.code = code;
-                            payload = JSON.stringify(payload);
-                        } else {
-                            // throw away execute request that has non-integer code
-                            payload = '';
-                        }
-                        return payload;
-                    },
-                    function failure(err) {
-                        error('Failed to load notebook data for', nbpath, err);
-                        return ''; // throw away execute request
-                    });
+function setupWSProxy(server) {
+    if (!isWsProxySetup) {
+        WsRewriter.setup({
+            server: server,
+            host: kgUrl,
+            basePath: kgBaseUrl,
+            sessionToNbPathCb: function(session) {
+                return urlToDashboard(sessions[session]);
             }
-        } catch(e) {
-            // TODO better handle parse error in WS message
-            error('Failed to parse `data` in WS.', e);
-            transformedData = '';
-        }
-    }
-    return Promise.resolve(transformedData);
-};
-
-// reusable objects required by WebSocketFrame
-// var maskBytes = new Buffer(4);
-// var frameHeader = new Buffer(10);
-// var bufferList = new BufferList();
-// var wsconfig = {
-//     maxReceivedFrameSize: 0x100000  // 1MiB max frame size.
-// };
-
-// var wsconfig = {
-//     maxReceivedFrameSize: Math.pow(2, 64)
-// };
-
-function sendSocketData(conn, data) {
-    if (data.type === 'utf8') {
-        conn.sendUTF(data.utf8Data);
-    } else {
-        conn.sendBytes(data.binaryData);
-    }
+        });
+        isWsProxySetup = true;
+     }
 }
 
-function setupWSProxy(_server) {
-    debug('setting up WebSocket proxy');
-    server = _server;
-
-
-    var wsserver = new WebSocketServer({
-        httpServer: _server,
-        autoAcceptConnections: false,
-        maxReceivedFrameSize: Number.MAX_SAFE_INTEGER
-    });
-
-    wsserver.on('request', function(request) {
-        debug('ws connection request');
-
-        // XXX verify request.origin
-        var servConn = request.accept(null, request.origin);
-
-        var pendingServMsgs = [];
-        var bufferServMsgs = function(data) {
-            pendingServMsgs.push(data);
-        };
-        servConn.on('message', bufferServMsgs);
-        servConn.on('close', function(reasonCode, desc) {
-            debug('closing WS server connection:', reasonCode, desc);
-        });
-
-        var client = new WebSocketClient({
-            maxReceivedFrameSize: Number.MAX_SAFE_INTEGER
-        });
-
-        client.on('connect', function(clientConn) {
-            debug('ws client connected');
-
-            // INCOMING: kernel-gateway -> proxy -> client
-            clientConn.on('message', function(data) {
-                debug('INCOMING msg :: data length =', (data.utf8Data||data.binaryData).length);
-                sendSocketData(servConn, data);
-            });
-
-            // OUTGOING: client -> proxy -> kernel-gateway
-            servConn.on('message', function(data) {
-                debug('OUTGOING msg :: data length =', (data.utf8Data||data.binaryData).length);
-                processOutgoingMsg(data, function(newdata) {
-                    sendSocketData(clientConn, newdata);
-                });
-            });
-
-            // handle any buffered messages
-            servConn.removeListener('message', bufferServMsgs);
-            pendingServMsgs.forEach(function(data) {
-                sendSocketData(clientConn, data);
-            });
-        });
-
-        client.on('connectFailed', function(e) {
-            error('ws client failure', e);
-        });
-        client.on('error', function(e) {
-            error('ws client error', e);
-        });
-        client.on('close', function() {
-            debug('closing WS client connection');
-        });
-
-        var wsKgUrl = urljoin(kgUrl, kgBaseUrl, request.resourceURL.path).replace(/^http/, 'ws');
-        client.connect(wsKgUrl, null);
-    });
-
-    return;
-
-
+function REFACTOR_ME() {
     // Listen to the `upgrade` event and proxy the WebSocket requests as well.
     _server.on('upgrade', function(req, socket, head) {
         debug('WS upgrading session ' + url.parse(req.url, true).query['session_id']);
         var _emit = socket.emit;
         socket.emit = function(eventName, data) {
-
-            // Handle TCP data
-            if (eventName === 'data') {
-                // Decode one or more websocket frames
-                bufferList.write(data);
-                var dataqueue = [];
-                while (bufferList.length > 0) {
-                    // Parse data. `addData` returns false if we are waiting for
-                    // more data to be sent (fragmented frame).
-                    var frame = new WebSocketFrame(maskBytes, frameHeader, wsconfig);
-
-                    var msgProcessed = true;
-                    if (!frame.addData(bufferList) || !frame.fin) {
-                        error('insufficient data for frame');
-                        // TODO handle large data spread across multiple frames
-                        msgProcessed = false;
-                    }
-                    if (frame.protocolError || frame.frameTooLarge) {
-                        error('an error occurred during parsing of WS data', frame.dropReason);
-                        // cannot handle this message -- close socket
-                        this.end();
-                        return;
-                    }
-
-                    var newdata;
-                    if (msgProcessed && frame.opcode === 0x01) { // TEXT FRAME
-                        newdata = Promise.resolve(
-                                substituteCodeCell(frame.binaryPayload.toString('utf8'))
-                            )
-                            .then(function success(data) {
-                                data = new Buffer(data, 'utf8');
-                                if (data.length > wsconfig.maxReceivedFrameSize) {
-                                    // TODO spread large data across multiple frames
-                                    error('buffer is too big after code substitution');
-                                    // don't send data
-                                    data = new Buffer('');
-                                }
-
-                                var outframe = new WebSocketFrame(maskBytes, frameHeader, wsconfig);
-                                outframe.opcode = 0x01; // TEXT FRAME
-                                outframe.binaryPayload = data;
-                                outframe.mask = frame.mask;
-                                outframe.fin = true;
-                                return outframe.toBuffer();
-                            })
-                            .catch(function failure(err) {
-                                error('Failure when substituting code or re-encoding WS msg', err);
-                                return new Buffer('');
-                            });
-                    } else {
-                        newdata = frame.toBuffer();
-                    }
-
-                    dataqueue.push(newdata);
-                }
-
-                data = Promise.all(dataqueue).then(function(arr) {
-                    return Buffer.concat(arr);
-                });
-            }
-
-            Promise.resolve(data).then(function(data) {
-                _emit.call(socket, eventName, data);
-            });
         };
 
         // Add handler for reaping a kernel and removing sessions if the client
@@ -296,21 +101,6 @@ function setupWSProxy(_server) {
     });
 }
 
-function processOutgoingMsg(data, cb) {
-    if (data.type === 'utf8') {
-        data = substituteCodeCell(data.utf8Data).then(function(newPayload) {
-            return {
-                type: 'utf8',
-                utf8Data: newPayload
-            };
-        });
-    }
-    Promise.resolve(data).then(function(data) {
-        cb(data);
-    });
-}
-
-
 // Kill kernel on backend kernel gateway.
 var killKernel = function(kernelId) {
     debug('killing kernel ' + kernelId);
@@ -348,9 +138,7 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
 
     // Configure the proxy for websocket connections BEFORE the first websocket
     // request. Take the opportunity to do so here.
-    if (!server) {
-        setupWSProxy(req.connection.server);
-    }
+    setupWSProxy(req.connection.server);
 
     // Forward the user object in the session to the kernel gateway.
     if(config.get('KG_FORWARD_USER_AUTH') && req.user) {
@@ -393,14 +181,8 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
 
 // Proxy all unhandled requests to the kernel gateway.
 router.use(function(req, res, next) {
-    // NOTE: Before invoking proxy.web with a websocket upgrade request for
-    // for the first time, setupWSProxy must be called on a prior request to
-    // properly register for upgrade events. Otherwise, the event handler is
-    // not registered in time.
+    setupWSProxy(req.connection.server);
     proxy.web(req, res);
-    if (!server) {
-        setupWSProxy(req.connection.server);
-    }
 });
 
 // Add the kernel gateway authorization token before proxying.
