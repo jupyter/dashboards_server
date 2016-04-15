@@ -24,17 +24,11 @@ body {
         line-height: 1.5em;
 
         .dashboard-cell {
-            position: absolute;
-
-            &.hidden {
-                display: none;
-            }
+            position: relative;
 
             img {
                 max-width: 100%;
                 height: auto;
-                margin-left: auto;
-                margin-right: auto;
             }
 
             .widget-subarea:empty {
@@ -42,18 +36,29 @@ body {
             }
         }
 
-        &.no-layout {
-            .dashboard-cell{
-                position: relative;
+        &[data-dashboard-layout="grid"] {
+            .dashboard-cell {
+                position: absolute;
+            }
+
+            @media (max-width: @dashboard-width-small) {
+                .dashboard-cell {
+                    position: relative;
+                    left: auto;
+                    top: auto;
+                    width: 100%;
+                }
             }
         }
-
-        @media (max-width: @dashboard-width-small) {
+        &:not([data-dashboard-layout="no-layout"]) {
+            .dashboard-cell.dashboard-hidden {
+                display: none;
+            }
+        }
+        &[data-dashboard-layout="no-layout"],
+        &[data-dashboard-layout="report"] {
             .dashboard-cell {
-                position: relative;
-                left: auto;
-                top: auto;
-                width: 100%;
+                margin-bottom: 1em;
             }
         }
     }

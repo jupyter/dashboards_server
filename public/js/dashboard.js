@@ -256,7 +256,9 @@ requirejs([
     }
 
     function _renderDashboard() {
-        Layout.createStyle();
+        if (Config.layout === 'grid') {
+            Layout.createStyle();
+        }
         $container.removeClass('invisible');
     }
 

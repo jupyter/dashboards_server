@@ -26,6 +26,13 @@ module.exports = {
         return value;
     },
 
+    isVisible: function(metadata) {
+        return metadata &&
+               metadata.urth &&
+               metadata.urth.dashboard &&
+               !metadata.urth.dashboard.hidden;
+    },
+
     mapCellType: function(cellType) {
         return cellType === 'markdown' ? 'text-cell rendered_html' : 'code-cell';
     },
