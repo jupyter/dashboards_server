@@ -139,8 +139,20 @@ requirejs([
             return kernel.status === KernelStatus.Busy || kernel.status === KernelStatus.Idle;
         };
 
-        // kernel has already started
-        nb.events.trigger('kernel_ready.Kernel');
+        // if the kernel is not already started and idle, wait for it to be
+        if (kernel.status !== KernelStatus.Idle) {
+            var puller = function(kernel, status) {
+                if (status === Services.KernelStatus.Idle) {
+                    nb.kernel.statusChanged.disconnect(puller);
+                    nb.events.trigger('kernel_ready.Kernel');
+                }
+            }
+            nb.kernel.statusChanged.connect(puller);
+        }
+        else {
+            // kernel has already started
+            nb.events.trigger('kernel_ready.Kernel');
+        }
     }
 
     /**
