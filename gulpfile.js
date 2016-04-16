@@ -34,6 +34,8 @@ gulp.task('webpack:components', function(done) {
                 'jupyter-js-output-area': './node_modules/jupyter-js-notebook/lib/output-area/index.js',
                 'jupyter-js-services': './node_modules/jupyter-js-services/lib/index.js',
                 'jupyter-js-widgets': ['./node_modules/jupyter-js-widgets/src/index.js'],
+                'rendermime': './node_modules/jupyter-js-ui/lib/rendermime/index.js',
+                'renderers': './node_modules/jupyter-js-ui/lib/renderers/index.js',
                 'ansi-parser': './node_modules/ansi-parser/lib/index.js'
             },
             module: {

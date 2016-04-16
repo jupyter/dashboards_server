@@ -11,6 +11,8 @@ requirejs.config({
         'jupyter-js-output-area': require.toUrl('/components/jupyter-js-output-area'),
         'jupyter-js-services': require.toUrl('/components/jupyter-js-services'),
         'jupyter-js-widgets': require.toUrl('/components/jupyter-js-widgets'),
+        'rendermime': require.toUrl('/components/rendermime'),
+        'renderers': require.toUrl('/components/renderers'),
         lodash: require.toUrl('/components/lodash.min'),
         'ansi-parser': require.toUrl('/components/ansi-parser')
     },
@@ -27,6 +29,8 @@ requirejs([
     'jupyter-js-services',
     'bootstrap',  // required by jupyter-js-widgets
     'jupyter-js-widgets',
+    'rendermime',
+    'renderers',
     './widget-manager',
     './error-indicator',
     './kernel',
@@ -38,6 +42,8 @@ requirejs([
     Services,
     bs,
     Widgets,
+    RenderMime,
+    renderers,
     WidgetManager,
     ErrorIndicator,
     Kernel,
@@ -51,17 +57,22 @@ requirejs([
     var Config = window.jupyter_dashboard.Config;
 
     var $container = $('#dashboard-container');
-
+    
+    // render the dashboard dom layout
     _renderDashboard();
 
     // setup shims for backwards compatibility
     _shimNotebook();
+    
+    // setup renderer chain for output mimetypes 
+    var renderMime = _createRenderMime();
 
     // start a kernel
     Kernel.start().then(function(kernel) {
         // do some additional shimming
         _setKernelShims(kernel);
 
+        // initialize a watcher for kernel errors to inform the user
         _registerKernelErrorHandler(kernel);
 
         // initialize an ipywidgets manager
@@ -75,11 +86,12 @@ requirejs([
             // setup and execute code cells
             _getCodeCells().each(function() {
                 var $cell = $(this);
-
                 var model = new OutputAreaModel();
                 model.trusted = true; // always trust notebooks
-                var view = new OutputAreaWidget(model);
+                var view = new OutputAreaWidget(model, renderMime);
                 model.outputs.changed.connect(function(sender, args) {
+                    // shove the rendered_html class on the view to match 
+                    // what notebook does
                     if (args.newValue.data &&
                         args.newValue.data.hasOwnProperty('text/html')) {
                         view.addClass('rendered_html');
@@ -129,7 +141,30 @@ requirejs([
             }
         });
     }
+    
+    // instantiate a rendermime instance with all the standard mimetype 
+    // transformers used in notebooks
+    function _createRenderMime() {
+        var rm = new RenderMime.RenderMime();
+        var transformers = [
+            new renderers.JavascriptRenderer(),
+            new renderers.HTMLRenderer(),
+            new renderers.ImageRenderer(),
+            new renderers.SVGRenderer(),
+            new renderers.LatexRenderer(),
+            new renderers.ConsoleTextRenderer(),
+            new renderers.TextRenderer()
+          ];
+        transformers.forEach(function(t) {
+            t.mimetypes.forEach(function(m) {
+                rm.order.push(m);
+                rm.renderers[m] = t;
+            });
+        });
+        return rm;
+    }
 
+    // shim kernel object on notebook for backward compatibility
     function _setKernelShims(kernel) {
         var nb = window.Jupyter.notebook;
         nb.kernel = kernel;
@@ -257,6 +292,7 @@ requirejs([
         }
     }
 
+    // show the user an indicator on error
     function _registerKernelErrorHandler(kernel) {
         kernel.statusChanged.connect(function(kernel, status) {
             if (status === Services.KernelStatus.Dead ||
