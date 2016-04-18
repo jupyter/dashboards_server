@@ -13,6 +13,7 @@ requirejs.config({
         'jupyter-js-widgets': require.toUrl('/components/jupyter-js-widgets'),
         'rendermime': require.toUrl('/components/rendermime'),
         'renderers': require.toUrl('/components/renderers'),
+        'phosphor-widget': require.toUrl('/components/phosphor-widget'),
         lodash: require.toUrl('/components/lodash.min'),
         'ansi-parser': require.toUrl('/components/ansi-parser')
     },
@@ -31,6 +32,7 @@ requirejs([
     'jupyter-js-widgets',
     'rendermime',
     'renderers',
+    'phosphor-widget',
     './widget-manager',
     './error-indicator',
     './kernel',
@@ -44,6 +46,7 @@ requirejs([
     Widgets,
     RenderMime,
     renderers,
+    PhWidget,
     WidgetManager,
     ErrorIndicator,
     Kernel,
@@ -141,14 +144,25 @@ requirejs([
             }
         });
     }
-    
+
     // instantiate a rendermime instance with all the standard mimetype 
     // transformers used in notebooks
     function _createRenderMime() {
         var rm = new RenderMime.RenderMime();
         var transformers = [
             new renderers.JavascriptRenderer(),
-            new renderers.HTMLRenderer(),
+            // HACK: !!!!!!
+            // new renderers.HTMLRenderer(),
+            {
+                mimetypes: ['text/html'],
+                render: function(mimetype, data) {
+                    var widget = new PhWidget.Widget();
+                    widget.onAfterAttach = function() {
+                        $(widget.node).html(data);
+                    };
+                    return widget;
+                }
+            },
             new renderers.ImageRenderer(),
             new renderers.SVGRenderer(),
             new renderers.LatexRenderer(),
