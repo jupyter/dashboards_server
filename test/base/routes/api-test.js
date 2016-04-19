@@ -8,7 +8,6 @@ var expect = chai.expect;
 var proxyquire = require('proxyquire');
 var Promise = require('es6-promise').Promise;
 var request = require('request');
-var url = require('url');
 var urljoin = require('url-join');
 
 // Environment variables
@@ -33,23 +32,6 @@ var httpProxyStub = {
     }
 };
 
-var notebookData = {
-    cells: [
-        {
-            source: [
-                'line 1;',
-                'line 2;'
-            ]
-        },
-        {
-            source: [
-                'line 3;',
-                'line 4;'
-            ]
-        }
-    ]
-};
-
 var nbstoreStub = {
     get: function() {
         return new Promise(function(resolve, reject) {
@@ -66,26 +48,67 @@ var bodyParserStub = {
     }
 };
 
+var wsrewriterInstance;
+var connCloseCallback;
+
+var wsrewriterStub = function() {
+    var _events = [];
+    wsrewriterInstance = this;
+
+    this.on = function(name, cb) {
+        expect(name).to.equal('request');
+        _events[name] = cb;
+    };
+
+    // utility test method
+    this.__emit = function(name) {
+        if (name === 'request') {
+            var req = {
+                resource: '/api/kernels/12345/channels'
+            };
+            var conn = {
+                on: function(name, cb) {
+                    expect(name).to.equal('close');
+                    connCloseCallback = cb;
+                }
+            };
+            _events['request'](req, conn);
+        }
+    };
+};
+
 var api = proxyquire('../../../routes/api', {
-    'http-proxy': httpProxyStub,
     'body-parser': bodyParserStub,
-    '../app/notebook-store': nbstoreStub
+    'http-proxy': httpProxyStub,
+    '../app/notebook-store': nbstoreStub,
+    '../app/ws-rewriter': wsrewriterStub
 });
 
-// Get a handle to the server.on('upgrade', cb) callback function
-var serverUpgradeCallback = null;
 var req = {
     method: 'GET',
-    connection: {
-        server: {
-            on: function(topic, callback) {
-                if (topic === 'upgrade') {
-                    serverUpgradeCallback = callback;
-                }
-            }
-        }
-    },
+    connection: {},
     url: '/api/kernels/12345/channels'
+};
+
+//////////////
+// TEST DATA
+//////////////
+
+var notebookData = {
+    cells: [
+        {
+            source: [
+                'line 1;',
+                'line 2;'
+            ]
+        },
+        {
+            source: [
+                'line 3;',
+                'line 4;'
+            ]
+        }
+    ]
 };
 
 //////////
@@ -130,56 +153,26 @@ describe('kernel creation api', function() {
     });
 });
 
-describe.skip('websocket proxy api', function() {
-    // Get a handle to the socket.on('close', cb) callback function
-    // var emitSpy = sinon.spy();
-    // var socketCloseCallback = null;
-    // var socket = {
-    //     emit: emitSpy,
-    //     on: function(topic, callback) {
-    //         if (topic === 'close') {
-    //             socketCloseCallback = callback;
-    //         }
-    //     }
-    // };
-    // var stub;
+describe('kernel killing api', function() {
+    var stub;
 
     before(function() {
         // Override request entirely since we don't care about its behavior
-        // stub = sinon.stub(request, 'Request');
-        // // initialize state of websocket handling
-        // api.handle(req, {}, null);
-        // // should have added a server upgrade handler
-        // expect(serverUpgradeCallback).to.not.be.null;
-        // serverUpgradeCallback(req, socket, null);
-        // // should have added a socket close handler
-        // expect(socketCloseCallback).to.not.be.null;
+        stub = sinon.stub(request, 'Request');
+        // initialize state of websocket handling
+        api.handle(req, {}, null);
+        wsrewriterInstance.__emit('request');
     });
 
-    beforeEach(function() {
-        // emitSpy.reset();
-    });
-    
     after(function() {
-        // stub.restore();
-    });
-
-
-    it('should emit all socket events', function(done) {
-        socket.emit('close');
-
-        setTimeout(function() {
-            expect(emitSpy).calledOnce;
-            expect(emitSpy).to.have.been.calledWith('close');
-            done();
-        }, 0);
+        stub.restore();
     });
 
     it('should kill kernel some time after the socket closed event', function(done) {
         var fakeClock = sinon.useFakeTimers();
         var uri = urljoin(kgUrl, kgBaseUrl, '/api/kernels/12345');
 
-        socketCloseCallback();
+        connCloseCallback();
         sinon.assert.notCalled(stub);
 
         setTimeout(function() {

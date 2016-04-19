@@ -37,56 +37,58 @@ var proxy = httpProxy.createProxyServer({
 });
 
 function initWsProxy(server) {
-    if (!wsProxy) {
-        wsProxy = new WsRewriter({
-            server: server,
-            host: kgUrl,
-            basePath: kgBaseUrl,
-            sessionToNbPath: function(session) {
-                return urlToDashboard(sessions[session]);
-            }
-        });
+    if (wsProxy) {
+        return;
+    }
 
-        // Add handler for reaping a kernel and removing sessions if the client
-        // socket closes.
-        //
-        // Assumes kernel ID and session ID are part of request url as follows:
-        //
-        // /api/kernels/8c51e1d7-7a1c-4ceb-a7dd-3a567f1505b9/channels?session_id=448e417f4c9a582bcaed2905541dcff0
-        wsProxy.on('request', function(req, conn) {
-            var resUrl = req.resource;
-            var kernelIdMatched = kernelIdRe.exec(resUrl);
-            var kernelId = null;
-            if (kernelIdMatched) {
-                kernelId = kernelIdMatched[1];
-            }
-            var query = url.parse(resUrl, true).query;
-            var sessionId = query['session_id'];
+    wsProxy = new WsRewriter({
+        server: server,
+        host: kgUrl,
+        basePath: kgBaseUrl,
+        sessionToNbPath: function(session) {
+            return urlToDashboard(sessions[session]);
+        }
+    });
 
-            // Check if this is a reconnection
-            if (disconnectedKernels[sessionId]) {
-                debug('WS reattaching to ' + sessionId);
-                clearTimeout(disconnectedKernels[sessionId]);
+    // Add handler for reaping a kernel and removing sessions if the client
+    // socket closes.
+    //
+    // Assumes kernel ID and session ID are part of request url as follows:
+    //
+    // /api/kernels/8c51e1d7-7a1c-4ceb-a7dd-3a567f1505b9/channels?session_id=448e417f4c9a582bcaed2905541dcff0
+    wsProxy.on('request', function(req, conn) {
+        var resUrl = req.resource;
+        var kernelIdMatched = kernelIdRe.exec(resUrl);
+        var kernelId = null;
+        if (kernelIdMatched) {
+            kernelId = kernelIdMatched[1];
+        }
+        var query = url.parse(resUrl, true).query;
+        var sessionId = query['session_id'];
+
+        // Check if this is a reconnection
+        if (disconnectedKernels[sessionId]) {
+            debug('WS reattaching to ' + sessionId);
+            clearTimeout(disconnectedKernels[sessionId]);
+            delete disconnectedKernels[sessionId];
+        }
+
+        // Setup a handler that schedules deletion of running kernels after
+        // a timeout to give clients that accidentally disconnected time to
+        // reconnect.
+        conn.on('close', function() {
+            debug('WS will kill kernel ' + kernelId + ' session ' + sessionId + ' soon');
+            var waiting = setTimeout(function(sessionId, kernelId) {
+                debug('WS closed for ' + sessionId);
                 delete disconnectedKernels[sessionId];
-            }
-
-            // Setup a handler that schedules deletion of running kernels after
-            // a timeout to give clients that accidentally disconnected time to
-            // reconnect.
-            conn.on('close', function() {
-                debug('WS will kill kernel ' + kernelId + ' session ' + sessionId + ' soon');
-                var waiting = setTimeout(function(sessionId, kernelId) {
-                    debug('WS closed for ' + sessionId);
-                    delete disconnectedKernels[sessionId];
-                    removeSession(sessionId);
-                    if (kernelId) {
-                        killKernel(kernelId);
-                    }
-                }, kgKernelRetentionTime, sessionId, kernelId);
-                disconnectedKernels[sessionId] = waiting;
-            });
+                removeSession(sessionId);
+                if (kernelId) {
+                    killKernel(kernelId);
+                }
+            }, kgKernelRetentionTime, sessionId, kernelId);
+            disconnectedKernels[sessionId] = waiting;
         });
-     }
+    });
 }
 
 // Kill kernel on backend kernel gateway.
