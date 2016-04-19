@@ -9,11 +9,9 @@ var nbstore = require('./notebook-store');
 var Promise = require('es6-promise').Promise;
 var urljoin = require('url-join');
 var util = require('util');
-var WebSocketServer = require('websocket').server;
 var WebSocketClient = require('websocket').client;
-
-// TODO:
-//  - override websocket lib's BufferingLogger
+var WebSocketConnection = require('websocket').connection;
+var WebSocketServer = require('websocket').server;
 
 /**
  * Websocket proxy between client/browser and kernel gateway which rewrites execution requests to
@@ -33,6 +31,8 @@ function WsRewriter(args) {
     debug('setting up WebSocket proxy');
     EventEmitter.call(this);
 
+    this._host = args.host;
+    this._basePath = args.basePath;
     this._sessionToNbPath = args.sessionToNbPath;
 
     // create a websocket server which will listen for requests coming from the client/browser
@@ -42,89 +42,96 @@ function WsRewriter(args) {
         maxReceivedFrameSize: Number.MAX_SAFE_INTEGER
     });
 
-    var rewriter = this;
-    wsserver.on('request', function(req) {
-        debug('ws-server connection request');
-
-        var clientConn = createDeferred();
-        var servConn = req.accept(null, req.origin); // XXX verify request.origin?
-
-        // OUTGOING: client -> proxy -> kernel-gateway
-        servConn.on('message', function(data) {
-            clientConn.then(function(clientConn) {
-                debug('OUTGOING msg :: data length = ' + (data.utf8Data||data.binaryData).length);
-                rewriter._processOutgoingMsg(data).then(function(newdata) {
-                    sendSocketData(clientConn, newdata);
-                });
-            });
-        });
-
-        servConn.on('close', function(reasonCode, desc) {
-            debug('closing WS server connection:', reasonCode, desc);
-            clientConn.then(function(clientConn) {
-                if (clientConn.connected) {
-                    clientConn.close(reasonCode, desc);
-                }
-            });
-        });
-
-        // for every WS connection request from the client/browser, create a new connection to
-        // the kernel gateway
-        var wsclient = new WebSocketClient({
-            maxReceivedFrameSize: Number.MAX_SAFE_INTEGER
-        });
-
-        wsclient.on('connect', function(_clientConn) {
-            // connected to kernel gateway -- now setup proxying between client/browser & gateway
-            debug('ws-client connected');
-            clientConn.resolve(_clientConn);
-
-            // INCOMING: kernel-gateway -> proxy -> client
-            _clientConn.on('message', function(data) {
-                debug('INCOMING msg :: data length = ' + (data.utf8Data||data.binaryData).length);
-                sendSocketData(servConn, data);
-            });
-
-            _clientConn.on('close', function(reasonCode, desc) {
-                debug('closing WS client connection:', reasonCode, desc);
-                if (servConn.connected) {
-                    servConn.close(reasonCode, desc);
-                }
-            });
-        });
-
-        wsclient.on('connectFailed', function(e) {
-            // XXX TODO
-            error('ws client failure', e);
-        });
-        wsclient.on('error', function(e) {
-            // XXX TODO
-            error('ws client error', e);
-        });
-
-        // kick off connection to kernel gateway WS
-        var url = urljoin(args.host, args.basePath, req.resourceURL.path).replace(/^http/, 'ws');
-        wsclient.connect(url, null);
-
-        rewriter.emit('request', req, servConn);
-    });
+    wsserver.on('request', this._handleWsRequest.bind(this));
 }
 util.inherits(WsRewriter, EventEmitter);
 
-// XXX don't do this -- just use Promise constructor
-function createDeferred() {
-    var _resolve;
-    var _reject;
+WsRewriter.prototype._handleWsRequest = function(req) {
+    debug('ws-server connection request');
 
-    var promise = new Promise(function(resolve, reject) {
-        _resolve = resolve;
-        _reject = reject;
+    var self = this;
+    var servConn = req.accept(null, req.origin); // accept from all origins
+
+    var pendingServMsgs = [];
+    function handleServMsg(data) {
+        pendingServMsgs.push(data);
+    }
+    servConn.on('message', handleServMsg);
+
+    function handleServClose(reasonCode, desc) {
+        // client/browser closed before we established connection to kernel gateway
+        wsclient.abort();
+    }
+    servConn.on('close', handleServClose);
+
+    // for every WS connection request from the client/browser, create a new connection to
+    // the kernel gateway
+    var wsclient = new WebSocketClient({
+        maxReceivedFrameSize: Number.MAX_SAFE_INTEGER
     });
 
-    promise.resolve = _resolve;
-    promise.reject = _reject;
-    return promise;
-}
+    wsclient.on('connect', function(clientConn) {
+        debug('ws-client connected');
+        // connected to kernel gateway -- now setup proxying between client/browser & gateway
+        self._setupProxying(servConn, clientConn);
+        // delete listeners that are no longer necessary
+        servConn.removeListener('message', handleServMsg);
+        servConn.removeListener('close', handleServClose);
+        // handle pending messages
+        pendingServMsgs.forEach(function(data) {
+            sendSocketData(clientConn, data);
+        });
+    });
+
+    wsclient.on('connectFailed', function(e) {
+        // failed to connect to kernel gateway -> close connection to client/browser
+        error('ws client connect failure', e);
+        if (servConn.connected) {
+            servConn.drop(WebSocketConnection.CLOSE_REASON_INTERNAL_SERVER_ERROR,
+                'Failed to create websocket connection to kernel gateway');
+        }
+    });
+
+    // kick off connection to kernel gateway WS
+    var url = urljoin(this._host, this._basePath, req.resourceURL.path).replace(/^http/, 'ws');
+    wsclient.connect(url, null);
+
+    this.emit('request', req, servConn);
+};
+
+WsRewriter.prototype._setupProxying = function(servConn, clientConn) {
+    var self = this;
+
+    // INCOMING: kernel-gateway -> proxy -> client
+    clientConn.on('message', function(data) {
+        debug('INCOMING msg :: data length = ' + (data.utf8Data||data.binaryData).length);
+        sendSocketData(servConn, data);
+    });
+
+    // called after 'error' messages as well
+    clientConn.on('close', function(reasonCode, desc) {
+        debug('closing WS client connection:', reasonCode, desc);
+        if (servConn.connected) {
+            servConn.close(reasonCode, desc);
+        }
+    });
+
+    // OUTGOING: client -> proxy -> kernel-gateway
+    servConn.on('message', function(data) {
+        debug('OUTGOING msg :: data length = ' + (data.utf8Data||data.binaryData).length);
+        self._processOutgoingMsg(data).then(function(newdata) {
+            sendSocketData(clientConn, newdata);
+        });
+    });
+
+    // called after 'error' messages as well
+    servConn.on('close', function(reasonCode, desc) {
+        debug('closing WS server connection:', reasonCode, desc);
+        if (clientConn.connected) {
+            clientConn.close(reasonCode, desc);
+        }
+    });
+};
 
 /**
  * Transmit data on given WS connection
@@ -200,7 +207,6 @@ WsRewriter.prototype._processOutgoingMsg = function(data) {
                     });
             }
         } catch(e) {
-            // TODO better handle parse error in WS message
             error('Failed to parse `data` in WS.', e);
             transformedData = '';
         }
