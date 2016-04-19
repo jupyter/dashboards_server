@@ -132,7 +132,7 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
     if(config.get('KG_FORWARD_USER_AUTH') && req.user) {
         req.body.env = {
              KERNEL_USER_AUTH: JSON.stringify(req.user)
-        }
+        };
     }
 
     // Pass the (modified) request to the kernel gateway.

@@ -12,8 +12,6 @@ var util = require('util');
 var WebSocketServer = require('websocket').server;
 var WebSocketClient = require('websocket').client;
 
-var sessionToNbPath;
-
 // TODO:
 //  - override websocket lib's BufferingLogger
 
@@ -32,18 +30,14 @@ var sessionToNbPath;
  * @param  {Function} args.sessionToNbPath - callback to return a notebook path for the session ID
  */
 function WsRewriter(args) {
+    debug('setting up WebSocket proxy');
     EventEmitter.call(this);
 
-    debug('setting up WebSocket proxy');
-
-    var server = args.server;
-    var host = args.host;
-    var basePath = args.basePath;
-    sessionToNbPath = args.sessionToNbPath;
+    this._sessionToNbPath = args.sessionToNbPath;
 
     // create a websocket server which will listen for requests coming from the client/browser
     var wsserver = new WebSocketServer({
-        httpServer: server,
+        httpServer: args.server,
         autoAcceptConnections: false,
         maxReceivedFrameSize: Number.MAX_SAFE_INTEGER
     });
@@ -53,15 +47,13 @@ function WsRewriter(args) {
         debug('ws-server connection request');
 
         var clientConn = createDeferred();
-
-        // XXX verify request.origin?
-        var servConn = req.accept(null, req.origin);
+        var servConn = req.accept(null, req.origin); // XXX verify request.origin?
 
         // OUTGOING: client -> proxy -> kernel-gateway
         servConn.on('message', function(data) {
             clientConn.then(function(clientConn) {
                 debug('OUTGOING msg :: data length = ' + (data.utf8Data||data.binaryData).length);
-                processOutgoingMsg(data, function(newdata) {
+                rewriter._processOutgoingMsg(data).then(function(newdata) {
                     sendSocketData(clientConn, newdata);
                 });
             });
@@ -111,7 +103,7 @@ function WsRewriter(args) {
         });
 
         // kick off connection to kernel gateway WS
-        var url = urljoin(host, basePath, req.resourceURL.path).replace(/^http/, 'ws');
+        var url = urljoin(args.host, args.basePath, req.resourceURL.path).replace(/^http/, 'ws');
         wsclient.connect(url, null);
 
         rewriter.emit('request', req, servConn);
@@ -119,6 +111,7 @@ function WsRewriter(args) {
 }
 util.inherits(WsRewriter, EventEmitter);
 
+// XXX don't do this -- just use Promise constructor
 function createDeferred() {
     var _resolve;
     var _reject;
@@ -149,21 +142,19 @@ function sendSocketData(conn, data) {
 /**
  * Rewrite (if necessary) outgoing websocket messages
  * @param  {Object}   data
- * @param  {Function} cb - invoked when (potentially rewritten) data is available
+ * @param  {Promise<Object>}  potentially rewritten data
  */
-function processOutgoingMsg(data, cb) {
+WsRewriter.prototype._processOutgoingMsg = function(data) {
     if (data.type === 'utf8') {
-        data = substituteCodeCell(data.utf8Data).then(function(newPayload) {
+        return this._substituteCodeCell(data.utf8Data).then(function(newPayload) {
             return {
                 type: 'utf8',
                 utf8Data: newPayload
             };
         });
     }
-    Promise.resolve(data).then(function(data) {
-        cb(data);
-    });
-}
+    return Promise.resolve(data);
+};
 
 /**
  * Rewrite websocket message data, replacing index with associated code block, if given message
@@ -171,7 +162,7 @@ function processOutgoingMsg(data, cb) {
  * @param {String} payload - websocket message data, in JSON format
  * @return {Promise<Object>} message data; may have been changed
  */
-var substituteCodeCell = function(payload) {
+ WsRewriter.prototype._substituteCodeCell = function(payload) {
     var transformedData = payload;
 
     // substitute in code if necessary
@@ -181,7 +172,7 @@ var substituteCodeCell = function(payload) {
             payload = JSON.parse(payload);
             if (payload.header.msg_type === 'execute_request') {
                 // get notebook data for current session
-                var nbpath = sessionToNbPath(payload.header.session);
+                var nbpath = this._sessionToNbPath(payload.header.session);
                 transformedData = nbstore.get(nbpath).then(
                     function success(nb) {
                         // get code string for cell at index and update WS message
