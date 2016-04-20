@@ -9,7 +9,7 @@
     "build": "gulp build",
     "start": "node ./bin/www",
     "start-debug": "node-inspector & node --debug-brk ./bin/www",
-    "start-logging": "NODE_DEBUG=http DEBUG=express:*,dashboard-proxy:* node ./bin/www",
+    "start-logging": "DEBUG=express:*,dashboard-proxy:* node ./bin/www",
     "test": "mocha test/base/**/*-test.js",
     "integration-test": "mocha test/integration/default/**/*-test.js",
     "integration-test-auth-token": "mocha test/integration/auth-token/**/*-test.js",
