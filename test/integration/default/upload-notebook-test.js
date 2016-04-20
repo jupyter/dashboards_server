@@ -131,7 +131,7 @@ describe('upload notebook', function() {
         });
     });
 
-    it('should allow uploading a valid ZIP with an index.ipynb', function() {
+    it('should allow uploading a valid ZIP with an index.ipynb', function(done) {
         // good.zip contains index.ipynb, hello.txt
         var url = randomUrl();
         upload(url.postUrl, goodZip, function(err, res) {
@@ -141,7 +141,7 @@ describe('upload notebook', function() {
         });
     });
 
-    it('should allow uploading a valid ZIP to existing location', function() {
+    it('should allow uploading a valid ZIP to existing location', function(done) {
         // good2.zip contains index.ipynb, goodbye.txt
         var url = randomUrl();
         upload(url.postUrl, goodZip, function(err, res) {
@@ -153,17 +153,19 @@ describe('upload notebook', function() {
         });
     });
 
-    it('should return error when uploading a ZIP without an index.ipynb', function() {
+    it('should return error when uploading a ZIP without an index.ipynb', function(done) {
         var url = randomUrl();
         upload(url.postUrl, badZip, function(err, res) {
             expect(res.statusCode).to.equal(500);
+            done();
         });
     });
 
-    it('should return error when uploading non-ZIP file with ".zip" extension', function() {
+    it('should return error when uploading non-ZIP file with ".zip" extension', function(done) {
         var url = randomUrl();
         upload(url.postUrl, badZip2, function(err, res) {
             expect(res.statusCode).to.equal(500);
+            done();
         });
     });
 });

@@ -39,7 +39,8 @@ debug('Using environment ' + env);
 
 app.engine('handlebars', exphbs({
     defaultLayout: 'main',
-    partialsDir: ['views/partials/'],
+    layoutsDir: path.join(__dirname, 'views', 'layouts'),
+    partialsDir: path.join(__dirname, 'views', 'partials'),
     helpers: hbsHelpers
 }));
 app.set('views', path.join(__dirname, 'views'));

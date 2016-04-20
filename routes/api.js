@@ -3,10 +3,10 @@
  * Distributed under the terms of the Modified BSD License.
  */
 var bodyParser = require('body-parser');
+var config = require('../app/config');
 var debug = require('debug')('dashboard-proxy:server');
 var error = require('debug')('dashboard-proxy:server:error');
 var httpProxy = require('http-proxy');
-var config = require('../app/config');
 var request = require('request');
 var router = require('express').Router();
 var url = require('url');
