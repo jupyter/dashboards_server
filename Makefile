@@ -7,6 +7,7 @@
 # Global params
 DASHBOARD_CONTAINER_NAME:=dashboard-server
 DASHBOARD_IMAGE_NAME:=jupyter-incubator/$(DASHBOARD_CONTAINER_NAME)
+INSTALLED_DASHBOARD_IMAGE_NAME:=jupyter-incubator/$(DASHBOARD_CONTAINER_NAME)-installed
 KG_IMAGE_NAME:=jupyter-incubator/kernel-gateway-extras
 KG_CONTAINER_NAME:=kernel-gateway
 HTTP_PORT?=3000
@@ -192,22 +193,18 @@ integration-test-auth-local: | kill build
 	$(RUN_INTEGRATION_TEST)
 
 install-test: CMD=integration-test
-install-test: ## Run basic integration tests after npm install in a container
+install-test: build ## Run basic integration tests after npm install in a container
 	@$(MAKE) kill
 	$(RUN_KERNEL_GATEWAY)
-	@echo '-- Installing and running dashboard server...'
+	@echo '-- Installing dashboard server npm package...'
+	@docker build --rm -f Dockerfile.installed -t $(INSTALLED_DASHBOARD_IMAGE_NAME) .
+	@echo '-- Running dashboard server...'
 	$(DASHBOARD_SERVER) -d \
-		-v `pwd`:/src \
-		--entrypoint /bin/bash \
 		-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
 		--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
-		$(DASHBOARD_IMAGE_NAME) \
-		-c 'cd /tmp && \
-			npm install --quiet /src && \
-			test -f ./node_modules/.bin/jupyter-dashboards-server && \
-			./node_modules/.bin/jupyter-dashboards-server'
-	@echo '-- Waiting 60 seconds for install to complete and server to start...'
-	@sleep 60
+		$(INSTALLED_DASHBOARD_IMAGE_NAME)
+	@echo '-- Waiting 10 seconds for server to start...'
+	@sleep 10
 	@$(MAKE) test-container \
 		CMD=$(CMD) \
 		SERVER_NAME=$(IT_SERVER_NAME) \
@@ -217,17 +214,17 @@ install-test: ## Run basic integration tests after npm install in a container
 			-e AUTH_TOKEN=$(AUTH_TOKEN) \
 			-e TEST_USERNAME=$(USERNAME) \
 			-e TEST_PASSWORD=$(PASSWORD)";
-	@$(MAKE) kill
+	#@$(MAKE) kill
 
 quick-install-test: ## Run npm install/uninstall in a container
 	@echo '-- Running global install/uninstall test...'
 	$(DASHBOARD_SERVER) -it --rm \
-		-v `pwd`:/src \
+		-v `pwd`:/home/node/app \
 		--user root \
 		--entrypoint /bin/bash \
 		$(DASHBOARD_IMAGE_NAME) \
-		-c 'cd /tmp && \
-			npm install --quiet /src && \
+		-c 'cd /home/node && \
+			npm install --quiet ./app && \
 			test -f ./node_modules/.bin/jupyter-dashboards-server && \
 			./node_modules/.bin/jupyter-dashboards-server --help && \
 			npm uninstall --quiet jupyter-dashboards-server'
