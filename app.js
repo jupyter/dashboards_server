@@ -7,6 +7,7 @@ var session = require('express-session');
 var path = require('path');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
+var cookieSession = require('cookie-session');
 var exphbs  = require('express-handlebars');
 var debug = require('debug')('dashboard-proxy:server');
 var passport = require('passport');
@@ -66,11 +67,9 @@ app.use(function(req, res, next) {
 });
 //
 var sessionSecret = config.get('SESSION_SECRET_TOKEN') || 'secret_token';
-app.use(session({
+app.use(cookieSession({
     secret: sessionSecret,
-    cookie: {maxAge: 24*3600*1000}, //cookie max age set to one day
-    resave: true,
-    saveUninitialized: true
+    cookie: {maxAge: 24*3600*1000} //cookie max age set to one day
 }));
 
 ///////////////////////////////////////
@@ -102,7 +101,7 @@ if(config.get('AUTH_STRATEGY')) {
 
     // Destroy session on any attempt to logout
     app.all('/logout', function(req, res) {
-        req.session.destroy();
+        req.session = null;
         res.redirect('/');
     });
     // Ensure login on all following routes
