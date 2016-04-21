@@ -111,9 +111,7 @@ WsRewriter.prototype._setupProxying = function(servConn, clientConn) {
     // called after 'error' messages as well
     clientConn.on('close', function(reasonCode, desc) {
         debug('closing WS client connection:', reasonCode, desc);
-        if (servConn.connected) {
-            servConn.close(reasonCode, desc);
-        }
+        closeConnection(servConn, reasonCode, desc);
     });
 
     // OUTGOING: client -> proxy -> kernel-gateway
@@ -127,9 +125,7 @@ WsRewriter.prototype._setupProxying = function(servConn, clientConn) {
     // called after 'error' messages as well
     servConn.on('close', function(reasonCode, desc) {
         debug('closing WS server connection:', reasonCode, desc);
-        if (clientConn.connected) {
-            clientConn.close(reasonCode, desc);
-        }
+        closeConnection(clientConn, reasonCode, desc);
     });
 };
 
@@ -144,6 +140,33 @@ function sendSocketData(conn, data) {
     } else {
         conn.sendBytes(data.binaryData);
     }
+}
+
+var validProtocolCloseCodes = [1000, 1001, 1002, 1003, 1007, 1008, 1009, 1010, 1011];
+
+/**
+ * Close the websocket connection, validating the close code
+ * @param  {WebSocketConnection} conn
+ * @param  {Number} reasonCode - socket code for reason connection was closed
+ * @param  {String} desc - user-friendly description of close reason
+ */
+function closeConnection(conn, reasonCode, desc) {
+    if (!conn.connected) {
+        return;
+    }
+
+    // Ensure that we close connection with a "valid" close code. Otherwise,
+    // WebSocketConnection will just error out and not actually close the connection.
+    // See WebSocketConnection's validateCloseReason()
+    if (code >= 1000 && code <= 2999) {
+        // reserved for use by protocol
+        if (validProtocolCloseCodes.indexOf(reasonCode) === -1) {
+            // non-valid code sent -- use a default instead
+            reasonCode = WebSocketConnection.CLOSE_REASON_GOING_AWAY;
+        }
+    }
+
+    conn.close(reasonCode, desc);
 }
 
 /**
