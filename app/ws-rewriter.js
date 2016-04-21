@@ -158,7 +158,7 @@ function closeConnection(conn, reasonCode, desc) {
     // Ensure that we close connection with a "valid" close code. Otherwise,
     // WebSocketConnection will just error out and not actually close the connection.
     // See WebSocketConnection's validateCloseReason()
-    if (code >= 1000 && code <= 2999) {
+    if (reasonCode >= 1000 && reasonCode <= 2999) {
         // reserved for use by protocol
         if (validProtocolCloseCodes.indexOf(reasonCode) === -1) {
             // non-valid code sent -- use a default instead
