@@ -13,9 +13,10 @@ var path = require('path');
 var Promise = require('es6-promise').Promise;
 var urljoin = require('url-join');
 
-var DB_INDEX = config.get('DB_INDEX')
-var DB_INDEX_DIR = config.get('DB_INDEX_DIR')
+var DB_INDEX = config.get('DB_INDEX');
+var DB_INDEX_DIR = config.get('DB_INDEX_DIR');
 var DB_EXT = config.get('DB_FILE_EXT');
+var NO_LAYOUT = 'no-layout';
 var reNbExt = new RegExp('\\' + DB_EXT + '$');
 
 function _renderList(req, res, next) {
@@ -90,7 +91,23 @@ function _renderDashboard(req, res, next, opts) {
                                   notebook.metadata.urth &&
                                   notebook.metadata.urth.dashboard &&
                                   notebook.metadata.urth.dashboard.layout) ||
-                                  'no-layout';
+                                  NO_LAYOUT;
+
+            // backwards compatibility - old grid layouts don't have layout set
+            if (dashboardLayout === NO_LAYOUT) {
+                var isGrid = notebook.cells.some(function(cell) {
+                    return cell.metadata &&
+                           cell.metadata.urth &&
+                           cell.metadata.urth.dashboard &&
+                           cell.metadata.urth.dashboard.layout &&
+                           ['row','col','width','height'].every(function(p) {
+                               return cell.metadata.urth.dashboard.layout.hasOwnProperty(p);
+                           });
+                });
+                if (isGrid) {
+                    dashboardLayout = 'grid';
+                }
+            }
 
             res.status(200);
             res.render('dashboard', {

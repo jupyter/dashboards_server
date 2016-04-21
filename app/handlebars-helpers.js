@@ -14,6 +14,19 @@ module.exports = {
         return config.get(name);
     },
 
+    defaultDashboardConfig: function(layout) {
+        if (layout === 'grid') {
+            return {
+                layout: 'grid',
+                cellMargin: config.get('DB_CELL_MARGIN'),
+                defaultCellHeight: config.get('DB_DEFAULT_CELL_HEIGHT'),
+                maxColumns: config.get('DB_MAX_COLUMNS')
+            };
+        } else {
+            return {};
+        }
+    },
+
     fsIcon: function(type) {
         var value = '';
         if (type === 'directory') {

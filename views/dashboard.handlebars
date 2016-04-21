@@ -16,7 +16,7 @@
 
 <div id="outer-dashboard">
     {{! Might need to refactor this line to better handle author mode?}}
-    <div id="dashboard-container" class="invisible center-container {{#if hasDashboardLayout}}no-layout{{/if}}"
+    <div id="dashboard-container" class="invisible center-container"
         data-dashboard-layout="{{dashboardLayout}}">
         {{#each notebook.cells}}
             {{#if (isVisible metadata)}}
@@ -44,15 +44,19 @@
     (function() {
         var db = window.jupyter_dashboard = window.jupyter_dashboard || {};
         var Config = db.Config = db.Config || {};
-        {{#if notebook.metadata.urth.dashboard}}
-            {{#each notebook.metadata.urth.dashboard}}
-                Config.{{@key}} = "{{this}}";
-            {{/each}}
-        {{else}}
-            Config.cellMargin = {{{config "DB_CELL_MARGIN"}}};
-            Config.defaultCellHeight = {{{config "DB_DEFAULT_CELL_HEIGHT"}}};
-            Config.maxColumns = {{{config "DB_MAX_COLUMNS"}}};
-        {{/if}}
+        // values from notebook metadata
+        {{#each notebook.metadata.urth.dashboard}}
+            Config.{{@key}} = "{{this}}";
+        {{/each}}
+
+        // default layout values
+        {{#each (defaultDashboardConfig dashboardLayout)}}
+            {{#unless (lookup ../notebook.metadata.urth.dashboard @key)}}
+            Config.{{@key}} = "{{this}}";
+            {{/unless}}
+        {{/each}}
+
+        // Declarative widget support
         {{#if supportsDeclWidgets}}
             Config.supportsDeclWidgets = true;
         {{/if}}
