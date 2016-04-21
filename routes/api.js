@@ -40,12 +40,19 @@ function initWsProxy(server) {
     if (wsProxy) {
         return;
     }
+    
+    var headers = null;
+    if(kgAuthToken) {
+        // include the kg auth token if we have one
+        headers = {};
+        headers.Authorization = 'token ' + kgAuthToken;
+    }
 
     wsProxy = new WsRewriter({
         server: server,
         host: kgUrl,
         basePath: kgBaseUrl,
-        authToken: kgAuthToken,
+        headers: headers,
         sessionToNbPath: function(session) {
             return urlToDashboard(sessions[session]);
         }
