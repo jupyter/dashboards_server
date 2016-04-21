@@ -33,6 +33,7 @@ function WsRewriter(args) {
 
     this._host = args.host;
     this._basePath = args.basePath;
+    this._authToken = args.authToken;
     this._sessionToNbPath = args.sessionToNbPath;
 
     // create a websocket server which will listen for requests coming from the client/browser
@@ -94,7 +95,13 @@ WsRewriter.prototype._handleWsRequest = function(req) {
 
     // kick off connection to kernel gateway WS
     var url = urljoin(this._host, this._basePath, req.resourceURL.path).replace(/^http/, 'ws');
-    wsclient.connect(url, null);
+    var headers = null;
+    if(this._authToken) {
+        // include the kg auth token if we have one
+        headers = {};
+        headers.Authorization = 'token ' + this._authToken;
+    }
+    wsclient.connect(url, null, null, headers);
 
     this.emit('request', req, servConn);
 };

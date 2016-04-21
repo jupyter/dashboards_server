@@ -45,6 +45,7 @@ function initWsProxy(server) {
         server: server,
         host: kgUrl,
         basePath: kgBaseUrl,
+        authToken: kgAuthToken,
         sessionToNbPath: function(session) {
             return urlToDashboard(sessions[session]);
         }
