@@ -53,7 +53,7 @@ debug('resolved NOTEBOOKS_DIR: ' + config.get('NOTEBOOKS_DIR'));
 // TODO Move vars to own module
 config.set('DB_FILE_EXT', '.ipynb');
 config.set('DB_INDEX', 'index.ipynb');
-config.set('DB_INDEX_DIR', 'index')
+config.set('DB_INDEX_DIR', 'index');
 
 var key_file_location = config.get('HTTPS_KEY_FILE');
 var cert_file_location = config.get('HTTPS_CERT_FILE');

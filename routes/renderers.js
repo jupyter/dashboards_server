@@ -13,9 +13,10 @@ var path = require('path');
 var Promise = require('es6-promise').Promise;
 var urljoin = require('url-join');
 
-var DB_INDEX = config.get('DB_INDEX')
-var DB_INDEX_DIR = config.get('DB_INDEX_DIR')
+var DB_INDEX = config.get('DB_INDEX');
+var DB_INDEX_DIR = config.get('DB_INDEX_DIR');
 var DB_EXT = config.get('DB_FILE_EXT');
+var NO_LAYOUT = 'no-layout';
 var reNbExt = new RegExp('\\' + DB_EXT + '$');
 
 function _renderList(req, res, next) {
@@ -85,12 +86,28 @@ function _renderDashboard(req, res, next, opts) {
         .then(function success(notebook) {
             debug('Success loading nb');
 
-            // Check if some cell in the notebook has the dashboard metadata
-            var hasDashboardLayout = notebook.cells.some(function(currentCell){
-                return ( currentCell.hasOwnProperty('metadata') &&
-                         currentCell.metadata.hasOwnProperty('urth') &&
-                         currentCell.metadata.urth.hasOwnProperty('dashboard') );
-            });
+            // get dashboard layout from notebook-level dashboard metadata
+            var dashboardLayout = (notebook.metadata &&
+                                  notebook.metadata.urth &&
+                                  notebook.metadata.urth.dashboard &&
+                                  notebook.metadata.urth.dashboard.layout) ||
+                                  NO_LAYOUT;
+
+            // backwards compatibility - old grid layouts don't have layout set
+            if (dashboardLayout === NO_LAYOUT) {
+                var isGrid = notebook.cells.some(function(cell) {
+                    return cell.metadata &&
+                           cell.metadata.urth &&
+                           cell.metadata.urth.dashboard &&
+                           cell.metadata.urth.dashboard.layout &&
+                           ['row','col','width','height'].every(function(p) {
+                               return cell.metadata.urth.dashboard.layout.hasOwnProperty(p);
+                           });
+                });
+                if (isGrid) {
+                    dashboardLayout = 'grid';
+                }
+            }
 
             res.status(200);
             res.render('dashboard', {
@@ -99,9 +116,9 @@ function _renderDashboard(req, res, next, opts) {
                 username: req.session.username,
                 hideChrome: hideChrome,
                 supportsDeclWidgets: stats.supportsDeclWidgets,
-                hasDashboardLayout: hasDashboardLayout,
-                // need to set document.baseURI with trailing slash (i.e. "/dashboards/nb/") so
-                // that relative paths load correctly
+                dashboardLayout: dashboardLayout,
+                // need to set document.baseURI with trailing slash
+                // (i.e. "/dashboards/nb/") so relative paths load correctly
                 baseURI: urljoin(req.originalUrl, '/')
             });
         })
@@ -119,7 +136,7 @@ function _render(req, res, next, opts) {
 
     // First, check if this path refers to a notebook file of the same name
     // whether or not the oriinal request had an .ipynb on the end of it or not.
-    // We do this so users can visit URLs without adding ipynb at the cost of 
+    // We do this so users can visit URLs without adding ipynb at the cost of
     // masking folders with the same name as notebook files.
     var dbpathWithExt = dbpath + (reNbExt.test(dbpath) ? '' : DB_EXT);
     nbstore.stat(dbpathWithExt)
@@ -127,19 +144,19 @@ function _render(req, res, next, opts) {
             if (dbpath === dbpathWithExt) {
                 throw err;
             }
-            // If the path does not refer to a notebook, stat the path 
+            // If the path does not refer to a notebook, stat the path
             // directly.
             return nbstore.stat(dbpath);
         })
         .then(function success(stats) {
             if (stats.isDashboard) {
-                // If the path exists on disk and is a bundled dashboard 
+                // If the path exists on disk and is a bundled dashboard
                 // directory, render the appropriate HTML.
                 _renderDashboard(req, res, next, {
                     dbpath: dbpath,
                     hideChrome: hideChrome,
                     stats: stats
-                }); 
+                });
             } else if (stats.isDirectory()) {
                 // check if an index bundle exists in this path
                 var dbpathIndex = urljoin(dbpath, DB_INDEX_DIR, DB_INDEX);
@@ -153,7 +170,7 @@ function _render(req, res, next, opts) {
                         // assets from the frontend will fail (off by one path).
                         res.redirect(urljoin(req.path, DB_INDEX_DIR));
                     })
-                    .catch(function() { 
+                    .catch(function() {
                         // If the directory does not contain an index bundle,
                         // check if we can render a directory listing or not
                         // according to our settings.
