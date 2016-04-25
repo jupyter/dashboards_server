@@ -4,14 +4,12 @@
 FROM jupyter/pyspark-notebook:0017b56d93c9
 
 RUN pip install jupyter_kernel_gateway==0.5.0
-# install ipywidgets from github for now (5.x branch)
-RUN pip uninstall -y ipywidgets && \
-    pip install git+https://github.com/ipython/ipywidgets.git@b1fb44dad39d86222db5edf98db3935fe2b09c18
+# install ipywidgets 5.0
+RUN pip install 'ipywidgets==5.0'
 
-# install Declarative Widgets
-RUN pip install jupyter_declarativewidgets && \
-    jupyter declarativewidgets install --user --symlink --overwrite && \
-    jupyter declarativewidgets activate
+# install Declarative Widgets python package
+# don't bother activating the extension, not needed outside notebook
+RUN pip install jupyter_declarativewidgets
 
 # run kernel gateway, not notebook server
 CMD ["jupyter", "kernelgateway", "--KernelGatewayApp.ip=0.0.0.0"]
