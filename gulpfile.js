@@ -12,6 +12,10 @@ var gulp = require('gulp'),
     merge = require('merge-stream'),
     expect = require('gulp-expect-file');
 
+// default to 'production' if not set
+var NODE_ENV = process.env.NODE_ENV && process.env.NODE_ENV.toLowerCase() === 'development' ?
+        'development' : 'production';
+
 var webpackStatsOptions = {
     colors: gutil.colors.supportsColor,
     hash: false,
@@ -28,39 +32,48 @@ var webpackStatsOptions = {
     errorDetails: false
 };
 
+// base configuration
+var webpackConfig = {
+    entry: {
+        'dashboard': './public/js/dashboard.js'
+    },
+    module: {
+        loaders: [
+            { test: /\.css$/, loader: 'style-loader!css-loader' },
+            { test: /\.json$/, loader: 'json-loader' },
+            // jquery-ui loads some images
+            { test: /\.(jpg|png|gif)$/, loader: "file" },
+            // required to load font-awesome
+            { test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=application/font-woff" },
+            { test: /\.woff(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=application/font-woff" },
+            { test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=application/octet-stream" },
+            { test: /\.eot(\?v=\d+\.\d+\.\d+)?$/, loader: "file" },
+            { test: /\.svg(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=image/svg+xml" }
+        ]
+    },
+    resolve: {
+        modulesDirectories: ['public/js', 'node_modules']
+    },
+    plugins: [],
+    output: {
+        filename: '[name].js',
+        path: './public/components',
+        publicPath: '/components/'
+    }
+};
+
+// add addition config options depending on development vs production build
+if (NODE_ENV === 'production') {
+    webpackConfig.plugins.push(
+        new webpack.optimize.UglifyJsPlugin({ minimize: true })
+    );
+    webpackConfig.devtool = 'source-map';
+} else {
+    webpackConfig.debug = true;
+}
+
 gulp.task('webpack:components', function(done) {
-    webpack({
-            entry: {
-                'dashboard': './public/js/dashboard.js'
-            },
-            module: {
-                loaders: [
-                    { test: /\.css$/, loader: 'style-loader!css-loader' },
-                    { test: /\.json$/, loader: 'json-loader' },
-                    // jquery-ui loads some images
-                    { test: /\.(jpg|png|gif)$/, loader: "file" },
-                    // required to load font-awesome
-                    { test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=application/font-woff" },
-                    { test: /\.woff(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=application/font-woff" },
-                    { test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=application/octet-stream" },
-                    { test: /\.eot(\?v=\d+\.\d+\.\d+)?$/, loader: "file" },
-                    { test: /\.svg(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=image/svg+xml" }
-                ]
-            },
-            resolve: {
-                modulesDirectories: ['public/js', 'node_modules']
-            },
-            plugins: [
-                // TODO For production, enable minification of JS. Also, enable source-map below.
-                // new webpack.optimize.UglifyJsPlugin({ minimize: true })
-            ],
-            // devtool: 'source-map',
-            output: {
-                filename: '[name].js',
-                path: './public/components',
-                publicPath: '/components/'
-            }
-        }, function(err, stats) {
+    webpack(webpackConfig, function(err, stats) {
             if (err) {
                 throw new gutil.PluginError('webpack', err);
             }

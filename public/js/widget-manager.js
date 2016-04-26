@@ -9,7 +9,6 @@
 
 var $ = require('jquery');
 var Widgets = require('jupyter-js-widgets');
-var Services = require('jupyter-js-services');
 
     var WidgetManager = function(kernel, msgHandler) {
         //  Call the base class.
