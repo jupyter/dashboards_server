@@ -35,7 +35,7 @@ var webpackStatsOptions = {
 // base configuration
 var webpackConfig = {
     entry: {
-        'dashboard': './public/js/dashboard.js'
+        'dashboard': './client/js/dashboard.js'
     },
     module: {
         loaders: [
@@ -52,7 +52,7 @@ var webpackConfig = {
         ]
     },
     resolve: {
-        modulesDirectories: ['public/js', 'node_modules']
+        modulesDirectories: ['client/js', 'node_modules']
     },
     plugins: [],
     output: {
@@ -111,15 +111,15 @@ gulp.task('copy:components', function() {
 });
 
 gulp.task('less', function () {
-    gulp.src('./less/style.less')
+    gulp.src('./client/less/style.less')
         .pipe(plumber())
         .pipe(less())
         .pipe(gulp.dest('./public/css'));
 });
 
 gulp.task('watch', function() {
-    gulp.watch('./less/*.less', ['less']);
-    gulp.watch('./public/js/*.js', ['webpack:components']);
+    gulp.watch('./client/less/*.less', ['less']);
+    gulp.watch('./client/js/*.js', ['webpack:components']);
 });
 
 var nodemonOptions = {
