@@ -6,14 +6,18 @@
 'use strict';
 
 var $ = require('jquery');
-var OutputArea = require('../../node_modules/jupyter-js-notebook/lib/output-area/index');
+var AnsiParser = require('ansi-parser');
 var Services = require('jupyter-js-services');
+var OutputArea = require('../../node_modules/jupyter-js-notebook/lib/output-area/index');
+
 var Widgets = require('jupyter-js-widgets');
+require('jquery-ui/themes/smoothness/jquery-ui.min.css');
+require("jupyter-js-widgets/css/widgets.min.css");
+
 var WidgetManager = require('./widget-manager');
 var ErrorIndicator = require('./error-indicator');
 var Kernel = require('./kernel');
 var Layout = require('./layout');
-var AnsiParser = require('ansi-parser');
 
     var OutputType = OutputArea.OutputType;
     var OutputAreaModel = OutputArea.OutputAreaModel;

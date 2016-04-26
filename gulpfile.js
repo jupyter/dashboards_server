@@ -38,7 +38,13 @@ gulp.task('webpack:components', function(done) {
                     { test: /\.css$/, loader: 'style-loader!css-loader' },
                     { test: /\.json$/, loader: 'json-loader' },
                     // jquery-ui loads some images
-                    { test: /\.(jpg|png|gif)$/, loader: "file" }
+                    { test: /\.(jpg|png|gif)$/, loader: "file" },
+                    // required to load font-awesome
+                    { test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=application/font-woff" },
+                    { test: /\.woff(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=application/font-woff" },
+                    { test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=application/octet-stream" },
+                    { test: /\.eot(\?v=\d+\.\d+\.\d+)?$/, loader: "file" },
+                    { test: /\.svg(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=image/svg+xml" }
                 ]
             },
             resolve: {
@@ -72,25 +78,9 @@ gulp.task('copy:components', function() {
     var tasks = [
         {
             files: [
-                'node_modules/bootstrap/dist/js/bootstrap.min.js',
-                'node_modules/jupyter-js-widgets/css/widgets.min.css',
                 'node_modules/requirejs/require.js',
-                'node_modules/jquery/dist/jquery.min.js'
             ],
             dest: 'public/components'
-        },
-        {
-            files: [
-                'node_modules/jquery-ui/jquery-ui.js',
-                'node_modules/jquery-ui/themes/smoothness/jquery-ui.min.css',
-            ],
-            dest: 'public/components/jquery-ui'
-        },
-        {
-            files: [
-                'node_modules/jquery-ui/themes/smoothness/images/**/*'
-            ],
-            dest: 'public/components/jquery-ui/images'
         },
         {
             files: [

@@ -53,6 +53,7 @@
   "devDependencies": {
     "chai": "^3.4.1",
     "css-loader": "^0.23.1",
+    "file-loader": "^0.8.5",
     "gulp": "^3.9.0",
     "gulp-expect-file": "0.0.7",
     "gulp-less": "^3.0.1",
@@ -69,6 +70,7 @@
     "sinon": "^1.17.2",
     "sinon-chai": "^2.8.0",
     "style-loader": "^0.13.0",
+    "url-loader": "^0.5.7",
     "webpack": "^1.12.12"
   }
 }
