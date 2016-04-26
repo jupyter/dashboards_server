@@ -1,0 +1,10 @@
+{
+    "browser": true,
+    "devel": true,
+    "globals": {
+        "module": false,
+        "Promise": false,
+        "require": false
+    },
+    "strict": "global"
+}

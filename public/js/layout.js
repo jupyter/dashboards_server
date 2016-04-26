@@ -7,7 +7,9 @@
  * Module to create a dashboard layout to match the Gridstack layout from the
  * notebook dashboard authoring extension.
  */
+
 'use strict';
+
 var $ = require('jquery');
 
     var Config = window.jupyter_dashboard.Config;

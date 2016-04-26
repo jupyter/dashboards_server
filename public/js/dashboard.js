@@ -19,6 +19,18 @@ var ErrorIndicator = require('./error-indicator');
 var Kernel = require('./kernel');
 var Layout = require('./layout');
 
+// ES6 Promise polyfill
+require('es6-promise').polyfill();
+
+// Element.prototype.matches polyfill -- fixes widgets rendering issue in IE 11
+// See ipywidgets' embed-webpack.js
+if (Element && !Element.prototype.matches) {
+    var proto = Element.prototype;
+    proto.matches = proto.matchesSelector ||
+    proto.mozMatchesSelector || proto.msMatchesSelector ||
+    proto.oMatchesSelector || proto.webkitMatchesSelector;
+}
+
     var OutputType = OutputArea.OutputType;
     var OutputAreaModel = OutputArea.OutputAreaModel;
     var OutputAreaWidget = OutputArea.OutputAreaWidget;
