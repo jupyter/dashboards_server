@@ -31,10 +31,7 @@ var webpackStatsOptions = {
 gulp.task('webpack:components', function(done) {
     webpack({
             entry: {
-                'jupyter-js-output-area': './node_modules/jupyter-js-notebook/lib/output-area/index.js',
-                'jupyter-js-services': './node_modules/jupyter-js-services/lib/index.js',
-                'jupyter-js-widgets': ['./node_modules/jupyter-js-widgets/src/index.js'],
-                'ansi-parser': './node_modules/ansi-parser/lib/index.js'
+                'dashboard': './public/js/dashboard.js'
             },
             module: {
                 loaders: [
@@ -44,23 +41,19 @@ gulp.task('webpack:components', function(done) {
                     { test: /\.(jpg|png|gif)$/, loader: "file" }
                 ]
             },
-            externals: [
-                // 'backbone',      // as of 2016-02-22, only used by *-widgets
-                'bootstrap',
-                'jquery',
-                'jquery-ui',
-                'jupyter-js-output-area',
-                'jupyter-js-services',
-                'jupyter-js-widgets',
-                {
-                    'requirejs': 'require' // loaded from `-services`
-                }
-            ],
-            output: {
-                libraryTarget: 'amd',
-                filename: '[name].js',
-                path: './public/components'
+            resolve: {
+                modulesDirectories: ['public/js', 'node_modules']
             },
+            plugins: [
+                // TODO For production, enable minification of JS. Also, enable source-map below.
+                // new webpack.optimize.UglifyJsPlugin({ minimize: true })
+            ],
+            // devtool: 'source-map',
+            output: {
+                filename: '[name].js',
+                path: './public/components',
+                publicPath: '/components/'
+            }
         }, function(err, stats) {
             if (err) {
                 throw new gutil.PluginError('webpack', err);

@@ -3,48 +3,17 @@
  * Distributed under the terms of the Modified BSD License.
  */
 
-requirejs.config({
-    paths: {
-        bootstrap: require.toUrl('/components/bootstrap.min'),
-        jquery: require.toUrl('/components/jquery.min'),
-        'jquery-ui': require.toUrl('/components/jquery-ui/jquery-ui'),
-        'jupyter-js-output-area': require.toUrl('/components/jupyter-js-output-area'),
-        'jupyter-js-services': require.toUrl('/components/jupyter-js-services'),
-        'jupyter-js-widgets': require.toUrl('/components/jupyter-js-widgets'),
-        lodash: require.toUrl('/components/lodash.min'),
-        'ansi-parser': require.toUrl('/components/ansi-parser')
-    },
-    shim : {
-        bootstrap: {
-            deps: [ 'jquery' ]
-        }
-    }
-});
+'use strict';
 
-requirejs([
-    'jquery',
-    'jupyter-js-output-area',
-    'jupyter-js-services',
-    'bootstrap',  // required by jupyter-js-widgets
-    'jupyter-js-widgets',
-    './widget-manager',
-    './error-indicator',
-    './kernel',
-    './layout',
-    'ansi-parser'
-], function(
-    $,
-    OutputArea,
-    Services,
-    bs,
-    Widgets,
-    WidgetManager,
-    ErrorIndicator,
-    Kernel,
-    Layout,
-    AnsiParser
-) {
-    'use strict';
+var $ = require('jquery');
+var OutputArea = require('../../node_modules/jupyter-js-notebook/lib/output-area/index');
+var Services = require('jupyter-js-services');
+var Widgets = require('jupyter-js-widgets');
+var WidgetManager = require('./widget-manager');
+var ErrorIndicator = require('./error-indicator');
+var Kernel = require('./kernel');
+var Layout = require('./layout');
+var AnsiParser = require('ansi-parser');
 
     var OutputType = OutputArea.OutputType;
     var OutputAreaModel = OutputArea.OutputAreaModel;
@@ -122,12 +91,17 @@ requirejs([
         nb.events = nb.events || $({});
 
         // setup module paths used by plugins
-        require.config({
+        window.require.config({
             map: {
                 '*': {
                     'nbextensions/widgets/widgets/js/widget': 'jupyter-js-widgets'
                 }
             }
+        });
+
+        // define as a require.js module; needed by some plugins/libraries
+        window.define('jquery', function() {
+            return $;
         });
     }
 
@@ -146,7 +120,7 @@ requirejs([
                     nb.kernel.statusChanged.disconnect(puller);
                     nb.events.trigger('kernel_ready.Kernel');
                 }
-            }
+            };
             nb.kernel.statusChanged.connect(puller);
         }
         else {
@@ -169,13 +143,13 @@ requirejs([
             a.href = document.baseURI;
             var path = a.pathname;
             var sep = path[path.length-1] === '/' ? '' : '/';
-            require.config({
+            window.require.config({
                 paths: {
                     'nbextensions/urth_widgets': path + sep + 'urth_widgets'
                 }
             });
 
-            require(['nbextensions/urth_widgets/js/init/init'], function(declWidgetsInit) {
+            window.require(['nbextensions/urth_widgets/js/init/init'], function(declWidgetsInit) {
                 // initialize Declarative Widgets
                 declWidgetsInit({
                         namespace: window.Jupyter,
@@ -249,7 +223,6 @@ requirejs([
 
     // process kernel messages by delegating to handlers based on message type
     function _consumeMessage(msg, outputAreaModel) {
-        var output = {};
         var handler = messageHandlers[msg.header.msg_type];
         if(handler) {
             handler(msg, outputAreaModel);
@@ -279,4 +252,3 @@ requirejs([
             return $(a).attr('data-cell-index') - $(b).attr('data-cell-index');
         });
     }
-});

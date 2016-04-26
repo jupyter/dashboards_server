@@ -2,9 +2,7 @@
  * Copyright (c) Jupyter Development Team.
  * Distributed under the terms of the Modified BSD License.
  */
-define([
-    'jupyter-js-services'
-], function(Services) {
+var Services = require('jupyter-js-services');
 
     var _outputAreaHandledMsgs = {
         'clear_output': 1,
@@ -86,8 +84,7 @@ define([
         // TODO error handling
     }
 
-    return {
+    module.exports = {
         start: _startKernel,
         execute: _execute
     };
-});

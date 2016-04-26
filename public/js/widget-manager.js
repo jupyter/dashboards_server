@@ -5,15 +5,9 @@
 
 // Adapted from example code at:
 //   https://github.com/ipython/ipywidgets/blob/fc6844f8210761ff5ad1c9ffc25a70b379fc5191/examples/development/web3/src/manager.js
-define([
-    'jquery',
-    'jupyter-js-widgets',
-    'jupyter-js-services'
-], function(
-    $,
-    Widgets,
-    Services
-) {
+var $ = require('jquery');
+var Widgets = require('jupyter-js-widgets');
+var Services = require('jupyter-js-services');
 
     var WidgetManager = function(kernel, msgHandler) {
         //  Call the base class.
@@ -233,5 +227,4 @@ define([
         nb.set_dirty = function() { /* no-op */ };
     };
 
-    return WidgetManager;
-});
+    module.exports = WidgetManager;
