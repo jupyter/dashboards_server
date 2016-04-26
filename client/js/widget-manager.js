@@ -77,6 +77,7 @@ var Widgets = require('jupyter-js-widgets');
         return Promise.resolve(view).then(function(view) {
             // display the widget in its assigned DOM node
             widgetInfo.widgetNode.appendChild(view.el);
+            view.trigger('displayed');
             view.on('remove', function() {
                 console.log('view removed', view);
             });
