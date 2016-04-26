@@ -119,6 +119,7 @@ gulp.task('less', function () {
 
 gulp.task('watch', function() {
     gulp.watch('./less/*.less', ['less']);
+    gulp.watch('./public/js/*.js', ['webpack:components']);
 });
 
 var nodemonOptions = {
@@ -154,7 +155,6 @@ gulp.task('build', [
 ]);
 
 gulp.task('default', [
-    'build',
     'develop',
     'watch'
 ]);
