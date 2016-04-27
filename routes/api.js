@@ -14,6 +14,8 @@ var urljoin = require('url-join');
 var urlToDashboard = require('../app/url-to-dashboard');
 var WsRewriter = require('../app/ws-rewriter');
 
+var nbstore = require('../app/notebook-store');
+
 var kgUrl = config.get('KERNEL_GATEWAY_URL');
 var kgAuthToken = config.get('KG_AUTH_TOKEN');
 var kgBaseUrl = config.get('KG_BASE_URL');
@@ -40,19 +42,11 @@ function initWsProxy(server) {
     if (wsProxy) {
         return;
     }
-    
-    var headers = null;
-    if(kgAuthToken) {
-        // include the kg auth token if we have one
-        headers = {};
-        headers.Authorization = 'token ' + kgAuthToken;
-    }
 
     wsProxy = new WsRewriter({
         server: server,
         host: kgUrl,
         basePath: kgBaseUrl,
-        headers: headers,
         sessionToNbPath: function(session) {
             return urlToDashboard(sessions[session]);
         }
@@ -144,6 +138,22 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
              KERNEL_USER_AUTH: JSON.stringify(req.user)
         };
     }
+
+    var notebookPathHeader = req.headers['x-jupyter-notebook-path'];
+    var matches = notebookPathHeader.match(/^\/(?:dashboards(-plain)?)?(.*)$/);
+    if (!matches) {
+        error('Invalid notebook path header');
+    }else{
+        var notebookPath = matches[2];
+        var kernel_lang;
+        var nb = nbstore.get(notebookPath)
+          .then(function success(notebook){
+            console.log("here");
+            kernel_lang = notebook.metadata.kernelspec.name;
+            console.log(kernel_lang);
+          });
+    }
+    console.log(kernel_lang);
 
     // Pass the (modified) request to the kernel gateway.
     request({
