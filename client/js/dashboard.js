@@ -95,6 +95,10 @@ if (Element && !Element.prototype.matches) {
                 // widget *subarea* with its output areas and DOM container
                 widgetManager.trackPending(kernelFuture, $widgetSubArea.get(0), model);
             });
+        })
+        .catch(function(err) {
+            console.error(err);
+            ErrorIndicator.show();
         });
     });
 
@@ -125,7 +129,8 @@ if (Element && !Element.prototype.matches) {
         var nb = window.Jupyter.notebook;
         nb.kernel = kernel;
         var KernelStatus = Services.KernelStatus;
-        nb.kernel.is_connected = function() {
+
+        kernel.is_connected = function() {
             return kernel.status === KernelStatus.Busy || kernel.status === KernelStatus.Idle;
         };
 
@@ -133,13 +138,12 @@ if (Element && !Element.prototype.matches) {
         if (kernel.status !== KernelStatus.Idle) {
             var puller = function(kernel, status) {
                 if (status === Services.KernelStatus.Idle) {
-                    nb.kernel.statusChanged.disconnect(puller);
+                    kernel.statusChanged.disconnect(puller);
                     nb.events.trigger('kernel_ready.Kernel');
                 }
             };
-            nb.kernel.statusChanged.connect(puller);
-        }
-        else {
+            kernel.statusChanged.connect(puller);
+        } else {
             // kernel has already started
             nb.events.trigger('kernel_ready.Kernel');
         }
@@ -151,36 +155,34 @@ if (Element && !Element.prototype.matches) {
      *                   (2) Declarative Widgets are not supported on this page
      */
     function _initDeclWidgets() {
-        var deferred = new $.Deferred();
+        return new Promise(function(resolve, reject) {
+            if (Config.supportsDeclWidgets) {
+                // construct path relative to notebook, in order to properly configure require.js
+                var a = document.createElement('a');
+                a.href = document.baseURI;
+                var path = a.pathname;
+                var sep = path[path.length-1] === '/' ? '' : '/';
+                window.require.config({
+                    paths: {
+                        'nbextensions/urth_widgets': path + sep + 'urth_widgets'
+                    }
+                });
 
-        if (Config.supportsDeclWidgets) {
-            // construct path relative to notebook, in order to properly configure require.js
-            var a = document.createElement('a');
-            a.href = document.baseURI;
-            var path = a.pathname;
-            var sep = path[path.length-1] === '/' ? '' : '/';
-            window.require.config({
-                paths: {
-                    'nbextensions/urth_widgets': path + sep + 'urth_widgets'
-                }
-            });
-
-            window.require(['nbextensions/urth_widgets/js/init/init'], function(declWidgetsInit) {
-                // initialize Declarative Widgets
-                declWidgetsInit({
-                        namespace: window.Jupyter,
-                        events: window.Jupyter.notebook.events,
-                        WidgetManager: WidgetManager,       // backwards compatibility
-                        WidgetModel: Widgets.WidgetModel    // backwards compatibility
-                    })
-                    .then(deferred.resolve);
-            });
-        } else {
-            console.log('Declarative Widgets not supported ("urth_components" directory not found)');
-            deferred.resolve();
-        }
-
-        return deferred;
+                window.require(['nbextensions/urth_widgets/js/init/init'], function(declWidgetsInit) {
+                    // initialize Declarative Widgets
+                    declWidgetsInit({
+                            namespace: window.Jupyter,
+                            events: window.Jupyter.notebook.events,
+                            WidgetManager: WidgetManager,       // backwards compatibility
+                            WidgetModel: Widgets.WidgetModel    // backwards compatibility
+                        })
+                        .then(resolve, reject);
+                });
+            } else {
+                console.log('Declarative Widgets not supported ("urth_components" directory not found)');
+                resolve();
+            }
+        });
     }
 
     // This object has delegates for kernel message handling, keyed by message
@@ -240,7 +242,7 @@ if (Element && !Element.prototype.matches) {
     // process kernel messages by delegating to handlers based on message type
     function _consumeMessage(msg, outputAreaModel) {
         var handler = messageHandlers[msg.header.msg_type];
-        if(handler) {
+        if (handler) {
             handler(msg, outputAreaModel);
         } else {
             console.warn('Unhandled message', msg);

@@ -104,7 +104,7 @@ var Widgets = require('jupyter-js-widgets');
         if (view) {
             var options = view.options;
             // Find the output area model that manages this widget. For now,
-            // we assume widgets cannot change "move" across output areas and so
+            // we assume widgets cannot "move" across output areas and so
             // we can compute this once, not on every callback.
             while (!options.outputAreaModel && options.parent) {
                 options = options.parent.options;
