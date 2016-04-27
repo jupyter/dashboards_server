@@ -7,10 +7,10 @@
  * Module to create a dashboard layout to match the Gridstack layout from the
  * notebook dashboard authoring extension.
  */
-define([
-    'jquery'
-], function($) {
-    'use strict';
+
+'use strict';
+
+var $ = require('jquery');
 
     var Config = window.jupyter_dashboard.Config;
     var cellMargin = Config.cellMargin;
@@ -28,7 +28,6 @@ define([
         }).get().reduce(function(a, b) {
             return Math.max(a, b);
         }, 0);
-    var height = maxY * cellHeight + (maxY - 1) * cellMargin + maxHeight;
 
     function _createStyle() {
         $('#dashboard-layout').remove();
@@ -71,7 +70,6 @@ define([
             halfMargin + 'px ' + (halfMargin + 6) + 'px }', 0);
     }
 
-    return {
+    module.exports = {
         createStyle: _createStyle
     };
-});

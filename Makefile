@@ -19,7 +19,7 @@ help:
 # http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 	@echo
-	
+
 help-options: ## Shows all nconf options and defaults
 	@cat config.json
 
@@ -58,16 +58,16 @@ dev-install: ## Install all dev deps on localhost
 
 dev: KG_IP?=$$(docker-machine ip $$(docker-machine active))
 dev: kernel-gateway-container ## Run dashobard server on localhost
-	KG_BASE_URL=$(KG_BASE_URL) KERNEL_GATEWAY_URL=http://$(KG_IP):8888 gulp
+	NODE_ENV='development' KG_BASE_URL=$(KG_BASE_URL) KERNEL_GATEWAY_URL=http://$(KG_IP):8888 gulp
 
 dev-logging: KG_IP?=$$(docker-machine ip $$(docker-machine active))
 dev-logging: kernel-gateway-container ## Run dashboard server with debug logging on localhost
-	gulp build
+	NODE_ENV='development' gulp build
 	KERNEL_GATEWAY_URL=http://$(KG_IP):8888 npm run start-logging
 
 dev-debug: KG_IP?=$$(docker-machine ip $$(docker-machine active))
 dev-debug: kernel-gateway-container ## Run dashboard server with node debugger on localhost
-	KG_BASE_URL=$(KG_BASE_URL) KERNEL_GATEWAY_URL=http://$(KG_IP):8888 gulp debug
+	NODE_ENV='development' KG_BASE_URL=$(KG_BASE_URL) KERNEL_GATEWAY_URL=http://$(KG_IP):8888 gulp debug
 
 ############### Dashboard server in Docker
 

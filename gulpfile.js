@@ -12,6 +12,10 @@ var gulp = require('gulp'),
     merge = require('merge-stream'),
     expect = require('gulp-expect-file');
 
+// default to 'production' if not set
+var NODE_ENV = process.env.NODE_ENV && process.env.NODE_ENV.toLowerCase() === 'development' ?
+        'development' : 'production';
+
 var webpackStatsOptions = {
     colors: gutil.colors.supportsColor,
     hash: false,
@@ -28,40 +32,48 @@ var webpackStatsOptions = {
     errorDetails: false
 };
 
+// base configuration
+var webpackConfig = {
+    entry: {
+        'dashboard': './client/js/dashboard.js'
+    },
+    module: {
+        loaders: [
+            { test: /\.css$/, loader: 'style-loader!css-loader' },
+            { test: /\.json$/, loader: 'json-loader' },
+            // jquery-ui loads some images
+            { test: /\.(jpg|png|gif)$/, loader: "file" },
+            // required to load font-awesome
+            { test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=application/font-woff" },
+            { test: /\.woff(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=application/font-woff" },
+            { test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=application/octet-stream" },
+            { test: /\.eot(\?v=\d+\.\d+\.\d+)?$/, loader: "file" },
+            { test: /\.svg(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=image/svg+xml" }
+        ]
+    },
+    resolve: {
+        modulesDirectories: ['client/js', 'node_modules']
+    },
+    plugins: [],
+    output: {
+        filename: '[name].js',
+        path: './public/components',
+        publicPath: '/components/'
+    }
+};
+
+// add addition config options depending on development vs production build
+if (NODE_ENV === 'production') {
+    webpackConfig.plugins.push(
+        new webpack.optimize.UglifyJsPlugin({ minimize: true })
+    );
+    webpackConfig.devtool = 'source-map';
+} else {
+    webpackConfig.debug = true;
+}
+
 gulp.task('webpack:components', function(done) {
-    webpack({
-            entry: {
-                'jupyter-js-output-area': './node_modules/jupyter-js-notebook/lib/output-area/index.js',
-                'jupyter-js-services': './node_modules/jupyter-js-services/lib/index.js',
-                'jupyter-js-widgets': ['./node_modules/jupyter-js-widgets/src/index.js'],
-                'ansi-parser': './node_modules/ansi-parser/lib/index.js'
-            },
-            module: {
-                loaders: [
-                    { test: /\.css$/, loader: 'style-loader!css-loader' },
-                    { test: /\.json$/, loader: 'json-loader' },
-                    // jquery-ui loads some images
-                    { test: /\.(jpg|png|gif)$/, loader: "file" }
-                ]
-            },
-            externals: [
-                // 'backbone',      // as of 2016-02-22, only used by *-widgets
-                'bootstrap',
-                'jquery',
-                'jquery-ui',
-                'jupyter-js-output-area',
-                'jupyter-js-services',
-                'jupyter-js-widgets',
-                {
-                    'requirejs': 'require' // loaded from `-services`
-                }
-            ],
-            output: {
-                libraryTarget: 'amd',
-                filename: '[name].js',
-                path: './public/components'
-            },
-        }, function(err, stats) {
+    webpack(webpackConfig, function(err, stats) {
             if (err) {
                 throw new gutil.PluginError('webpack', err);
             }
@@ -79,25 +91,9 @@ gulp.task('copy:components', function() {
     var tasks = [
         {
             files: [
-                'node_modules/bootstrap/dist/js/bootstrap.min.js',
-                'node_modules/jupyter-js-widgets/css/widgets.min.css',
                 'node_modules/requirejs/require.js',
-                'node_modules/jquery/dist/jquery.min.js'
             ],
             dest: 'public/components'
-        },
-        {
-            files: [
-                'node_modules/jquery-ui/jquery-ui.js',
-                'node_modules/jquery-ui/themes/smoothness/jquery-ui.min.css',
-            ],
-            dest: 'public/components/jquery-ui'
-        },
-        {
-            files: [
-                'node_modules/jquery-ui/themes/smoothness/images/**/*'
-            ],
-            dest: 'public/components/jquery-ui/images'
         },
         {
             files: [
@@ -115,14 +111,15 @@ gulp.task('copy:components', function() {
 });
 
 gulp.task('less', function () {
-    gulp.src('./less/style.less')
+    gulp.src('./client/less/style.less')
         .pipe(plumber())
         .pipe(less())
         .pipe(gulp.dest('./public/css'));
 });
 
 gulp.task('watch', function() {
-    gulp.watch('./less/*.less', ['less']);
+    gulp.watch('./client/less/*.less', ['less']);
+    gulp.watch('./client/js/*.js', ['webpack:components']);
 });
 
 var nodemonOptions = {
@@ -158,7 +155,6 @@ gulp.task('build', [
 ]);
 
 gulp.task('default', [
-    'build',
     'develop',
     'watch'
 ]);

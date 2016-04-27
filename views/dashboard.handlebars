@@ -3,10 +3,6 @@
     Distributed under the terms of the Modified BSD License.
 }}
 
-{{! Required for jupyter-js-widgets }}
-<link rel="stylesheet" href="/components/jquery-ui/jquery-ui.min.css">
-<link rel="stylesheet" href="/components/widgets.min.css">
-
 <noscript>
     <div id="noscript">
         This page requires JavaScript.<br>
@@ -39,7 +35,6 @@
     </div>
 </div>
 
-<script src="/components/require.js" data-main="/js/dashboard.js"></script>
 <script>
     (function() {
         var db = window.jupyter_dashboard = window.jupyter_dashboard || {};
@@ -62,3 +57,5 @@
         {{/if}}
     })();
 </script>
+<script src="/components/require.js"></script>
+<script src="/components/dashboard.js"></script>

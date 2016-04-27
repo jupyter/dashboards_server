@@ -5,15 +5,10 @@
 
 // Adapted from example code at:
 //   https://github.com/ipython/ipywidgets/blob/fc6844f8210761ff5ad1c9ffc25a70b379fc5191/examples/development/web3/src/manager.js
-define([
-    'jquery',
-    'jupyter-js-widgets',
-    'jupyter-js-services'
-], function(
-    $,
-    Widgets,
-    Services
-) {
+'use strict';
+
+var $ = require('jquery');
+var Widgets = require('jupyter-js-widgets');
 
     var WidgetManager = function(kernel, msgHandler) {
         //  Call the base class.
@@ -82,6 +77,7 @@ define([
         return Promise.resolve(view).then(function(view) {
             // display the widget in its assigned DOM node
             widgetInfo.widgetNode.appendChild(view.el);
+            view.trigger('displayed');
             view.on('remove', function() {
                 console.log('view removed', view);
             });
@@ -150,10 +146,8 @@ define([
      * metadata: ???
      */
     WidgetManager.prototype._create_comm = function(targetName, id, metadata) {
-        // TODO Other Jupyter code seems to expect `metadata` to be passed in as `data`. Why?
-        var data = metadata;
         return Promise.resolve(
-            this.commManager.new_comm(targetName, data, null, null, id)
+            this.commManager.new_comm(targetName, {}, this.callbacks(), metadata, id)
         );
     };
 
@@ -235,5 +229,4 @@ define([
         nb.set_dirty = function() { /* no-op */ };
     };
 
-    return WidgetManager;
-});
+    module.exports = WidgetManager;
