@@ -30,7 +30,6 @@
     "es6-promise": "^3.0.2",
     "express": "^4.13.3",
     "express-handlebars": "^3.0.0",
-    "express-session": "^1.13.0",
     "extract-zip": "^1.4.1",
     "font-awesome": "^4.5.0",
     "fs-extra": "^0.26.5",
