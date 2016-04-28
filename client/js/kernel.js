@@ -25,7 +25,7 @@ var Services = require('jupyter-js-services');
         var kernelOptions = {
             baseUrl: kernelUrl,
             wsUrl: kernelUrl.replace(/^http/, 'ws'),
-            name: 'python3',
+            name: '', // Set by API when making request to kernel gateway
             clientId: clientId,
             ajaxSettings: {
                 requestHeaders: {

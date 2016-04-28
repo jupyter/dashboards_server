@@ -139,52 +139,51 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
         };
     }
 
+    // Store the notebook path for use within the WS proxy.
     var notebookPathHeader = req.headers['x-jupyter-notebook-path'];
+    var sessionId = req.headers['x-jupyter-session-id'];
+    if (!notebookPathHeader || !sessionId) {
+        error('Missing notebook path or session ID headers');
+        return res.status(500).end();
+    }
+
     var matches = notebookPathHeader.match(/^\/(?:dashboards(-plain)?)?(.*)$/);
     if (!matches) {
         error('Invalid notebook path header');
+        return res.status(500).end();
     }else{
         var notebookPath = matches[2];
-        var kernel_lang;
-        var nb = nbstore.get(notebookPath)
-          .then(function success(notebook){
-            console.log("here");
-            kernel_lang = notebook.metadata.kernelspec.name;
-            console.log(kernel_lang);
-          });
-    }
-    console.log(kernel_lang);
-
-    // Pass the (modified) request to the kernel gateway.
-    request({
-        url: urljoin(kgUrl, kgBaseUrl, '/api/kernels'),
-        method: 'POST',
-        headers: headers,
-        json: req.body
-    }, function(err, response, body) {
-        if(err) {
-            error('Error proxying kernel creation request:' + err.toString());
-            return res.status(500).end();
-        }
-        // Store the notebook path for use within the WS proxy.
-        var notebookPathHeader = req.headers['x-jupyter-notebook-path'];
-        var sessionId = req.headers['x-jupyter-session-id'];
-        if (!notebookPathHeader || !sessionId) {
-            error('Missing notebook path or session ID headers');
-            return res.status(500).end();
-        }
-        var matches = notebookPathHeader.match(/^\/(?:dashboards(-plain)?)?(.*)$/);
-        if (!matches) {
-            error('Invalid notebook path header');
-            return res.status(500).end();
-        }
         // Store notebook path for later use
-        sessions[sessionId] = matches[2];
+        sessions[sessionId] = notebookPath;
 
-        // Pass the kernel gateway response back to the client.
-        res.set(response.headers);
-        res.status(response.statusCode).json(body);
-    });
+        var kernel_lang;
+
+        nbstore.get(notebookPath)
+        .then(function success(notebook){
+          if (notebook.metadata.kernelspec.name){
+            req.body.name = notebook.metadata.kernelspec.name;
+          }else{
+            // Default to Python 3
+            req.body.name = 'python3';
+          }
+          // Pass the (modified) request to the kernel gateway.
+          request({
+            url: urljoin(kgUrl, kgBaseUrl, '/api/kernels'),
+            method: 'POST',
+            headers: headers,
+            json: req.body
+          }, function(err, response, body) {
+            if(err) {
+              error('Error proxying kernel creation request:' + err.toString());
+              return res.status(500).end();
+            }
+
+            // Pass the kernel gateway response back to the client.
+            res.set(response.headers);
+            res.status(response.statusCode).json(body);
+          });
+        });
+      }
 });
 
 // Proxy all unhandled requests to the kernel gateway.
