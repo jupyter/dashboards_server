@@ -114,14 +114,18 @@ if (Element && !Element.prototype.matches) {
         window.require.config({
             map: {
                 '*': {
-                    'nbextensions/widgets/widgets/js/widget': 'jupyter-js-widgets'
+                    'nbextensions/widgets/widgets/js/widget': 'jupyter-js-widgets',
+                    'jupyter-decl-widgets': 'urth_widgets/js/widgets'
                 }
             }
         });
 
-        // define as a require.js module; needed by some plugins/libraries
+        // define require.js modules; needed by some plugins/libraries
         window.define('jquery', function() {
             return $;
+        });
+        window.define('jupyter-js-widgets', function() {
+            return Widgets;
         });
     }
 
