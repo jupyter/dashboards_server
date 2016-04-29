@@ -30,7 +30,8 @@ var store = {};
 // Appends the specified extension if left off
 // If extension is not specified, uses notebook file extension
 function _appendExt(nbpath, ext) {
-    return nbpath + (ext || (path.extname(nbpath) === DB_EXT ? '' : DB_EXT));
+    ext = ext || DB_EXT;
+    return nbpath + (path.extname(nbpath) === ext ? '' : ext);
 }
 
 // determines if the specified file exists
