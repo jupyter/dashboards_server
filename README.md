@@ -29,6 +29,15 @@ The behavior of the application is similar to that of [Thebe](https://github.com
 * The browser client can only send [Jupyter comm messages](http://jupyter-client.readthedocs.org/en/latest/messaging.html#opening-a-comm) to kernels (*not* arbitrary code).
 * The application uses the [jupyter-js-services](https://github.com/jupyter/jupyter-js-services) and [jupyter-js-widgets](https://github.com/ipython/ipywidgets/tree/master/jupyter-js-widgets) libraries for communication with kernels.
 
+The following libraries are known to work with the dashboard server:
+
+* jupyter_dashboards 0.5.x
+* jupyter_dashboards_bundlers 0.7.x 
+* ipywidgets 5.x
+* jupyter_declarativewidgets 0.5.x
+* Bokeh 0.11.x
+* Plotly 1.9.x
+
 ## Try It
 
 If you want to see the dashboard server in action, you can run a handful of demos we included in this project in a Docker container. After setting up Docker (e.g. using [docker-machine](https://docs.docker.com/machine/get-started/)), do the following in a git clone of this repo:

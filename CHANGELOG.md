@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.0 (2016-05-02)
+
+* Use cookies for session storage
+* Support install using npm
+* Fix image style to better match render in Jupyter Notebook
+* Fix websocket disconnections due to improper proxying
+* Fix premature kernel ready event
+* Add support for report layout
+* Render notebooks with no layout metadata as reports
+* Load `index` bundles in place of directory listings
+* Fix cell styling to better match rendering in Jupyter Notebook
+* Improve support for deployment on Cloud Foundry
+* Add option to pass user authentication to kernel
+* Fix redirect after login to exclude favicon
+* Update `ipywidgets` support to 5.x, `jupyter-js-widgets` support to 1.x, and `jupyter_declarativewidgets` to 0.5.x
+
 ## 0.4.0 (2016-03-24)
 
 * Clean up examples directory and include an intro dashboard-notebook
