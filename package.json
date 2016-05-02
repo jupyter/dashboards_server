@@ -1,6 +1,13 @@
 {
   "name": "jupyter-dashboards-server",
+  "description": "Serves Jupyter notebooks as standalone dashboards",
+  "author": "Jupyter Development Team",
+  "license": "BSD-3-Clause",
   "version": "0.5.0-dev",
+  "repository": {
+    "type": "git",
+    "url" : "https://github.com/jupyter-incubator/dashboards_server.git"
+  },
   "engines": {
     "node": "5.10.0"
   },
