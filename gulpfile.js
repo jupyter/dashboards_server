@@ -65,7 +65,12 @@ var webpackConfig = {
 // add addition config options depending on development vs production build
 if (NODE_ENV === 'production') {
     webpackConfig.plugins.push(
-        new webpack.optimize.UglifyJsPlugin({ minimize: true })
+        new webpack.optimize.UglifyJsPlugin({
+            minimize: true,
+            compress: {
+                warnings: false, // Suppress uglification warnings
+            }
+        })
     );
     webpackConfig.devtool = 'source-map';
 } else {
