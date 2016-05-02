@@ -259,6 +259,6 @@ examples: data/test data/demo ## Unpack demo dashobards in data/
 
 ############### npmjs.org release
 
-release: ## Build frontend assets and release package to npmjs.org
+release: | clean dev-install ## Build frontend assets and release package to npmjs.org
 	gulp build
 	npm publish
