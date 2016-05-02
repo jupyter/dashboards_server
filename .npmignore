@@ -1,6 +1,6 @@
-.git
-node_modules/
 etc/
-data/
-!data/INTRO
+data/test/
+data/demo/
 *.log
+Dockerfile*
+Makefile
