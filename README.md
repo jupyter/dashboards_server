@@ -32,25 +32,35 @@ The behavior of the application is similar to that of [Thebe](https://github.com
 The following libraries are known to work with the dashboard server:
 
 * jupyter_dashboards 0.5.x
-* jupyter_dashboards_bundlers 0.7.x 
+* jupyter_dashboards_bundlers 0.7.x
 * ipywidgets 5.x
 * jupyter_declarativewidgets 0.5.x
 * Bokeh 0.11.x
 * Plotly 1.9.x
 
-## Try It
+## Install it
 
-If you want to see the dashboard server in action, you can run a handful of demos we included in this project in a Docker container. After setting up Docker (e.g. using [docker-machine](https://docs.docker.com/machine/get-started/)), do the following in a git clone of this repo:
+You can install the dashboard server using `npm`. 
 
 ```
-make build
-make examples
-make demo-container
+npm install -g jupyter-dashboards-server
 ```
 
-Open your web browser and point it to the dashboards server running on your Docker host at `http://<docker host ip>:3000/`.
+You can then run the dashboard server from the command line. See the next section about how to install and configure the other prerequisite components.
 
-## Deploy It
+```
+# shows a list of all nconf options
+jupyter-dashboards-server --help
+
+# runs the server pointing to a public kernel gateway
+jupyter-dashboards-server --KERNEL_GATEWAY_URL=http://my.gateway.com/
+
+# runs the server pointing to a kernel gateway that requires token auth
+export KG_AUTH_TOKEN='somesecretinenvironment' 
+jupyter-dashboards-server --KERNEL_GATEWAY_URL=http://my.gateway.com/
+```
+
+## Run It
 
 The dashboard server is meant to enable the following workflow:
 
@@ -62,17 +72,23 @@ The dashboard server is meant to enable the following workflow:
 6. Bob interacts with Alice's notebook as a dashboard.
 7. Alice updates her notebook and redeploys it to the dashboards server.
 
-This workflow requires multiple components working in concert like so:
+This workflow requires multiple components working in concert.
 
 ![Minimal dashboard app deployment diagram](etc/simple_deploy.png)
 
-To bring all of these pieces together, start with the [`docker-compose` recipe outlined in this gist](https://gist.github.com/parente/527cea0481afe9fabbcd). Modify it to suit your needs, or bring your own DevOps tooling to bear. (We'll gladly take PRs that reduce the complexity of getting everything set up!)
+To bring all of these pieces together, you can start with the [`docker-compose` recipe outlined in this gist](https://gist.github.com/jhpedemonte/0e156782a7039be0ecc6fa335390bed0). Modify it to suit your needs, or bring your own DevOps tooling to bear. (We'll gladly take PRs that reduce the complexity of getting everything set up!)
 
-See the [dashboards deployment roadmap](https://github.com/jupyter-incubator/dashboards/wiki/Deployment-Roadmap) for additional use cases and potential deployments.
+Alternatively, you can clone this git repository and build the Docker images we use for development in order to run the demos in `etc/notebooks`. After setting up Docker (e.g. using [docker-machine](https://docs.docker.com/machine/get-started/)), run the following and then visit `http://<your docker host ip>:3000`.
+
+```
+make build
+make examples
+make demo-container
+```
 
 ## Develop It
 
-You can use the Try It setup above for development, but any change you make to the source will require a restart of the dashboard server container. A better approach is to install the following on your host machine:
+To setup a development environment, install the following on your host machine.
 
 * Node 5.5.0
 * npm 3.5.3
@@ -80,7 +96,7 @@ You can use the Try It setup above for development, but any change you make to t
 * Docker 1.9.1
 * Docker Machine 0.5.6
 
-With these installed, you can use the `make dev-*` targets. Under the covers, these targets use `gulp` to automatically rebuild and restart the dashboard server any time you make a code change. Run `make help` to see the full gamut of targets and options. See the next few sections for the most common patterns. Of course, you can mix and match.
+With these installed, you can use the `make dev-*` targets. Run `make help` to see the full gamut of targets and options. See the next few sections for the most common patterns.
 
 ### Setup
 
@@ -96,6 +112,7 @@ make examples
 ### Dashboard Server w/ Auto Restart
 
 ```bash
+# uses gulp:watch to restart on any changes
 make dev
 # mac shortcut for visiting URL in a browser
 open http://127.0.0.1:3000
@@ -144,10 +161,12 @@ open https://127.0.0.1:3001
 make test
 # backend integration tests
 make integration-test
+# installation tests
+make install-test
 ```
 
 ## Detailed Developer Documentation
 
 * [Server API](https://github.com/jupyter-incubator/dashboards_server/wiki/Server-API) - server endpoints
-    - Also contains information about **bundled dashboards** (allowing specification of external resources).
+    * Also contains information about **bundled dashboards** (allowing specification of external resources).
 * [Authentication](https://github.com/jupyter-incubator/dashboards_server/wiki/Authentication) - examples of integrating 3rd-party authentication strategies

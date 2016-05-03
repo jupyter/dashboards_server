@@ -109,5 +109,5 @@ function onListening() {
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : addr.address + ':' + addr.port;
-  debug('Listening on ' + bind);
+  console.log('Jupyter dashboard server listening on ' + bind);
 }
