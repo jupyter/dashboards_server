@@ -40,11 +40,24 @@ The following libraries are known to work with the dashboard server:
 
 ## Install it
 
-You can install the dashboard server using `npm`. See the next section about how to install and configure the other prerequisite components.
+You can install the dashboard server using `npm`. 
 
 ```
 npm install -g jupyter-dashboards-server
+```
+
+You can then run the dashboard server from the command line. See the next section about how to install and configure the other prerequisite components.
+
+```
+# shows a list of all nconf options
 jupyter-dashboards-server --help
+
+# runs the server pointing to a public kernel gateway
+jupyter-dashboards-server --KERNEL_GATEWAY_URL=http://my.gateway.com/
+
+# runs the server pointing to a kernel gateway that requires token auth
+export KG_AUTH_TOKEN='somesecretinenvironment' 
+jupyter-dashboards-server --KERNEL_GATEWAY_URL=http://my.gateway.com/
 ```
 
 ## Run It
