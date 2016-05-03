@@ -13,11 +13,12 @@ var tmp = require('tmp');
 
 var DB_EXT = config.get('DB_FILE_EXT');
 var DATA_DIR = config.get('NOTEBOOKS_DIR');
+var ENCODING = 'utf8';
 var INDEX_NB_NAME = config.get('DB_INDEX');
 var ZIP_EXT = '.zip';
 debug('store dir: ' + DATA_DIR);
 
-var allowedUploadExts = [ DB_EXT, ZIP_EXT ];
+var ALLOWED_UPLOAD_EXTS = [ DB_EXT, ZIP_EXT ];
 
 // cached notebook objects
 var store = {};
@@ -26,10 +27,11 @@ var store = {};
 // GET OPERATIONS
 /////////////////
 
-// Append the notebook file extension if left off
-function _appendExt(nbpath) {
-    var ext = path.extname(nbpath) === DB_EXT ? '' : DB_EXT;
-    return nbpath + ext;
+// Appends the specified extension if left off
+// If extension is not specified, uses notebook file extension
+function _appendExt(nbpath, ext) {
+    ext = ext || DB_EXT;
+    return nbpath + (path.extname(nbpath) === ext ? '' : ext);
 }
 
 // determines if the specified file exists
@@ -109,7 +111,7 @@ function _loadNb(nbpath, stats) {
 
             return new Promise(function(resolve, reject) {
                 var nbAbsPath = path.join(DATA_DIR, nbfile);
-                fs.readFile(nbAbsPath, 'utf8', function(err, rawData) {
+                fs.readFile(nbAbsPath, ENCODING, function(err, rawData) {
                     if (err) {
                         reject(new Error('Error loading notebook: ' + err.message));
                     } else {
@@ -117,7 +119,7 @@ function _loadNb(nbpath, stats) {
                             var nb = JSON.parse(rawData);
                             // cache notebook for future reads -- use given `nbpath` since that
                             // is path from request. later calls will look up using request path.
-                            store[nbpath] = nb; 
+                            store[nbpath] = nb;
                             resolve(nb);
                         } catch(e) {
                             reject(new Error('Error parsing notebook JSON'));
@@ -168,41 +170,27 @@ function remove(nbpath) {
 
 var _uploadMessage = 'Make sure to upload a single Jupyter Notebook file (*.ipynb).';
 
-/**
- * Return absolute destination directory
- * @param  {Request} req
- * @return {String}
- */
-function _getDestination (req) {
-    // parse destination directory from request url
-    var nbdir = path.dirname(req.params[0]);
-    var destDir = path.join(DATA_DIR, nbdir);
-    return destDir;
-}
-
 function _fileFilter (filename) {
     // check that file extension is in list of allowed upload file extensions
     var ext = path.extname(filename).toLowerCase();
-    return allowedUploadExts.indexOf(ext) !== -1;
+    return ALLOWED_UPLOAD_EXTS.indexOf(ext) !== -1;
 }
 
 /**
  * Write file contents to specified location
- * 
- * @param  {String} destination - directory path which will contain uploaded dashboard
- * @param  {String} filename    - name of dashboard
+ *
+ * @param  {String} destination - file path of uploaded dashboard
  * @param  {Buffer} buffer      - contents of uploaded file
  * @return {Promise}
  */
-function _writeFile (destination, filename, buffer) {
+function _writeFile (destination, buffer) {
     return new Promise(function(resolve, reject) {
-        fs.mkdir(destination, function(err) {
+        fs.mkdir(path.dirname(destination), function(err) {
             if (err && err.code !== 'EEXIST') {
                 reject(err);
             } else {
-                var destFilename = path.join(destination, filename);
-                debug('Uploading notebook: ' + destFilename);
-                fs.writeFile(destFilename, buffer, function(err) {
+                debug('Uploading notebook: ' + destination);
+                fs.writeFile(destination, buffer, function(err) {
                     if (err) {
                         reject(err);
                     } else {
@@ -216,13 +204,12 @@ function _writeFile (destination, filename, buffer) {
 
 /**
  * Write zip archive contents to specified location
- * 
- * @param  {String} destination - directory path which will contain uploaded dashboard
- * @param  {String} filename    - name of dashboard
+ *
+ * @param  {String} destination - file path of uploaded dashboard
  * @param  {Buffer} buffer      - contents of uploaded zip archive
  * @return {Promise}
  */
-function _writeZipFile(destination, filename, buffer) {
+function _writeZipFile(destination, buffer) {
     // create a temporary directory in which to unzip archive
     return new Promise(function(resolve, reject) {
         tmp.dir({ unsafeCleanup: true }, function(err, tmpDir, cleanup) {
@@ -237,7 +224,7 @@ function _writeZipFile(destination, filename, buffer) {
     })
     .then(function(tempobj) {
         var tmpDir = tempobj.path;
-        var tmpZip = path.join(tmpDir, filename + ZIP_EXT);
+        var tmpZip = path.join(tmpDir, _appendExt(path.basename(destination), ZIP_EXT));
         var tmpUnzipDir = path.join(path.dirname(tmpZip), path.basename(tmpZip, ZIP_EXT));
 
         // write zip archive contents to filesystem
@@ -266,8 +253,7 @@ function _writeZipFile(destination, filename, buffer) {
         })
         // move unzipped contents to data directory, overwriting previously existing dir
         .then(function(tmpUnzipDir) {
-            var destDir = path.join(destination, filename);
-
+            var destDir = path.dirname(destination);
             return new Promise(function(resolve, reject) {
                 fs.move(tmpUnzipDir, destDir, { clobber: true }, function(err) {
                     if (err) {
@@ -298,8 +284,7 @@ var _uploadLimits = {
 function upload(req, res, next) {
     var buffers = [];
     var bufferLength = 0;
-    var destination = _getDestination(req);
-    var filename = path.basename(req.params[0]);
+    var destination = path.join(DATA_DIR, req.params[0]);
     var cachedPath = req.params[0];
     var fileCount = 0;
 
@@ -332,10 +317,11 @@ function upload(req, res, next) {
 
                         // write the file correctly
                         var extension = path.extname(originalname);
+                        destination = _appendExt(destination, extension);
                         if (extension === DB_EXT) {
-                            promise = _writeFile(destination, _appendExt(filename), totalFile);
+                            promise = _writeFile(destination, totalFile);
                         } else if (extension === '.zip') {
-                            promise = _writeZipFile(destination, filename, totalFile);
+                            promise = _writeZipFile(destination, totalFile);
                         }
 
                         promise.then(resolve, function failure(err) {
