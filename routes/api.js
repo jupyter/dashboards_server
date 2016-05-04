@@ -156,16 +156,19 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
         // Store notebook path for later use
         sessions[sessionId] = notebookPath;
 
-        var kernel_lang;
-
         nbstore.get(notebookPath)
         .then(function success(notebook){
+          debug(notebook.metadata);
           if (notebook.metadata.kernelspec.name){
-            req.body.name = notebook.metadata.kernelspec.name;
+              var kernelName = notebook.metadata.kernelspec.name;
+              debug("Notebook kernel name found: " + kernelName);
+              req.body.name = kernelName;
           }else{
-            // Default to Python 3
-            req.body.name = 'python3';
+              // Default to Python 3
+              debug("Notebook kernel name not found, defaulting to Python 3");
+              req.body.name = "python3";
           }
+          debug(req.body);
           // Pass the (modified) request to the kernel gateway.
           request({
             url: urljoin(kgUrl, kgBaseUrl, '/api/kernels'),
@@ -174,10 +177,9 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
             json: req.body
           }, function(err, response, body) {
             if(err) {
-              error('Error proxying kernel creation request:' + err.toString());
-              return res.status(500).end();
+                error('Error proxying kernel creation request:' + err.toString());
+                return res.status(500).end();
             }
-
             // Pass the kernel gateway response back to the client.
             res.set(response.headers);
             res.status(response.statusCode).json(body);
