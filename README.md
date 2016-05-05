@@ -33,14 +33,14 @@ The following libraries are known to work with the dashboard server:
 
 * jupyter_dashboards 0.5.x
 * jupyter_dashboards_bundlers 0.7.x
-* ipywidgets 5.x
+* ipywidgets 5.1.1+
 * jupyter_declarativewidgets 0.5.x
 * Bokeh 0.11.x
 * Plotly 1.9.x
 
 ## Install it
 
-You can install the dashboard server using `npm`. 
+You can install the dashboard server using `npm`.
 
 ```
 npm install -g jupyter-dashboards-server
@@ -56,7 +56,7 @@ jupyter-dashboards-server --help
 jupyter-dashboards-server --KERNEL_GATEWAY_URL=http://my.gateway.com/
 
 # runs the server pointing to a kernel gateway that requires token auth
-export KG_AUTH_TOKEN='somesecretinenvironment' 
+export KG_AUTH_TOKEN='somesecretinenvironment'
 jupyter-dashboards-server --KERNEL_GATEWAY_URL=http://my.gateway.com/
 ```
 
