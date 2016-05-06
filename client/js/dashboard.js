@@ -9,6 +9,9 @@ var $ = require('jquery');
 var AnsiParser = require('ansi-parser');
 var Services = require('jupyter-js-services');
 var OutputArea = require('../../node_modules/jupyter-js-notebook/lib/output-area/index');
+var RenderMime = require('jupyter-js-ui/lib/rendermime');
+var renderers = require('jupyter-js-ui/lib/renderers');
+var PhWidget = require('phosphor-widget');
 
 var Widgets = require('jupyter-js-widgets');
 require('jquery-ui/themes/smoothness/jquery-ui.min.css');
@@ -31,24 +34,27 @@ if (Element && !Element.prototype.matches) {
     proto.oMatchesSelector || proto.webkitMatchesSelector;
 }
 
-    var OutputType = OutputArea.OutputType;
     var OutputAreaModel = OutputArea.OutputAreaModel;
     var OutputAreaWidget = OutputArea.OutputAreaWidget;
-    var StreamName = OutputArea.StreamName;
     var Config = window.jupyter_dashboard.Config;
 
     var $container = $('#dashboard-container');
 
+    // render the dashboard dom layout
     _renderDashboard();
 
     // setup shims for backwards compatibility
     _shimNotebook();
+
+    // setup renderer chain for output mimetypes
+    var renderMime = _createRenderMime();
 
     // start a kernel
     Kernel.start().then(function(kernel) {
         // do some additional shimming
         _setKernelShims(kernel);
 
+        // initialize a watcher for kernel errors to inform the user
         _registerKernelErrorHandler(kernel);
 
         // initialize an ipywidgets manager
@@ -63,11 +69,12 @@ if (Element && !Element.prototype.matches) {
             _getCodeCells().each(function() {
                 var $cell = $(this);
 
-                // create a jupyter output area mode and widget view for each
-                // dashboard code cell
                 var model = new OutputAreaModel();
-                var view = new OutputAreaWidget(model);
+                model.trusted = true; // always trust notebooks
+                var view = new OutputAreaWidget(model, renderMime);
+
                 model.outputs.changed.connect(function(sender, args) {
+                    // add rendered_html class on the view to match what notebook does
                     if (args.newValue.data &&
                         args.newValue.data.hasOwnProperty('text/html')) {
                         view.addClass('rendered_html');
@@ -129,6 +136,42 @@ if (Element && !Element.prototype.matches) {
         });
     }
 
+    // create a rendermime instance with all the standard mimetype
+    // transformers used in notebooks
+    function _createRenderMime() {
+        var rm = new RenderMime.RenderMime();
+        var transformers = [
+            new renderers.JavascriptRenderer(),
+            // new renderers.HTMLRenderer(),
+            // NOTE: The HTMLRenderer doesn't work with current Safari versions -- inline JS scripts
+            // don't load. This simple implementation works around it by using jQuery to add the
+            // HTML to the DOM; this does run inline scripts.
+            {
+                mimetypes: ['text/html'],
+                render: function(mimetype, data) {
+                    var widget = new PhWidget.Widget();
+                    widget.onAfterAttach = function() {
+                        $(widget.node).html(data);
+                    };
+                    return widget;
+                }
+            },
+            new renderers.ImageRenderer(),
+            new renderers.SVGRenderer(),
+            new renderers.LatexRenderer(),
+            new renderers.ConsoleTextRenderer(),
+            new renderers.TextRenderer()
+        ];
+        transformers.forEach(function(t) {
+            t.mimetypes.forEach(function(m) {
+                rm.order.push(m);
+                rm.renderers[m] = t;
+            });
+        });
+        return rm;
+    }
+
+    // shim kernel object on notebook for backward compatibility
     function _setKernelShims(kernel) {
         var nb = window.Jupyter.notebook;
         nb.kernel = kernel;
@@ -199,7 +242,7 @@ if (Element && !Element.prototype.matches) {
         },
         stream: function(msg, outputAreaModel) {
             var output = {};
-            output.outputType = OutputType.Stream;
+            output.output_type = 'stream';
             output.text = msg.content.text;
             switch(msg.content.name) {
                 case "stderr":
@@ -207,7 +250,7 @@ if (Element && !Element.prototype.matches) {
                   console.error(msg.content.name, msg.content.text);
                   break;
                 case "stdout":
-                  output.name = StreamName.StdOut;
+                  output.name = 'stdout';
                   outputAreaModel.add(output);
                   break;
                 default:
@@ -216,14 +259,14 @@ if (Element && !Element.prototype.matches) {
         },
         display_data: function(msg, outputAreaModel) {
             var output = {};
-            output.outputType = OutputType.DisplayData;
+            output.output_type = 'display_data';
             output.data = msg.content.data;
             output.metadata = msg.content.metadata;
             outputAreaModel.add(output);
         },
         execute_result: function(msg, outputAreaModel) {
             var output = {};
-            output.outputType = OutputType.ExecuteResult;
+            output.output_type = 'execute_result';
             output.data = msg.content.data;
             output.metadata = msg.content.metadata;
             output.execution_count = msg.content.execution_count;
@@ -253,6 +296,7 @@ if (Element && !Element.prototype.matches) {
         }
     }
 
+    // show the user an indicator on error
     function _registerKernelErrorHandler(kernel) {
         kernel.statusChanged.connect(function(kernel, status) {
             if (status === Services.KernelStatus.Dead ||

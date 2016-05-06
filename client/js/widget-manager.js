@@ -145,9 +145,9 @@ var Widgets = require('jupyter-js-widgets');
      * id: jupyter widget model ID
      * metadata: ???
      */
-    WidgetManager.prototype._create_comm = function(targetName, id, metadata) {
+    WidgetManager.prototype._create_comm = function(targetName, id, data) {
         return Promise.resolve(
-            this.commManager.new_comm(targetName, {}, this.callbacks(), metadata, id)
+            this.commManager.new_comm(targetName, data, this.callbacks(), {}, id)
         );
     };
 
