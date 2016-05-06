@@ -130,7 +130,8 @@ gulp.task('watch', function() {
 var nodemonOptions = {
     script: 'bin/jupyter-dashboards-server',
     ext: 'js handlebars coffee',
-    stdout: false
+    stdout: false,
+    ignore: ['data/*']
 };
 
 gulp.task('develop', ['build'], function () {

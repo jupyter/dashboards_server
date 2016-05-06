@@ -22,7 +22,7 @@
     // Optional HTTPS certificate
     HTTPS_CERT_FILE: null
     // Directory that contains notebooks to serve as dashboards relative to
-    // the current working directory. Defaults to <package-dir>/data if left 
+    // the current working directory. Defaults to <package-dir>/data if left
     // unset.
     NOTEBOOKS_DIR: ""
     // Secret for authentication tokens
@@ -59,6 +59,6 @@
     DB_CELL_MARGIN: 10
     // Number of pixels in each row
     DB_DEFAULT_CELL_HEIGHT: 20
-    //Number of dashboard grid columns
+    // Number of dashboard grid columns
     DB_MAX_COLUMNS: 12
 }

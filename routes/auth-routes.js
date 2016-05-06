@@ -6,16 +6,23 @@
  * Routes that make use of auth token
  */
 var authToken = require('../app/auth-token');
-var nbstore = require('../app/notebook-store');
+var config = require('../app/config');
+var upload = require('../app/notebook-upload');
 var router = require('express').Router();
+var urljoin = require('url-join');
+
+var GET_URL = urljoin(config.get('PUBLIC_LINK'), '/dashboards');
+var UPLOAD_MESSAGE = 'Notebook successfully uploaded';
 
 /* POST /notebooks/* - upload a dashboard notebook */
-router.post('/notebooks(/*)', authToken, nbstore.upload, function(req, res) {
-    res.status(201).json({
-        url: req.url,
+router.post('/notebooks(/*)', authToken, upload, function(req, res) {
+    var resBody = {
+        link: urljoin(GET_URL, req.params[0]),
+        message: UPLOAD_MESSAGE,
         status: 201,
-        message: 'Notebook successfully uploaded.'
-    });
+        url: req.url
+    };
+    res.status(201).json(resBody);
 });
 
 module.exports = router;

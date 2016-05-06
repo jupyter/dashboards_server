@@ -7,6 +7,7 @@
 # Global params
 DASHBOARD_CONTAINER_NAME:=dashboard-server
 DASHBOARD_IMAGE_NAME:=jupyter-incubator/$(DASHBOARD_CONTAINER_NAME)
+DASHBOARD_SERVER_LINK?=http://$$(docker-machine ip $$(docker-machine active)):3000
 INSTALLED_DASHBOARD_IMAGE_NAME:=jupyter-incubator/$(DASHBOARD_CONTAINER_NAME)-installed
 KG_IMAGE_NAME:=jupyter-incubator/kernel-gateway-extras
 KG_CONTAINER_NAME:=kernel-gateway
@@ -84,7 +85,8 @@ define DASHBOARD_SERVER
 	-e HTTPS_PORT=$(HTTPS_PORT) \
 	-e HTTPS_KEY_FILE=$(HTTPS_KEY_FILE) \
 	-e HTTPS_CERT_FILE=$(HTTPS_CERT_FILE) \
-	-e SESSION_SECRET_TOKEN=$(SESSION_SECRET_TOKEN)
+	-e SESSION_SECRET_TOKEN=$(SESSION_SECRET_TOKEN) \
+	-e PUBLIC_LINK=$(DASHBOARD_SERVER_LINK)
 endef
 
 ############### Kernel gateway in a Docker container
