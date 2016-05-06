@@ -136,7 +136,7 @@ if (Element && !Element.prototype.matches) {
         });
     }
 
-    // instantiate a rendermime instance with all the standard mimetype
+    // create a rendermime instance with all the standard mimetype
     // transformers used in notebooks
     function _createRenderMime() {
         var rm = new RenderMime.RenderMime();
@@ -161,7 +161,7 @@ if (Element && !Element.prototype.matches) {
             new renderers.LatexRenderer(),
             new renderers.ConsoleTextRenderer(),
             new renderers.TextRenderer()
-          ];
+        ];
         transformers.forEach(function(t) {
             t.mimetypes.forEach(function(m) {
                 rm.order.push(m);
