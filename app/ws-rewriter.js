@@ -119,10 +119,12 @@ WsRewriter.prototype._setupProxying = function(servConn, clientConn) {
     // OUTGOING: client -> proxy -> kernel-gateway
     servConn.on('message', function(data) {
         debug('OUTGOING msg :: data length = ' + (data.utf8Data||data.binaryData).length);
-        self._processOutgoingMsg(data).then(function(newdata) {
-            sendSocketData(clientConn, newdata);
-        });
+        self._processOutgoingMsg(servConn, clientConn, data);
     });
+
+    // Ensure that outgoing messages are handled in the correct order by
+    // promise-chaining them as they come in.
+    servConn._lastMsg = Promise.resolve();
 
     // called after 'error' messages as well
     servConn.on('close', function(reasonCode, desc) {
@@ -176,16 +178,23 @@ function closeConnection(conn, reasonCode, desc) {
  * @param  {Object}   data
  * @param  {Promise<Object>}  potentially rewritten data
  */
-WsRewriter.prototype._processOutgoingMsg = function(data) {
-    if (data.type === 'utf8') {
-        return this._substituteCodeCell(data.utf8Data).then(function(newPayload) {
-            return {
-                type: 'utf8',
-                utf8Data: newPayload
-            };
-        });
-    }
-    return Promise.resolve(data);
+WsRewriter.prototype._processOutgoingMsg = function(servConn, clientConn, data) {
+    var self = this;
+    // chain to previous message, to ensure they are handled in order
+    servConn._lastMsg = servConn._lastMsg.then(function() {
+        if (data.type === 'utf8') {
+            return self._substituteCodeCell(data.utf8Data).then(function(newPayload) {
+                return {
+                    type: 'utf8',
+                    utf8Data: newPayload
+                };
+            });
+        }
+        return Promise.resolve(data);
+    })
+    .then(function(newdata) {
+        sendSocketData(clientConn, newdata);
+    });
 };
 
 /**
