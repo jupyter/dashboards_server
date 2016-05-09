@@ -1,0 +1,41 @@
+# Copyright (c) Jupyter Development Team.
+# Distributed under the terms of the Modified BSD License.
+
+# Pin to a known release for sanity
+FROM jupyter/pyspark-notebook:0017b56d93c9
+
+# Become root to do the apt-gets
+USER root
+
+RUN apt-get update && \
+		apt-get install -y curl && \
+		curl --silent --location https://deb.nodesource.com/setup_0.12 | sudo bash - && \
+		apt-get install --yes nodejs && \
+		npm install -g bower
+
+# Do the pip installs as the unprivileged notebook user
+USER jovyan
+
+# Install dashboard layout and preview within Jupyter Notebook
+RUN pip install 'jupyter_dashboards==0.5.0' && \
+	jupyter dashboards install --user --symlink && \
+	jupyter dashboards activate
+
+# Install declarative widgets for Jupyter Notebook
+RUN pip install 'jupyter_declarativewidgets==0.5.1' && \
+	jupyter declarativewidgets install --user --symlink && \
+	jupyter declarativewidgets activate
+
+# Install content management to support dashboard bundler options
+RUN pip install 'jupyter_cms==0.5.0' && \
+	jupyter cms install --user --symlink && \
+	jupyter cms activate
+RUN pip install 'jupyter_dashboards_bundlers==0.7.0' && \
+	jupyter dashboards_bundlers activate
+
+# Put a couple sample notebooks into the notebook server
+RUN wget -O $HOME/work/hello_world.ipynb https://gist.githubusercontent.com/parente/bd6789c4a3533fab8085/raw/c5a8e9be2213650332889178b15cf899a844694f/hello_world.ipynb
+RUN wget -O $HOME/work/taxi_demo_grid.ipynb https://gist.githubusercontent.com/jhpedemonte/f6d9f3f2bbecee1cd26e3b963283ef12/raw/6a98189e82ba5b42008a5ca51382e9f9c3ab801f/taxi_demo_grid.ipynb
+RUN wget -O $HOME/work/meetup-streaming.ipynb https://raw.githubusercontent.com/jupyter-incubator/dashboards/master/etc/notebooks/stream_demo/meetup-streaming.ipynb
+
+# Stay as jovyan in the newer docker stack images
