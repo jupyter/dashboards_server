@@ -174,9 +174,8 @@ function closeConnection(conn, reasonCode, desc) {
 }
 
 /**
- * Rewrite (if necessary) outgoing websocket messages
+ * Rewrite (if necessary) outgoing websocket messages and transmit to kernel gateway
  * @param  {Object}   data
- * @param  {Promise<Object>}  potentially rewritten data
  */
 WsRewriter.prototype._processOutgoingMsg = function(servConn, clientConn, data) {
     var self = this;
