@@ -1,4 +1,4 @@
-This folder contains template manifests for deploying a dashboard server, kernel gateway server, and notebook server to a Docker host. Consider this a recipe that will need tuning for your particular environment. See the sibling [cf_deploy](../cf_deploy) folder for an alternative using Cloud Foundry.
+This folder contains a recipe for deploying a dashboard server, kernel gateway server, and notebook server to a Docker host. Consider this a starting point that needs tuning to your particular environment. See the sibling [cf_deploy](../cf_deploy) folder for an alternative using Cloud Foundry.
 
 ## Prerequisites
 

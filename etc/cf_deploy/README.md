@@ -7,7 +7,7 @@ This folder contains template manifests for pushing a dashboard server and kerne
 
 ## Try It
 
-1. Use `cf` to target and authenticate with your CF provider
+1. Use `cf` to target and authenticate with your CF provider.
 2. Edit `manifest.yml` to set globally unique hostnames for both servers.
 3. Edit `conda_requirements.txt` and `requirements.txt` to install any packages needed by your dashboards. The default files install the libraries necessary to run the `INTRO` demo dashboard.
 4. Run:
