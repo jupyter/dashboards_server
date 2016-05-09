@@ -35,7 +35,7 @@ function _loadNb(nbpath, stats) {
             return new Promise(function(resolve, reject) {
                 fs.readFile(nbfile, ENCODING, function(err, rawData) {
                     if (err) {
-                        reject(err);
+                        reject(new Error('Error loading notebook: ' + err.message));
                     } else {
                         var nb = JSON.parse(rawData);
                         // cache notebook for future reads -- use given `nbpath` since that
