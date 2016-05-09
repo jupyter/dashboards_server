@@ -86,13 +86,13 @@ module.exports = {
     /**
      * Loads, parses, and returns cells (minus code) of the notebook specified by nbpath
      * @param  {String} nbpath - path of the notebook to load
-     * @return {Promise} resolved with notebook JSON and notebook absolute path
+     * @return {Promise.<Object>} notebook data
      */
     get: _get,
     /**
      * Lists contents of the specified directory
      * @param {String} dir - optional sub-directory to Lists
-     * @return {Promise} resolved with list of contents
+     * @return {Promise.<string[]>} list of contents
      */
     list: _list,
     /**

@@ -105,18 +105,18 @@ module.exports = {
     /**
      * Checks if the specified file exists
      * @param  {String} nbpath - path to a notebook
-     * @return {Promise(Boolean)} resolved to true if it exists
+     * @return {Promise.<boolean>} true if it exists
      */
     exists: _exists,
     /**
      * Runs `stat` on the specified path.
      * @param {String} nbpath - Path to a notebook or directory.
      *     If not relative to data directory, it will be made so.
-     * @return {Promise} resolved with the `stat` results. Will contain some custom properties:
+     * @return {Promise.<Object>} `stat` results. Contains some custom properties:
      *     {String} fullpath - absolute path of file (index path if bundled)
-     *     {Boolean} isDashboard - true if the path is a dashboard file or directory
-     *     {Boolean} hasIndex - true if the path contains an index dashboard
-     *     {Boolean} supportsDeclWidgets - true if the dashboard supports Declarative Widgets
+     *     {boolean} isDashboard - true if the path is a dashboard file or directory
+     *     {boolean} hasIndex - true if the path contains an index dashboard
+     *     {boolean} supportsDeclWidgets - true if the dashboard supports Declarative Widgets
      */
     stat: _stat
 };
