@@ -107,7 +107,13 @@ WsRewriter.prototype._setupProxying = function(servConn, clientConn) {
     // INCOMING: kernel-gateway -> proxy -> client
     clientConn.on('message', function(data) {
         debug('INCOMING msg :: data length = ' + (data.utf8Data||data.binaryData).length);
-        sendSocketData(servConn, data);
+        self._processMsg({
+            srcConn: clientConn,
+            destConn: servConn,
+            data: data,
+            transformOnMsgType: 'execute_input',
+            transformer: self._filterCodeProp
+        });
     });
 
     // called after 'error' messages as well
@@ -119,18 +125,25 @@ WsRewriter.prototype._setupProxying = function(servConn, clientConn) {
     // OUTGOING: client -> proxy -> kernel-gateway
     servConn.on('message', function(data) {
         debug('OUTGOING msg :: data length = ' + (data.utf8Data||data.binaryData).length);
-        self._processOutgoingMsg(servConn, clientConn, data);
+        self._processMsg({
+            srcConn: servConn,
+            destConn: clientConn,
+            data: data,
+            transformOnMsgType: 'execute_request',
+            transformer: self._substituteCodeCell
+        });
     });
-
-    // Ensure that outgoing messages are handled in the correct order by
-    // promise-chaining them as they come in.
-    servConn._lastMsg = Promise.resolve();
 
     // called after 'error' messages as well
     servConn.on('close', function(reasonCode, desc) {
         debug('closing WS server connection:', reasonCode, desc);
         closeConnection(clientConn, reasonCode, desc);
     });
+
+    // Ensure that messages are handled in the correct order by
+    // promise-chaining them as they come in.
+    clientConn._lastMsg = Promise.resolve();
+    servConn._lastMsg = Promise.resolve();
 };
 
 /**
@@ -174,77 +187,101 @@ function closeConnection(conn, reasonCode, desc) {
 }
 
 /**
- * Rewrite (if necessary) outgoing websocket messages and transmit to kernel gateway
- * @param  {Object}   data
+ * Rewrite (if necessary) websocket messages (using given transformer callback) and
+ * transmit to destination
+ * @param  {Object} args
+ * @param  {WebSocketConnection} args.srcConn - connection from which message was received
+ * @param  {WebSocketConnection} args.destConn - connection to which (rewritten) message will be sent
+ * @param  {Object} args.data - data from websocket message
+ * @param  {String} args.transformOnMsgType - identifier for which msgs to transform
+ * @param  {Function} args.transformer - callback which does the actual rewriting of the data
  */
-WsRewriter.prototype._processOutgoingMsg = function(servConn, clientConn, data) {
+WsRewriter.prototype._processMsg = function(args) {
+    var data = args.data;
+    var msgType = args.transformOnMsgType;
     var self = this;
-    // chain to previous message, to ensure they are handled in order
-    servConn._lastMsg = servConn._lastMsg.then(function() {
+
+    args.srcConn._lastMsg = args.srcConn._lastMsg.then(function() {
         if (data.type === 'utf8') {
-            return self._substituteCodeCell(data.utf8Data).then(function(newPayload) {
-                return {
-                    type: 'utf8',
-                    utf8Data: newPayload
-                };
-            });
+            var payload = data.utf8Data;
+
+            // for performance, first do a quick string check before JSON parsing
+            if (payload.indexOf(msgType) !== -1) {
+                return new Promise(function(resolve, reject) {
+                    try {
+                        payload = JSON.parse(payload);
+                        if (payload.header.msg_type === msgType) {
+                            args.transformer.call(self, payload)
+                                .then(resolve)
+                                .catch(function(e) {
+                                    error('Failure transforming WS msg.', e);
+                                    resolve({});
+                                });
+                        }
+                    } catch(e) {
+                        error('Failed to parse `data` in WS.', e);
+                        resolve({});
+                    }
+                })
+                .then(function(newPayload) {
+                    data.utf8Data = JSON.stringify(newPayload);
+                    return data;
+                });
+            }
+            // else, fall through to returning existing data
         }
+
         return Promise.resolve(data);
     })
     .then(function(newdata) {
-        sendSocketData(clientConn, newdata);
+        sendSocketData(args.destConn, newdata);
     });
 };
 
 /**
- * Rewrite websocket message data, replacing index with associated code block, if given message
- * is an execution request. Returns untouched message data for all other message types.
- * @param {String} payload - websocket message data, in JSON format
- * @return {Promise<Object>} message data; may have been changed
+ * Removes the code property value for the given websocket payload.
+ * @param  {Object} payload
+ * @return {Promise.<Object>}
+ */
+WsRewriter.prototype._filterCodeProp = function(payload) {
+    if (payload.content) {
+        payload.content.code = '';
+    }
+    return Promise.resolve(payload);
+};
+
+/**
+ * Rewrite websocket message data, replacing index with associated code block
+ * @param {Object} payload
+ * @return {Promise.<Object>}
  */
  WsRewriter.prototype._substituteCodeCell = function(payload) {
-    var transformedData = payload;
+    // get notebook data for current session
+    var nbpath = this._sessionToNbPath(payload.header.session);
+    return nbstore.get(nbpath)
+        .then(function(nb) {
+            // get code string for cell at index and update WS message
 
-    // substitute in code if necessary
-    // for performance reasons, first do a quick string check before JSON parsing
-    if (payload.indexOf('execute_request') !== -1) {
-        try {
-            payload = JSON.parse(payload);
-            if (payload.header.msg_type === 'execute_request') {
-                // get notebook data for current session
-                var nbpath = this._sessionToNbPath(payload.header.session);
-                transformedData = nbstore.get(nbpath).then(
-                    function success(nb) {
-                        // get code string for cell at index and update WS message
+            // code must be an integer corresponding to a cell index
+            var cellIdx = parseInt(payload.content.code, 10);
 
-                        // code must be an integer corresponding to a cell index
-                        var cellIdx = parseInt(payload.content.code, 10);
+            // code must only consist of a non-negative integer
+            if (cellIdx.toString(10) === payload.content.code &&
+                    cellIdx >= 0) {
 
-                        // code must only consist of a non-negative integer
-                        if (cellIdx.toString(10) === payload.content.code &&
-                                cellIdx >= 0) {
-
-                            // substitute cell's actual code into the message
-                            var code = nb.cells[cellIdx].source.join('');
-                            payload.content.code = code;
-                            payload = JSON.stringify(payload);
-                        } else {
-                            // throw away execute request that has non-integer code
-                            payload = '';
-                        }
-                        return payload;
-                    },
-                    function failure(err) {
-                        error('Failed to load notebook data for', nbpath, err);
-                        return ''; // throw away execute request
-                    });
+                // substitute cell's actual code into the message
+                var code = nb.cells[cellIdx].source.join('');
+                payload.content.code = code;
+            } else {
+                // throw away execute request that has non-integer code
+                payload = {};
             }
-        } catch(e) {
-            error('Failed to parse `data` in WS.', e);
-            transformedData = '';
-        }
-    }
-    return Promise.resolve(transformedData);
+            return payload;
+        })
+        .catch(function(err) {
+            error('Failed to load notebook data for', nbpath, err);
+            return {}; // throw away execute request
+        });
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

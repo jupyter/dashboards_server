@@ -100,7 +100,13 @@ describe('websocket rewriter', function() {
             }
         });
 
-        rewriter._processOutgoingMsg(servConn, clientConn, msg);
+        rewriter._processMsg({
+            srcConn: servConn,
+            destConn: clientConn,
+            data: msg,
+            transformOnMsgType: 'execute_request',
+            transformer: rewriter._substituteCodeCell
+        });
 
         setTimeout(function() {
             expect(clientConn.sendUTF).calledOnce;
@@ -147,19 +153,31 @@ describe('websocket rewriter', function() {
         });
 
         var msg1Promise = new Promise(function(resolve, reject) {
-            rewriter._processOutgoingMsg(servConn, clientConn, msg1);
+            rewriter._processMsg({
+                srcConn: servConn,
+                destConn: clientConn,
+                data: msg1,
+                transformOnMsgType: 'execute_request',
+                transformer: rewriter._substituteCodeCell
+            });
             setTimeout(function() {
                 var newPayload = clientConn.sendUTF.args[0][0];
-                expect(newPayload).to.be.empty;
+                expect(newPayload).to.equal('{}');
                 resolve();
             }, 0);
         });
 
         var msg2Promise = new Promise(function(resolve, reject) {
-            rewriter._processOutgoingMsg(servConn, clientConn, msg2);
+            rewriter._processMsg({
+                srcConn: servConn,
+                destConn: clientConn,
+                data: msg2,
+                transformOnMsgType: 'execute_request',
+                transformer: rewriter._substituteCodeCell
+            });
             setTimeout(function() {
                 var newPayload = clientConn.sendUTF.args[1][0];
-                expect(newPayload).to.be.empty;
+                expect(newPayload).to.equal('{}');
                 resolve();
             });
         });
