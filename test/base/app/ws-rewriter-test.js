@@ -188,4 +188,41 @@ describe('websocket rewriter', function() {
             assert.fail(err);
         });
     });
+
+    it('should filter "code" property', function(done) {
+        var payload = {
+            "header": {
+                "session": "12345",
+                "msg_type": "execute_input"
+            },
+            "content": {
+                "code": "this should be filtered;",
+            }
+        };
+        var msg = {
+            type: 'utf8',
+            utf8Data: JSON.stringify(payload)
+        };
+
+        var rewriter = new WsRewriter({
+            sessionToNbPath: function() {
+                return '/notebook/path';
+            }
+        });
+
+        rewriter._processMsg({
+            srcConn: servConn,
+            destConn: clientConn,
+            data: msg,
+            transformOnMsgType: 'execute_input',
+            transformer: rewriter._filterCodeProp
+        });
+
+        setTimeout(function() {
+            expect(clientConn.sendUTF).calledOnce;
+            var newPayload = JSON.parse(clientConn.sendUTF.args[0][0]);
+            expect(newPayload.content.code).to.equal('');
+            done();
+        }, 0);
+    });
 });
