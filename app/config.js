@@ -11,7 +11,7 @@ var debug = require('debug')('dashboard-proxy:config');
 var config = nconf.use('memory')
                   .argv()
                   .env()
-                  .file({ file: 'config.json', format: hjson });
+                  .file({ file: path.join(__dirname, '..', 'config.json'), format: hjson });
 
 // Show the config defaults for --help
 if(config.get('help')) {
