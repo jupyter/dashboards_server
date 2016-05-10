@@ -51,7 +51,7 @@ EventMock.prototype.invoke = function(event, args) {
 
 var projectRoot = '../../../';
 var appDir = path.join(projectRoot, '/app');
-var nbstore = proxyquire(path.join(appDir, '/notebook-store'), {
+var nbupload = proxyquire(path.join(appDir, '/notebook-upload'), {
     './config': configStub,
     'fs-extra': fsStub,
     busboy: EventMock
@@ -69,7 +69,7 @@ function uploadFile(req, originalname, next) {
         busboy.invoke('file', ['', fileMock, originalname]);
         busboy.invoke('finish');
     };
-    nbstore.upload(req, null, next);
+    nbupload(req, null, next);
 }
 
 function uploadFileTest(uploadPath, originalname, finalname) {

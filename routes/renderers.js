@@ -5,9 +5,11 @@
 /**
  * Renderers used in routes
  */
+var appendExt = require('../app/append-ext');
 var config = require('../app/config');
 var debug = require('debug')('dashboard-proxy:renderer');
 var fs = require('fs');
+var nbfs = require('../app/notebook-fs');
 var nbstore = require('../app/notebook-store');
 var path = require('path');
 var Promise = require('es6-promise').Promise;
@@ -17,7 +19,6 @@ var DB_INDEX = config.get('DB_INDEX');
 var DB_INDEX_DIR = config.get('DB_INDEX_DIR');
 var DB_EXT = config.get('DB_FILE_EXT');
 var NO_LAYOUT = 'no-layout';
-var reNbExt = new RegExp('\\' + DB_EXT + '$');
 
 function _renderList(req, res, next) {
     var listPath = req.params[0] || '';
@@ -26,7 +27,7 @@ function _renderList(req, res, next) {
             // check each item to determine if a file or directory
             var statPromises = list.map(function(filename) {
                 var url = urljoin(listPath, filename);
-                return nbstore.stat(url).then(
+                return nbfs.stat(url).then(
                     function success(stats) {
                         var type;
                         if (stats.isDashboard) {
@@ -47,7 +48,7 @@ function _renderList(req, res, next) {
             });
 
             // render parent directory listing if not at root
-            if (listPath.length > 0) {
+            if (listPath) {
                 statPromises.unshift({
                     type: 'directory',
                     path: urljoin(listPath, '..')
@@ -80,7 +81,7 @@ function _renderDashboard(req, res, next, opts) {
     var dbpath = (opts && opts.dbpath) || req.params[0];
     var title =  path.basename(dbpath, DB_EXT);
     var hideChrome = !!(opts && opts.hideChrome);
-    var stats = (opts && opts.stats) || nbstore.stat(dbpath);
+    var stats = (opts && opts.stats) || nbfs.stat(dbpath);
 
     return nbstore.get(dbpath, stats)
         .then(function success(notebook) {
@@ -130,24 +131,11 @@ function _renderDashboard(req, res, next, opts) {
 }
 
 function _render(req, res, next, opts) {
-    var dbpath = (opts && opts.dbpath) || req.params[0] || '/';
+    var dbpath = (opts && opts.dbpath) || req.params[0] || '';
     var hideChrome = !!(opts && opts.hideChrome);
     var errorOnList = !!(opts && opts.errorOnList);
 
-    // First, check if this path refers to a notebook file of the same name
-    // whether or not the oriinal request had an .ipynb on the end of it or not.
-    // We do this so users can visit URLs without adding ipynb at the cost of
-    // masking folders with the same name as notebook files.
-    var dbpathWithExt = dbpath + (reNbExt.test(dbpath) ? '' : DB_EXT);
-    nbstore.stat(dbpathWithExt)
-        .catch(function(err) {
-            if (dbpath === dbpathWithExt) {
-                throw err;
-            }
-            // If the path does not refer to a notebook, stat the path
-            // directly.
-            return nbstore.stat(dbpath);
-        })
+    nbfs.stat(dbpath)
         .then(function success(stats) {
             if (stats.isDashboard) {
                 // If the path exists on disk and is a bundled dashboard
@@ -163,7 +151,7 @@ function _render(req, res, next, opts) {
 
                 // If the path exists on disk and is a normal directory, check
                 // if it contains an index bundle.
-                nbstore.stat(dbpathIndex)
+                nbfs.stat(dbpathIndex)
                     .then(function() {
                         // If it does contain an index bundle, redirect to it.
                         // We can't render it from because requests for static
@@ -189,10 +177,6 @@ function _render(req, res, next, opts) {
             }
         })
         .catch(function failure(err) {
-            // If path on disk does not exist at all, return 404 not found.
-            if (err.code === 'ENOENT') {
-                err.status = 404;
-            }
             next(err);
         });
 }
@@ -206,8 +190,8 @@ module.exports = {
      * @param {Object} [opts] - additional options
      * @param {String} [opts.dbpath] - path to use instead of request param
      * @param {Boolean} [opts.hideChrome] - if true, disables UI chrome; defaults to false
-     * @param {Boolean} [opts.stats] - object returned from `nbstore.stat()`; if not provided, calls
-     *                                 `nbstore.stat()`
+     * @param {Boolean} [opts.stats] - object returned from `notebook-fs.stat()`; if not provided, calls
+     *                                 `notebook-fs.stat()`
      */
     render: _render,
     /**
@@ -225,8 +209,8 @@ module.exports = {
      * @param {Object} [opts] - additional options
      * @param {String} [opts.dbpath] - path to use instead of request param
      * @param {Boolean} [opts.hideChrome] - if true, disables UI chrome; defaults to false
-     * @param {Boolean} [opts.stats] - object returned from `nbstore.stat()`; if not provided, calls
-     *                                 `nbstore.stat()`
+     * @param {Boolean} [opts.stats] - object returned from `notebook-fs.stat()`; if not provided, calls
+     *                                 `notebook-fs.stat()`
      */
     renderDashboard: _renderDashboard
 };

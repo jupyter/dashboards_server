@@ -75,4 +75,10 @@ if (key_file_location || cert_file_location) {
     });
 }
 
+// set base link
+if (!config.get('PUBLIC_LINK')) {
+    var _protocol = config.get('SSL_OPTIONS') ? 'https' : 'http';
+    config.set('PUBLIC_LINK', _protocol + '://' + config.get('IP') + ':' + config.get('PORT'));
+}
+
 module.exports = config;
