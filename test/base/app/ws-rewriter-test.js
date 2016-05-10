@@ -36,6 +36,15 @@ var WsRewriter = proxyquire('../../../app/ws-rewriter', {
     'websocket': websocketStub
 });
 
+var servConn = {
+    _lastMsg: Promise.resolve()
+};
+
+var clientConn = {
+    sendUTF: function() {},
+    sendBytes: function() {}
+};
+
 
 ///////////////////
 // TEST DATA
@@ -64,6 +73,12 @@ var notebookData = {
 //////////
 
 describe('websocket rewriter', function() {
+    var sendUTFSpy = sinon.spy(clientConn, 'sendUTF');
+
+    afterEach(function() {
+        sendUTFSpy.reset();
+    });
+
     it('should allow execute request with integer', function(done) {
         var payload = {
             "header": {
@@ -85,13 +100,14 @@ describe('websocket rewriter', function() {
             }
         });
 
-        rewriter._processOutgoingMsg(msg).then(function(newMsg) {
-            expect(newMsg.utf8Data).to.contain('line 1;line 2;');
+        rewriter._processOutgoingMsg(servConn, clientConn, msg);
+
+        setTimeout(function() {
+            expect(clientConn.sendUTF).calledOnce;
+            var newPayload = clientConn.sendUTF.args[0][0];
+            expect(newPayload).to.contain('line 1;line 2;');
             done();
-        })
-        .catch(function(err) {
-            assert.fail(err, 'payload');
-        });
+        }, 0);
     });
 
     it('should filter execute request with code', function(done) {
@@ -131,22 +147,20 @@ describe('websocket rewriter', function() {
         });
 
         var msg1Promise = new Promise(function(resolve, reject) {
-            rewriter._processOutgoingMsg(msg1).then(function(newMsg) {
-                expect(newMsg.utf8Data).to.be.empty;
+            rewriter._processOutgoingMsg(servConn, clientConn, msg1);
+            setTimeout(function() {
+                var newPayload = clientConn.sendUTF.args[0][0];
+                expect(newPayload).to.be.empty;
                 resolve();
-            })
-            .catch(function(err) {
-                reject(err);
-            });
+            }, 0);
         });
 
         var msg2Promise = new Promise(function(resolve, reject) {
-            rewriter._processOutgoingMsg(msg2).then(function(newMsg) {
-                expect(newMsg.utf8Data).to.be.empty;
+            rewriter._processOutgoingMsg(servConn, clientConn, msg2);
+            setTimeout(function() {
+                var newPayload = clientConn.sendUTF.args[1][0];
+                expect(newPayload).to.be.empty;
                 resolve();
-            })
-            .catch(function(err) {
-                reject(err);
             });
         });
 
