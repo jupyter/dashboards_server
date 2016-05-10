@@ -8,14 +8,18 @@ var path = require('path');
 var fs = require('fs');
 var debug = require('debug')('dashboard-proxy:config');
 
+// Config defaults are in an HJSON file in the root of the source tree
+var defaultConfig = path.join(__dirname, '..', 'config.json');
+
+// Configure nconf config mechanisms in order of precedence
 var config = nconf.use('memory')
                   .argv()
                   .env()
-                  .file({ file: path.join(__dirname, '..', 'config.json'), format: hjson });
+                  .file({ file: defaultConfig, format: hjson });
 
 // Show the config defaults for --help
 if(config.get('help')) {
-    var text = fs.readFileSync(path.join(__dirname, '..', 'config.json'), 'utf-8');
+    var text = fs.readFileSync(defaultConfig, 'utf-8');
     console.log(text);
     process.exit(0);
 }
