@@ -220,6 +220,7 @@ if (Element && !Element.prototype.matches) {
                     declWidgetsInit({
                             namespace: window.Jupyter,
                             events: window.Jupyter.notebook.events,
+                            suppressErrors: true,               // hide all errors in  dashboard view
                             WidgetManager: WidgetManager,       // backwards compatibility
                             WidgetModel: Widgets.WidgetModel    // backwards compatibility
                         })
