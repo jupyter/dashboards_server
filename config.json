@@ -11,6 +11,14 @@
 
     // Mode in which the dashboard server express environment runs
     NODE_ENV: development
+    // Base URL pattern for building public link for an uploaded notebook.
+    // Supports placeholder strings (values come from request host header):
+    //   {protocol} - request protocol (HTTP or HTTPS)
+    //   {host} - value of the host header, (hostname[:port])
+    //   {port} - port extracted from the host header
+    // Examples using placeholders: {protocol}://{host}
+    //                              {protocol}://192.168.99.100:{port}
+    PUBLIC_LINK_PATTERN: http://127.0.0.1:3000
     // Interface on which the dashboard server listens
     IP: 127.0.0.1
     // Port on which the dashboard server listens
