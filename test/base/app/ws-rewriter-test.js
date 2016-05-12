@@ -100,7 +100,13 @@ describe('websocket rewriter', function() {
             }
         });
 
-        rewriter._processOutgoingMsg(servConn, clientConn, msg);
+        rewriter._processMsg({
+            srcConn: servConn,
+            destConn: clientConn,
+            data: msg,
+            transformOnMsgType: 'execute_request',
+            transformer: rewriter._substituteCodeCell
+        });
 
         setTimeout(function() {
             expect(clientConn.sendUTF).calledOnce;
@@ -147,19 +153,31 @@ describe('websocket rewriter', function() {
         });
 
         var msg1Promise = new Promise(function(resolve, reject) {
-            rewriter._processOutgoingMsg(servConn, clientConn, msg1);
+            rewriter._processMsg({
+                srcConn: servConn,
+                destConn: clientConn,
+                data: msg1,
+                transformOnMsgType: 'execute_request',
+                transformer: rewriter._substituteCodeCell
+            });
             setTimeout(function() {
                 var newPayload = clientConn.sendUTF.args[0][0];
-                expect(newPayload).to.be.empty;
+                expect(newPayload).to.equal('{}');
                 resolve();
             }, 0);
         });
 
         var msg2Promise = new Promise(function(resolve, reject) {
-            rewriter._processOutgoingMsg(servConn, clientConn, msg2);
+            rewriter._processMsg({
+                srcConn: servConn,
+                destConn: clientConn,
+                data: msg2,
+                transformOnMsgType: 'execute_request',
+                transformer: rewriter._substituteCodeCell
+            });
             setTimeout(function() {
                 var newPayload = clientConn.sendUTF.args[1][0];
-                expect(newPayload).to.be.empty;
+                expect(newPayload).to.equal('{}');
                 resolve();
             });
         });
@@ -169,5 +187,42 @@ describe('websocket rewriter', function() {
         }).catch(function(err) {
             assert.fail(err);
         });
+    });
+
+    it('should filter "code" property', function(done) {
+        var payload = {
+            "header": {
+                "session": "12345",
+                "msg_type": "execute_input"
+            },
+            "content": {
+                "code": "this should be filtered;",
+            }
+        };
+        var msg = {
+            type: 'utf8',
+            utf8Data: JSON.stringify(payload)
+        };
+
+        var rewriter = new WsRewriter({
+            sessionToNbPath: function() {
+                return '/notebook/path';
+            }
+        });
+
+        rewriter._processMsg({
+            srcConn: servConn,
+            destConn: clientConn,
+            data: msg,
+            transformOnMsgType: 'execute_input',
+            transformer: rewriter._filterCodeProp
+        });
+
+        setTimeout(function() {
+            expect(clientConn.sendUTF).calledOnce;
+            var newPayload = JSON.parse(clientConn.sendUTF.args[0][0]);
+            expect(newPayload.content.code).to.equal('');
+            done();
+        }, 0);
     });
 });
