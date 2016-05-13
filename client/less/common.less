@@ -9,12 +9,6 @@
     border-right: none;
     border-left: none;
 
-    .center-container {
-        @media (max-width: @dashboard-width-small) {
-            padding: 0 1em;
-        }
-    }
-
     .error-container {
         .error-indicator {
             color: @error-red;
@@ -48,20 +42,5 @@
     .navbar-right-container {
         display: flex;
         float: right;
-    }
-}
-
-// centered container with responsive width
-.center-container {
-    margin: 0 auto;
-
-    @media (max-width: @dashboard-width-small) {
-        width: 100%;
-    }
-    @media (min-width: @dashboard-width-small) {
-        width: @dashboard-width-small;
-    }
-    @media (min-width: @dashboard-width) {
-        width: @dashboard-width;
     }
 }
