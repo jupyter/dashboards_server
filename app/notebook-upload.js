@@ -150,6 +150,7 @@ function _cleanPreviousDashboard(destination, destIsNotebook) {
             rimraf(destination, { disableGlob: true }, function(err) {
                 if (err) {
                     reject('Failed to remove existing bundled dashboard directory: ' + err.message);
+                    return;
                 }
                 resolve();
             });
@@ -158,6 +159,7 @@ function _cleanPreviousDashboard(destination, destIsNotebook) {
             fs.unlink(appendExt(destination, DB_EXT), function(err) {
                 if (err && err.code !== 'ENOENT') { // ignore "file doesn't exist" errors
                     reject('Failed to remove existing notebook: ' + err.message);
+                    return;
                 }
                 resolve();
             });
