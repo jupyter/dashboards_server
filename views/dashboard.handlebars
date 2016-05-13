@@ -12,7 +12,7 @@
 
 <div id="outer-dashboard">
     {{! Might need to refactor this line to better handle author mode?}}
-    <div id="dashboard-container" class="invisible center-container"
+    <div id="dashboard-container" class="invisible container"
         data-dashboard-layout="{{dashboardLayout}}">
         {{#each notebook.cells}}
             {{#if (isVisible metadata)}}
