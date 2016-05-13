@@ -217,14 +217,20 @@ if (Element && !Element.prototype.matches) {
 
                 window.require(['nbextensions/urth_widgets/js/init/init'], function(declWidgetsInit) {
                     // initialize Declarative Widgets
-                    declWidgetsInit({
-                            namespace: window.Jupyter,
-                            events: window.Jupyter.notebook.events,
-                            suppressErrors: true,               // hide all errors in  dashboard view
-                            WidgetManager: WidgetManager,       // backwards compatibility
-                            WidgetModel: Widgets.WidgetModel    // backwards compatibility
-                        })
-                        .then(resolve, reject);
+                    var res = declWidgetsInit({
+                        namespace: window.Jupyter,
+                        events: window.Jupyter.notebook.events,
+                        suppressErrors: true,               // hide all errors in  dashboard view
+                        WidgetManager: WidgetManager,       // backwards compatibility (<= 0.4)
+                        WidgetModel: Widgets.WidgetModel    // backwards compatibility (<= 0.4)
+                    });
+
+                    if (res.whenReady) {
+                        res.whenReady(resolve);
+                    } else if (res.then) {
+                        // backwards compatible (<= 0.5) -- older versions returned a Promise
+                        res.then(resolve, reject);
+                    }
                 });
             } else {
                 console.log('Declarative Widgets not supported ("urth_components" directory not found)');
