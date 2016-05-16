@@ -58,7 +58,7 @@ if (Element && !Element.prototype.matches) {
         _registerKernelErrorHandler(kernel);
 
         // initialize an ipywidgets manager
-        var widgetManager = new WidgetManager(kernel, _consumeMessage);
+        var widgetManager = new WidgetManager(kernel, Config.kernelname, _consumeMessage);
 
         // initialize Declarative Widgets library
         var widgetsReady = _initDeclWidgets();

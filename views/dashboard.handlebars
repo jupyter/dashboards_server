@@ -39,6 +39,7 @@
     (function() {
         var db = window.jupyter_dashboard = window.jupyter_dashboard || {};
         var Config = db.Config = db.Config || {};
+        Config.kernelname = "{{notebook.metadata.kernelspec.name}}";
         // values from notebook metadata
         {{#each notebook.metadata.urth.dashboard}}
             Config.{{@key}} = "{{this}}";
