@@ -25,8 +25,9 @@ var Widgets = require('jupyter-js-widgets');
         this.commManager.register_target(this.comm_target_name, this.handle_comm_open.bind(this));
 
         // Validate the version requested by the backend -- required for ipywidgets
+        // If kernel name is not defined, default to python3
         kernelname = kernelname.toLowerCase();
-        if (kernelname === 'python3' || kernelname === 'python2') {
+        if (!kernelname || kernelname === 'python3' || kernelname === 'python2') {
             var validate = (function validate() {
                 this.validateVersion().then(function(valid) {
                     if (!valid) {
