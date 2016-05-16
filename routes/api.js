@@ -124,7 +124,7 @@ var removeSession = function(sessionId) {
 // configurations.
 router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, res) {
     var headers = {};
-    if(kgAuthToken) {
+    if (kgAuthToken) {
         headers['Authorization'] = 'token ' + kgAuthToken;
     }
 
@@ -133,7 +133,7 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
     initWsProxy(req.connection.server);
 
     // Forward the user object in the session to the kernel gateway.
-    if(config.get('KG_FORWARD_USER_AUTH') && req.user) {
+    if (config.get('KG_FORWARD_USER_AUTH') && req.user) {
         req.body.env = {
              KERNEL_USER_AUTH: JSON.stringify(req.user)
         };
@@ -151,44 +151,44 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
     if (!matches) {
         error('Invalid notebook path header');
         return res.status(500).end();
-    }else{
+    } else {
         var notebookPath = matches[2];
         // Store notebook path for later use
         sessions[sessionId] = notebookPath;
 
         nbstore.get(notebookPath)
         .then(function success(notebook){
-          debug(notebook.metadata);
-          if (notebook.metadata.kernelspec.name){
-              var kernelName = notebook.metadata.kernelspec.name;
-              debug("Notebook kernel name found: " + kernelName);
-              if (kernelName === "apache_toree"){
-                  kernelName = "scala";
-              }
-              req.body.name = kernelName;
-          }else{
-              // Default to Python 3
-              debug("Notebook kernel name not found, defaulting to Python 3");
-              req.body.name = "python3";
-          }
-          console.log(req.body);
-          // Pass the (modified) request to the kernel gateway.
-          request({
-            url: urljoin(kgUrl, kgBaseUrl, '/api/kernels'),
-            method: 'POST',
-            headers: headers,
-            json: req.body
-          }, function(err, response, body) {
-            if(err) {
-                error('Error proxying kernel creation request:' + err.toString());
-                return res.status(500).end();
+            //debug(notebook.metadata);
+            if (notebook.metadata.kernelspec.name) {
+                var kernelName = notebook.metadata.kernelspec.name;
+                debug("Notebook kernel name found: " + kernelName);
+                if(kernelName === "apache_toree") {
+                    kernelName = "scala";
+                }
+                req.body.name = kernelName;
+            } else {
+                // Default to Python 3
+                debug("Notebook kernel name not found, defaulting to Python 3");
+                req.body.name = "python3";
             }
-            // Pass the kernel gateway response back to the client.
-            res.set(response.headers);
-            res.status(response.statusCode).json(body);
-          });
+            debug("Issuing request for kernel: " + req.body);
+            // Pass the (modified) request to the kernel gateway.
+            request({
+                url: urljoin(kgUrl, kgBaseUrl, '/api/kernels'),
+                method: 'POST',
+                headers: headers,
+                json: req.body
+            }, function(err, response, body) {
+                if(err) {
+                    error('Error proxying kernel creation request:' + err.toString());
+                    return res.status(500).end();
+                }
+                // Pass the kernel gateway response back to the client.
+                res.set(response.headers);
+                res.status(response.statusCode).json(body);
+            });
         });
-      }
+    }
 });
 
 // Proxy all unhandled requests to the kernel gateway.
