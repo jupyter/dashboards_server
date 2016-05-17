@@ -11,6 +11,7 @@ INSTALLED_DASHBOARD_IMAGE_NAME:=jupyter-incubator/$(DASHBOARD_CONTAINER_NAME)-in
 PUBLIC_LINK_PATTERN:={protocol}://$$(docker-machine ip $$(docker-machine active)):{port}
 KG_IMAGE_NAME:=jupyter-incubator/kernel-gateway-extras
 KG_CONTAINER_NAME:=kernel-gateway
+KG_PUBLIC_PORT?=8888
 HTTP_PORT?=3000
 HTTPS_PORT?=3001
 TEST_CONTAINER_NAME:=$(DASHBOARD_CONTAINER_NAME)-test
@@ -57,18 +58,18 @@ kill: ## Kill all running docker containers
 dev-install: ## Install all dev deps on localhost
 	npm install --quiet
 
-dev: KG_IP?=$$(docker-machine ip $$(docker-machine active))
+dev: KG_PUBLIC_IP?=$$(docker-machine ip $$(docker-machine active))
 dev: kernel-gateway-container ## Run dashobard server on localhost
-	NODE_ENV='development' KG_BASE_URL=$(KG_BASE_URL) KERNEL_GATEWAY_URL=http://$(KG_IP):8888 gulp
+	NODE_ENV='development' KG_BASE_URL=$(KG_BASE_URL) KERNEL_GATEWAY_URL=http://$(KG_PUBLIC_IP):$(KG_PUBLIC_PORT) gulp
 
-dev-logging: KG_IP?=$$(docker-machine ip $$(docker-machine active))
+dev-logging: KG_PUBLIC_IP?=$$(docker-machine ip $$(docker-machine active))
 dev-logging: kernel-gateway-container ## Run dashboard server with debug logging on localhost
 	NODE_ENV='development' gulp build
-	KERNEL_GATEWAY_URL=http://$(KG_IP):8888 npm run start-logging
+	KERNEL_GATEWAY_URL=http://$(KG_IP):$(KG_PUBLIC_PORT) npm run start-logging
 
-dev-debug: KG_IP?=$$(docker-machine ip $$(docker-machine active))
+dev-debug: KG_PUBLIC_IP?=$$(docker-machine ip $$(docker-machine active))
 dev-debug: kernel-gateway-container ## Run dashboard server with node debugger on localhost
-	NODE_ENV='development' KG_BASE_URL=$(KG_BASE_URL) KERNEL_GATEWAY_URL=http://$(KG_IP):8888 gulp debug
+	NODE_ENV='development' KG_BASE_URL=$(KG_BASE_URL) KERNEL_GATEWAY_URL=http://$(KG_PUBLIC_IP):$(KG_PUBLIC_PORT) gulp debug
 
 ############### Dashboard server in Docker
 
@@ -100,7 +101,7 @@ else \
 	docker rm $(KG_CONTAINER_NAME) 2> /dev/null; \
 	docker run -d \
 		--name $(KG_CONTAINER_NAME) \
-		-p 8888:8888 \
+		-p $(KG_PUBLIC_PORT):8888 \
 		-e KG_ALLOW_ORIGIN='*' \
 		-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
 		-e KG_BASE_URL=$(KG_BASE_URL) \
@@ -114,11 +115,10 @@ kernel-gateway-container:
 	$(RUN_KERNEL_GATEWAY)
 
 # targets for running nodejs app and kernel gateway containers
-demo-container: KERNEL_GATEWAY_URL?=http://$(KG_CONTAINER_NAME):8888
 demo-container: | build kernel-gateway-container ## Run dashboard server in a docker container
 	@echo '-- Starting dashboard server container'
 	$(DASHBOARD_SERVER) -it --rm \
-	-e KERNEL_GATEWAY_URL=$(KERNEL_GATEWAY_URL) \
+	-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
 	-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
 	-e KG_BASE_URL=$(KG_BASE_URL) \
 	--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
@@ -144,8 +144,6 @@ test-container:
 test: | build test-container ## Run unit tests
 
 IT_SERVER_NAME:=integration-test-server
-IT_IP?=$$(docker-machine ip $$(docker-machine active))
-IT_KG_PORT:=8888
 
 define RUN_INTEGRATION_TEST
 @$(MAKE) kill
@@ -164,12 +162,14 @@ $(DASHBOARD_SERVER) -d \
 @$(MAKE) test-container \
 	CMD=$(CMD) \
 	SERVER_NAME=$(IT_SERVER_NAME) \
-	DOCKER_OPTIONS="-e APP_URL=http://$(IT_IP):$(HTTP_PORT) \
-		-e KERNEL_GATEWAY_URL=http://$(IT_IP):$(IT_KG_PORT) \
+	DOCKER_OPTIONS="-e APP_URL=http://$(DASHBOARD_CONTAINER_NAME):$(HTTP_PORT) \
+		-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
 		-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
 		-e AUTH_TOKEN=$(AUTH_TOKEN) \
 		-e TEST_USERNAME=$(USERNAME) \
-		-e TEST_PASSWORD=$(PASSWORD)";
+		-e TEST_PASSWORD=$(PASSWORD) \
+		--link $(DASHBOARD_CONTAINER_NAME):$(DASHBOARD_CONTAINER_NAME) \
+		--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME)";
 @$(MAKE) kill
 endef
 
@@ -195,8 +195,7 @@ integration-test-auth-local: | kill build
 	$(RUN_INTEGRATION_TEST)
 
 install-test: CMD=integration-test
-install-test: build ## Run basic integration tests after npm install in a container
-	@$(MAKE) kill
+install-test: | kill build ## Run basic integration tests after npm install in a container
 	$(RUN_KERNEL_GATEWAY)
 	@echo '-- Installing dashboard server npm package...'
 	@docker build --rm -f Dockerfile.installed -t $(INSTALLED_DASHBOARD_IMAGE_NAME) .
@@ -210,13 +209,15 @@ install-test: build ## Run basic integration tests after npm install in a contai
 	@$(MAKE) test-container \
 		CMD=$(CMD) \
 		SERVER_NAME=$(IT_SERVER_NAME) \
-		DOCKER_OPTIONS="-e APP_URL=http://$(IT_IP):$(HTTP_PORT) \
-			-e KERNEL_GATEWAY_URL=http://$(IT_IP):$(IT_KG_PORT) \
+		DOCKER_OPTIONS="-e APP_URL=http://$(DASHBOARD_CONTAINER_NAME):$(HTTP_PORT) \
+			-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
 			-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
 			-e AUTH_TOKEN=$(AUTH_TOKEN) \
 			-e TEST_USERNAME=$(USERNAME) \
-			-e TEST_PASSWORD=$(PASSWORD)";
-	#@$(MAKE) kill
+			-e TEST_PASSWORD=$(PASSWORD) \
+			--link $(DASHBOARD_CONTAINER_NAME):$(DASHBOARD_CONTAINER_NAME) \
+			--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME)";
+	@$(MAKE) kill
 
 quick-install-test: ## Run npm install/uninstall in a container
 	@echo '-- Running global install/uninstall test...'
