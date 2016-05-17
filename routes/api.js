@@ -14,6 +14,8 @@ var urljoin = require('url-join');
 var urlToDashboard = require('../app/url-to-dashboard');
 var WsRewriter = require('../app/ws-rewriter');
 
+var nbstore = require('../app/notebook-store');
+
 var kgUrl = config.get('KERNEL_GATEWAY_URL');
 var kgAuthToken = config.get('KG_AUTH_TOKEN');
 var kgBaseUrl = config.get('KG_BASE_URL');
@@ -40,12 +42,12 @@ function initWsProxy(server) {
     if (wsProxy) {
         return;
     }
-    
+
     var headers = null;
     if(kgAuthToken) {
-        // include the kg auth token if we have one
-        headers = {};
-        headers.Authorization = 'token ' + kgAuthToken;
+       // include the kg auth token if we have one
+       headers = {};
+       headers.Authorization = 'token ' + kgAuthToken;
     }
 
     wsProxy = new WsRewriter({
@@ -130,7 +132,7 @@ var removeSession = function(sessionId) {
 // configurations.
 router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, res) {
     var headers = {};
-    if(kgAuthToken) {
+    if (kgAuthToken) {
         headers['Authorization'] = 'token ' + kgAuthToken;
     }
 
@@ -139,42 +141,67 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
     initWsProxy(req.connection.server);
 
     // Forward the user object in the session to the kernel gateway.
-    if(config.get('KG_FORWARD_USER_AUTH') && req.user) {
+    if (config.get('KG_FORWARD_USER_AUTH') && req.user) {
         req.body.env = {
              KERNEL_USER_AUTH: JSON.stringify(req.user)
         };
     }
 
-    // Pass the (modified) request to the kernel gateway.
-    request({
-        url: urljoin(kgUrl, kgBaseUrl, '/api/kernels'),
-        method: 'POST',
-        headers: headers,
-        json: req.body
-    }, function(err, response, body) {
-        if(err) {
-            error('Error proxying kernel creation request:' + err.toString());
-            return res.status(500).end();
-        }
-        // Store the notebook path for use within the WS proxy.
-        var notebookPathHeader = req.headers['x-jupyter-notebook-path'];
-        var sessionId = req.headers['x-jupyter-session-id'];
-        if (!notebookPathHeader || !sessionId) {
-            error('Missing notebook path or session ID headers');
-            return res.status(500).end();
-        }
-        var matches = notebookPathHeader.match(/^\/(?:dashboards(-plain)?)?(.*)$/);
-        if (!matches) {
-            error('Invalid notebook path header');
-            return res.status(500).end();
-        }
-        // Store notebook path for later use
-        sessions[sessionId] = matches[2];
+    // Get notebook path from request headers
+    var notebookPathHeader = req.headers['x-jupyter-notebook-path'];
+    var sessionId = req.headers['x-jupyter-session-id'];
+    if (!notebookPathHeader || !sessionId) {
+        error('Missing notebook path or session ID headers');
+        return res.status(500).end();
+    }
 
-        // Pass the kernel gateway response back to the client.
-        res.set(response.headers);
-        res.status(response.statusCode).json(body);
-    });
+    var matches = notebookPathHeader.match(/^\/(?:dashboards(-plain)?)?(.*)$/);
+    if (!matches) {
+        error('Invalid notebook path header');
+        return res.status(500).end();
+    } else {
+        var notebookPath = matches[2];
+        // Store notebook path for later use
+        sessions[sessionId] = notebookPath;
+
+        // Retrieve notebook from store to pull out kernel name
+        nbstore.get(notebookPath)
+        .then(function success(notebook){
+
+            if (notebook.metadata.kernelspec.name) {
+                var kernelName = notebook.metadata.kernelspec.name;
+                debug('Notebook kernel name found: ' + kernelName);
+                if (kernelName === 'apache_toree') {
+                    kernelName = 'scala';
+                }
+                req.body.name = kernelName;
+            } else {
+                // Default to Python 3
+                debug('Notebook kernel name not found, defaulting to Python 3');
+                req.body.name = 'python3';
+            }
+            debug('Issuing request for kernel: ' + req.body);
+            // Pass the (modified) request to the kernel gateway.
+            request({
+                url: urljoin(kgUrl, kgBaseUrl, '/api/kernels'),
+                method: 'POST',
+                headers: headers,
+                json: req.body
+            }, function(err, response, body) {
+                if (err) {
+                    error('Error proxying kernel creation request:' + err.toString());
+                    return res.status(500).end();
+                }
+                // Pass the kernel gateway response back to the client.
+                res.set(response.headers);
+                res.status(response.statusCode).json(body);
+            });
+        })
+        .catch(function(err) {
+            error('Unknown notebook path: ' + notebookPath);
+            return res.status(500).end();
+        });
+    }
 });
 
 // Proxy all unhandled requests to the kernel gateway.
