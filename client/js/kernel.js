@@ -18,14 +18,14 @@ var Services = require('jupyter-js-services');
 
     var _kernel;
 
-    function _startKernel() {
+    function _startKernel(kernelname) {
         var loc = window.location;
         var kernelUrl = loc.protocol + '//' + loc.host;
         var clientId = _uuid();
         var kernelOptions = {
             baseUrl: kernelUrl,
             wsUrl: kernelUrl.replace(/^http/, 'ws'),
-            name: '', // Set by API when making POST request to kernel gateway
+            name: kernelname,
             clientId: clientId,
             ajaxSettings: {
                 requestHeaders: {
@@ -55,6 +55,7 @@ var Services = require('jupyter-js-services');
             })
             .catch(function(e) {
                 console.error('failed to create kernel', e);
+                throw e;
             });
     }
 

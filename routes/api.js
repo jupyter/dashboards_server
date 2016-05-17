@@ -44,10 +44,10 @@ function initWsProxy(server) {
     }
 
     var headers = null;
-    if(kgAuthToken) {
-       // include the kg auth token if we have one
-       headers = {};
-       headers.Authorization = 'token ' + kgAuthToken;
+    if (kgAuthToken) {
+        // include the kg auth token if we have one
+        headers = {};
+        headers.Authorization = 'token ' + kgAuthToken;
     }
 
     wsProxy = new WsRewriter({
@@ -159,16 +159,17 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
     if (!matches) {
         error('Invalid notebook path header');
         return res.status(500).end();
-    } else {
-        var notebookPath = matches[2];
-        // Store notebook path for later use
-        sessions[sessionId] = notebookPath;
+    }
 
-        // Retrieve notebook from store to pull out kernel name
-        nbstore.get(notebookPath)
-        .then(function success(notebook){
+    var notebookPath = matches[2];
+    // Store notebook path for later use
+    sessions[sessionId] = notebookPath;
 
-            if (notebook.metadata.kernelspec.name) {
+    // Retrieve notebook from store to pull out kernel name. Use this value instead
+    // of that supplied by client (trust local notebook over client info).
+    nbstore.get(notebookPath)
+        .then(function success(notebook) {
+            if (notebook.metadata.kernelspec && notebook.metadata.kernelspec.name) {
                 var kernelName = notebook.metadata.kernelspec.name;
                 debug('Notebook kernel name found: ' + kernelName);
                 if (kernelName === 'apache_toree') {
@@ -180,8 +181,9 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
                 debug('Notebook kernel name not found, defaulting to Python 3');
                 req.body.name = 'python3';
             }
-            debug('Issuing request for kernel: ' + req.body);
+
             // Pass the (modified) request to the kernel gateway.
+            debug('Issuing request for kernel', req.body);
             request({
                 url: urljoin(kgUrl, kgBaseUrl, '/api/kernels'),
                 method: 'POST',
@@ -201,7 +203,6 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
             error('Unknown notebook path: ' + notebookPath);
             return res.status(500).end();
         });
-    }
 });
 
 // Proxy all unhandled requests to the kernel gateway.

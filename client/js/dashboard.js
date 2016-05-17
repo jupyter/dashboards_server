@@ -50,7 +50,7 @@ if (Element && !Element.prototype.matches) {
     var renderMime = _createRenderMime();
 
     // start a kernel
-    Kernel.start().then(function(kernel) {
+    Kernel.start(Config.kernelname).then(function(kernel) {
         // do some additional shimming
         _setKernelShims(kernel);
 
@@ -58,7 +58,7 @@ if (Element && !Element.prototype.matches) {
         _registerKernelErrorHandler(kernel);
 
         // initialize an ipywidgets manager
-        var widgetManager = new WidgetManager(kernel, Config.kernelname, _consumeMessage);
+        var widgetManager = new WidgetManager(kernel, _consumeMessage);
 
         // initialize Declarative Widgets library
         var widgetsReady = _initDeclWidgets();

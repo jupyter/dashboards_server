@@ -9,7 +9,13 @@ RUN pip install 'ipywidgets==5.1.3'
 
 # install Declarative Widgets python package
 # don't bother activating the extension, not needed outside notebook
-RUN pip install jupyter_declarativewidgets
+RUN pip install jupyter_declarativewidgets==0.5.2
+
+# also install above packages for python2
+USER root
+RUN /opt/conda/envs/python2/bin/pip install 'ipywidgets==5.1.3'
+RUN /opt/conda/envs/python2/bin/pip install jupyter_declarativewidgets==0.5.2
+USER jovyan
 
 # run kernel gateway, not notebook server
 CMD ["jupyter", "kernelgateway", "--KernelGatewayApp.ip=0.0.0.0"]
