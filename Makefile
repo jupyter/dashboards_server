@@ -144,8 +144,6 @@ test-container:
 test: | build test-container ## Run unit tests
 
 IT_SERVER_NAME:=integration-test-server
-IT_IP?=$$(docker-machine ip $$(docker-machine active))
-IT_KG_PORT:=8888
 
 define RUN_INTEGRATION_TEST
 @$(MAKE) kill
@@ -164,12 +162,14 @@ $(DASHBOARD_SERVER) -d \
 @$(MAKE) test-container \
 	CMD=$(CMD) \
 	SERVER_NAME=$(IT_SERVER_NAME) \
-	DOCKER_OPTIONS="-e APP_URL=http://$(IT_IP):$(HTTP_PORT) \
-		-e KERNEL_GATEWAY_URL=http://$(IT_IP):$(IT_KG_PORT) \
+	DOCKER_OPTIONS="-e APP_URL=http://$(DASHBOARD_CONTAINER_NAME):$(HTTP_PORT) \
+		-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):$(IT_KG_PORT) \
 		-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
 		-e AUTH_TOKEN=$(AUTH_TOKEN) \
 		-e TEST_USERNAME=$(USERNAME) \
-		-e TEST_PASSWORD=$(PASSWORD)";
+		-e TEST_PASSWORD=$(PASSWORD) \
+		--link $(DASHBOARD_CONTAINER_NAME):$(DASHBOARD_CONTAINER_NAME) \
+		--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME)";
 @$(MAKE) kill
 endef
 
@@ -195,8 +195,7 @@ integration-test-auth-local: | kill build
 	$(RUN_INTEGRATION_TEST)
 
 install-test: CMD=integration-test
-install-test: build ## Run basic integration tests after npm install in a container
-	@$(MAKE) kill
+install-test: | kill build ## Run basic integration tests after npm install in a container
 	$(RUN_KERNEL_GATEWAY)
 	@echo '-- Installing dashboard server npm package...'
 	@docker build --rm -f Dockerfile.installed -t $(INSTALLED_DASHBOARD_IMAGE_NAME) .
@@ -210,13 +209,15 @@ install-test: build ## Run basic integration tests after npm install in a contai
 	@$(MAKE) test-container \
 		CMD=$(CMD) \
 		SERVER_NAME=$(IT_SERVER_NAME) \
-		DOCKER_OPTIONS="-e APP_URL=http://$(IT_IP):$(HTTP_PORT) \
-			-e KERNEL_GATEWAY_URL=http://$(IT_IP):$(IT_KG_PORT) \
+		DOCKER_OPTIONS="-e APP_URL=http://$(DASHBOARD_CONTAINER_NAME):$(HTTP_PORT) \
+			-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):$(IT_KG_PORT) \
 			-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
 			-e AUTH_TOKEN=$(AUTH_TOKEN) \
 			-e TEST_USERNAME=$(USERNAME) \
-			-e TEST_PASSWORD=$(PASSWORD)";
-	#@$(MAKE) kill
+			-e TEST_PASSWORD=$(PASSWORD) \
+			--link $(DASHBOARD_CONTAINER_NAME):$(DASHBOARD_CONTAINER_NAME) \
+			--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME)";
+	@$(MAKE) kill
 
 quick-install-test: ## Run npm install/uninstall in a container
 	@echo '-- Running global install/uninstall test...'
