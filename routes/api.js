@@ -172,14 +172,9 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
             if (notebook.metadata.kernelspec && notebook.metadata.kernelspec.name) {
                 var kernelName = notebook.metadata.kernelspec.name;
                 debug('Notebook kernel name found: ' + kernelName);
-                if (kernelName === 'apache_toree') {
-                    kernelName = 'scala';
-                }
                 req.body.name = kernelName;
             } else {
-                // Default to Python 3
-                debug('Notebook kernel name not found, defaulting to Python 3');
-                req.body.name = 'python3';
+                req.body.name = '';
             }
 
             // Pass the (modified) request to the kernel gateway.

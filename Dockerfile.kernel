@@ -1,7 +1,7 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-FROM jupyter/all-spark-notebook:0017b56d93c9
+FROM jupyter/all-spark-notebook:2d878db5cbff
 
 ARG KERNEL_GATEWAY_VER=0.5.0
 ARG IPYWIDGETS_VER=5.1.3
@@ -16,10 +16,9 @@ RUN pip install "ipywidgets==$IPYWIDGETS_VER"
 RUN pip install jupyter_declarativewidgets==$DECLWIDGETS_VER
 
 # also install above packages for python2
-USER root
-RUN /opt/conda/envs/python2/bin/pip install "ipywidgets==$IPYWIDGETS_VER"
-RUN /opt/conda/envs/python2/bin/pip install jupyter_declarativewidgets==$DECLWIDGETS_VER
-USER jovyan
+RUN bash -c "source activate python2 && \
+	pip install \"ipywidgets==$IPYWIDGETS_VER\" && \
+	pip install jupyter_declarativewidgets==$DECLWIDGETS_VER"
 
 # run kernel gateway, not notebook server
 CMD ["jupyter", "kernelgateway", "--KernelGatewayApp.ip=0.0.0.0"]
