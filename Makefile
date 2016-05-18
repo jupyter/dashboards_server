@@ -136,7 +136,7 @@ logging-container: demo-container ## Run dashboard server with node debugger in 
 
 ############### Unit and integration tests
 
-test: | build ## Run unit tests
+test: ## Run unit tests
 	docker run -it --rm \
 		--name $(TEST_CONTAINER_NAME) \
 		$(TEST_IMAGE_NAME) test
@@ -156,7 +156,7 @@ $(DASHBOARD_SERVER) -d \
 @echo '-- Waiting 10 seconds for servers to start'
 @sleep 10
 @echo '-- Starting test container'
-@docker run -it --rm \
+docker run -it --rm \
 	--name $(TEST_CONTAINER_NAME) \
 	-e APP_URL=http://$(DASHBOARD_CONTAINER_NAME):$(HTTP_PORT) \
 	-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \

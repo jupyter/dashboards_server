@@ -8,7 +8,7 @@ services:
     - docker
 
 script:
-    - make test integration-test
+    - make build test integration-test
 
 notifications:
   email:

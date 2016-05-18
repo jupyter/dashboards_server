@@ -7,7 +7,7 @@ USER root
 
 # Install Xvfb and its dependencies needed to run Electron (Nightmare tests)
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get -qq install -y \
     libgtk2.0-0 \
     libgconf-2-4 \
     libasound2 \
