@@ -48,10 +48,14 @@ test-image:
 
 images: kernel-gateway-image dashboard-server-image test-image ## Build all dev docker images
 build: images
+	
+define KILL
+@echo '-- Removing Docker containers'
+@-docker rm -f $(DASHBOARD_CONTAINER_NAME) $(KG_CONTAINER_NAME) $(TEST_CONTAINER_NAME) 2> /dev/null || true
+endef
 
 kill: ## Kill all running docker containers
-	@echo '-- Removing Docker containers'
-	@-docker rm -f $(DASHBOARD_CONTAINER_NAME) $(KG_CONTAINER_NAME) $(TEST_CONTAINER_NAME) 2> /dev/null || true
+	$(KILL)
 
 ############### Dashboard server development on host
 
@@ -132,21 +136,13 @@ logging-container: demo-container ## Run dashboard server with node debugger in 
 
 ############### Unit and integration tests
 
-test-container: CMD?=test
-test-container: SERVER_NAME?=$(TEST_CONTAINER_NAME)
-test-container: DOCKER_OPTIONS?=
-test-container:
-	@docker run -it --rm \
-		--name $(SERVER_NAME) \
-		$(DOCKER_OPTIONS) \
-		$(TEST_IMAGE_NAME) $(CMD)
-
-test: | build test-container ## Run unit tests
-
-IT_SERVER_NAME:=integration-test-server
+test: | build ## Run unit tests
+	docker run -it --rm \
+		--name $(TEST_CONTAINER_NAME) \
+		$(TEST_IMAGE_NAME) test
 
 define RUN_INTEGRATION_TEST
-@$(MAKE) kill
+$(KILL)
 $(RUN_KERNEL_GATEWAY)
 @echo '-- Starting dashboard server container'
 $(DASHBOARD_SERVER) -d \
@@ -157,45 +153,41 @@ $(DASHBOARD_SERVER) -d \
 	-e PASSWORD=$(PASSWORD) \
 	--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
 	$(DASHBOARD_IMAGE_NAME)
-@echo '-- Waiting 10 seconds for servers to start...'
+@echo '-- Waiting 10 seconds for servers to start'
 @sleep 10
-@$(MAKE) test-container \
-	CMD=$(CMD) \
-	SERVER_NAME=$(IT_SERVER_NAME) \
-	DOCKER_OPTIONS="-e APP_URL=http://$(DASHBOARD_CONTAINER_NAME):$(HTTP_PORT) \
-		-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
-		-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
-		-e AUTH_TOKEN=$(AUTH_TOKEN) \
-		-e TEST_USERNAME=$(USERNAME) \
-		-e TEST_PASSWORD=$(PASSWORD) \
-		--link $(DASHBOARD_CONTAINER_NAME):$(DASHBOARD_CONTAINER_NAME) \
-		--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME)";
-@$(MAKE) kill
+@echo '-- Starting test container'
+@docker run -it --rm \
+	--name $(TEST_CONTAINER_NAME) \
+	-e APP_URL=http://$(DASHBOARD_CONTAINER_NAME):$(HTTP_PORT) \
+	-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
+	-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
+	-e AUTH_TOKEN=$(AUTH_TOKEN) \
+	-e TEST_USERNAME=$(USERNAME) \
+	-e TEST_PASSWORD=$(PASSWORD) \
+	--link $(DASHBOARD_CONTAINER_NAME):$(DASHBOARD_CONTAINER_NAME) \
+	--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
+	$(TEST_IMAGE_NAME)
 endef
 
-integration-test: | kill build integration-test-default integration-test-auth-token integration-test-auth-local ## Run integration tests
+integration-test: | integration-test-default integration-test-auth-token integration-test-auth-local ## Run integration tests
 
-integration-test-default: CMD=integration-test
-integration-test-default: | kill build
+integration-test-default:
 	@echo '-- Running system integration tests...'
-	$(RUN_INTEGRATION_TEST)
+	$(RUN_INTEGRATION_TEST) integration-test
 
-integration-test-auth-token: CMD=integration-test-auth-token
 integration-test-auth-token: KG_AUTH_TOKEN=1a2b3c4d5e6f
 integration-test-auth-token: AUTH_TOKEN=7g8h9i0j
-integration-test-auth-token: | kill build
+integration-test-auth-token:
 	@echo '-- Running system integration tests using auth tokens...'
-	$(RUN_INTEGRATION_TEST)
+	$(RUN_INTEGRATION_TEST) integration-test-auth-token
 
-integration-test-auth-local: CMD=integration-test-auth-local
 integration-test-auth-local: USERNAME=testuser
 integration-test-auth-local: PASSWORD=testpass
-integration-test-auth-local: | kill build
+integration-test-auth-local:
 	@echo '-- Running system integration tests using local user auth...'
-	$(RUN_INTEGRATION_TEST)
+	$(RUN_INTEGRATION_TEST) integration-test-auth-local
 
-install-test: CMD=integration-test
-install-test: | kill build ## Run basic integration tests after npm install in a container
+install-test: kill ## Run basic integration tests after npm install in a container
 	$(RUN_KERNEL_GATEWAY)
 	@echo '-- Installing dashboard server npm package...'
 	@docker build --rm -f Dockerfile.installed -t $(INSTALLED_DASHBOARD_IMAGE_NAME) .
@@ -206,18 +198,17 @@ install-test: | kill build ## Run basic integration tests after npm install in a
 		$(INSTALLED_DASHBOARD_IMAGE_NAME)
 	@echo '-- Waiting 10 seconds for server to start...'
 	@sleep 10
-	@$(MAKE) test-container \
-		CMD=$(CMD) \
-		SERVER_NAME=$(IT_SERVER_NAME) \
-		DOCKER_OPTIONS="-e APP_URL=http://$(DASHBOARD_CONTAINER_NAME):$(HTTP_PORT) \
-			-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
-			-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
-			-e AUTH_TOKEN=$(AUTH_TOKEN) \
-			-e TEST_USERNAME=$(USERNAME) \
-			-e TEST_PASSWORD=$(PASSWORD) \
-			--link $(DASHBOARD_CONTAINER_NAME):$(DASHBOARD_CONTAINER_NAME) \
-			--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME)";
-	@$(MAKE) kill
+	@docker run -it --rm \
+		--name $(TEST_CONTAINER_NAME) \
+		-e APP_URL=http://$(DASHBOARD_CONTAINER_NAME):$(HTTP_PORT) \
+		-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
+		-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
+		-e AUTH_TOKEN=$(AUTH_TOKEN) \
+		-e TEST_USERNAME=$(USERNAME) \
+		-e TEST_PASSWORD=$(PASSWORD) \
+		--link $(DASHBOARD_CONTAINER_NAME):$(DASHBOARD_CONTAINER_NAME) \
+		--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
+		$(TEST_IMAGE_NAME) integration-test
 
 quick-install-test: ## Run npm install/uninstall in a container
 	@echo '-- Running global install/uninstall test...'

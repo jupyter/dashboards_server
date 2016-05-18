@@ -1,6 +1,8 @@
 sudo: required
 
-language: node_js
+# really, we're node but want to skip the implict npm install on the host 
+# which is not needed when using docker
+language: python
 
 services:
     - docker
