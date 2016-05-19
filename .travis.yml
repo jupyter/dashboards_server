@@ -1,19 +1,14 @@
-language: node_js
+sudo: required
 
-node_js:
-    - "5"
+# really, we're node but want to skip the implict npm install on the host 
+# which is not needed when using docker
+language: python
 
-env:
-    - CXX=g++-4.8
-addons:
-    apt:
-        sources:
-            - ubuntu-toolchain-r-test
-        packages:
-            - g++-4.8
+services:
+    - docker
 
-before_install:
-    - npm install -g gulp
+script:
+    - make build test integration-test
 
 notifications:
   email:
