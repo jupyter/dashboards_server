@@ -24,14 +24,14 @@ var Widgets = require('jupyter-js-widgets');
         // Register the comm target
         this.commManager.register_target(this.comm_target_name, this.handle_comm_open.bind(this));
 
-        // Validate the version requested by the backend.
+        // Validate the version requested by the backend -- required for ipywidgets
         var validate = (function validate() {
             this.validateVersion().then(function(valid) {
                 if (!valid) {
                     console.warn('Widget frontend version does not match the backend.');
                 }
             }).catch(function(err) {
-                console.error('Could not cross validate the widget frontend and backend versions.', err);
+                console.warn('Could not cross validate the widget frontend and backend versions.', err);
             });
         }).bind(this);
         validate();
