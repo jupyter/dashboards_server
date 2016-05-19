@@ -3,11 +3,12 @@
 ## 0.6.0 (2016-05-20)
 
 * Enable support for kernels other than python3 (e.g., python2, Apache Toree)
+* Include public links to dashboards in API response to `POST /notebooks` (`PUBLIC_LINK_PATTERN` config)
 * Fix browser-width responsive breakpoints: match them to what's used in notebook server 4.2
 * Fix positioning of image output from declarative widgets to match notebook
 * Fix clipping on markdown headings
 * Fix handling of bundled and unbundled notebooks of the same name
-* Fix vertical browser scrollbar from appearing unnecessarily
+* Fix unnecessary appearances by browser vertical scrollbar
 * Fix declarative widget error messages: prevent them from appearing in the dashboard
 * Fix notebook code visibility in the client: remove code from iopub messages sent from the kernel
 * Fix failure to load defaults when server is run from an npm install
