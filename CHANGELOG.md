@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.6.0 (2016-05-20)
+
+* Enable support for kernels other than python3 (e.g., python2, Apache Toree)
+* Include public links to dashboards in API response to `POST /notebooks` (`PUBLIC_LINK_PATTERN` config)
+* Fix browser-width responsive breakpoints: match them to what's used in notebook server 4.2
+* Fix positioning of image output from declarative widgets to match notebook
+* Fix clipping on markdown headings
+* Fix handling of bundled and unbundled notebooks of the same name
+* Fix unnecessary appearances by browser vertical scrollbar
+* Fix declarative widget error messages: prevent them from appearing in the dashboard
+* Fix notebook code visibility in the client: remove code from iopub messages sent from the kernel
+* Fix failure to load defaults when server is run from an npm install
+* Fix out-of-order websocket messages
+* Fix silence when server starts: log a message with the interface and port
+* Update `ipywidgets` support to 5.1.x, `jupyter-js-widgets` to 1.1.x, and `jupyter_declarativewidgets` to 0.5.x
+* Attempt to future-proof `jupyter_declarativewidgets` initialization for 0.6.x
+* Enable integration tests on Travis
+
 ## 0.5.0 (2016-05-02)
 
 * Use cookies for session storage
@@ -14,7 +32,7 @@
 * Improve support for deployment on Cloud Foundry
 * Add option to pass user authentication to kernel
 * Fix redirect after login to exclude favicon
-* Update `ipywidgets` support to 5.x, `jupyter-js-widgets` support to 1.x, and `jupyter_declarativewidgets` to 0.5.x
+* Update `ipywidgets` support to 5.0.x, `jupyter-js-widgets` support to 1.0.x, and `jupyter_declarativewidgets` to 0.5.0
 
 ## 0.4.0 (2016-03-24)
 
