@@ -64,10 +64,10 @@ app.use(function(req, res, next) {
        next();
    }
 });
-//
-var sessionSecret = config.get('SESSION_SECRET_TOKEN') || 'secret_token';
+
+// cookie session configuration
 app.use(cookieSession({
-    secret: sessionSecret,
+    secret: config.get('SESSION_SECRET_TOKEN'),
     cookie: {maxAge: 24*3600*1000} //cookie max age set to one day
 }));
 
