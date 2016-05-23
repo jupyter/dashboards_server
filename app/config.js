@@ -77,7 +77,7 @@ if (key_file_location || cert_file_location) {
 }
 
 // Generate a session key if one is not specified. Log that we did it in case
-// the user accidentally left of an explict token.
+// the user accidentally left off an explict token.
 if(!config.get('SESSION_SECRET_TOKEN')) {
     var bytes = crypto.randomBytes(48);
     config.set('SESSION_SECRET_TOKEN', bytes.toString('hex'));
