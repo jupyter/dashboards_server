@@ -21,7 +21,7 @@ var bundleBody;
 var nightmare;
 
 describe('dashboard with widgets', function() {
-    this.timeout(10000);
+    this.timeout(30000);
     before(function(done) {
         util.upload(uploadUrl, bundleFile, function(err, res) {
             if (err) {
