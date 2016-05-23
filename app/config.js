@@ -6,6 +6,7 @@ var nconf = require('nconf');
 var hjson = require('hjson');
 var path = require('path');
 var fs = require('fs');
+var crypto = require('crypto');
 var debug = require('debug')('dashboard-proxy:config');
 
 // Config defaults are in an HJSON file in the root of the source tree
@@ -73,6 +74,14 @@ if (key_file_location || cert_file_location) {
        key: fs.readFileSync(key_file_location),
        cert: fs.readFileSync(cert_file_location)
     });
+}
+
+// Generate a session key if one is not specified. Log that we did it in case
+// the user accidentally left of an explict token.
+if(!config.get('SESSION_SECRET_TOKEN')) {
+    var bytes = crypto.randomBytes(48);
+    config.set('SESSION_SECRET_TOKEN', bytes.toString('hex'));
+    console.log('Using generated SESSION_SECRET_TOKEN');
 }
 
 module.exports = config;
