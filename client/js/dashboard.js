@@ -142,6 +142,7 @@ if (Element && !Element.prototype.matches) {
         var rm = new RenderMime.RenderMime();
         var transformers = [
             new renderers.JavascriptRenderer(),
+            new renderers.MarkdownRenderer(),
             // new renderers.HTMLRenderer(),
             // NOTE: The HTMLRenderer doesn't work with current Safari versions -- inline JS scripts
             // don't load. This simple implementation works around it by using jQuery to add the
