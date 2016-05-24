@@ -65,9 +65,6 @@ var $ = require('jquery');
             sheet.insertRule('.dashboard-cell[data-layout-height="' + h + '"] { height: ' + height + '}', 0);
         }
 
-        // cell padding
-        sheet.insertRule('.dashboard-cell { padding: ' +
-            halfMargin + 'px ' + (halfMargin + 6) + 'px }', 0);
     }
 
     module.exports = {
