@@ -65,6 +65,13 @@ var $ = require('jquery');
             sheet.insertRule('.dashboard-cell[data-layout-height="' + h + '"] { height: ' + height + '}', 0);
         }
 
+        // cell padding
+        sheet.insertRule('.dashboard-cell { padding: 0px ' + halfMargin + 'px) }', 0);
+        // try to account for the difference in DOM structure between classic 
+        // notebook and phosphor components for text cells to make alignment
+        // a bit better
+        sheet.insertRule('.dashboard-cell.text-cell.rendered_html { padding: 0.5em calc(0.5em + ' + 
+            halfMargin + 'px) 0.5em calc(0.4em + ' + halfMargin + 'px) }', 0);
     }
 
     module.exports = {
