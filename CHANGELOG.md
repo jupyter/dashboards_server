@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.1 (2016-05-27)
+
+* Fix extra padding around grid layout cells
+* Fix ipywidget failures when using declarative widgets on the same page
+* Fix markdown output from kernel so that it renders properly
+* Fix silent use of development mode session secret
+
 ## 0.6.0 (2016-05-20)
 
 * Enable support for kernels other than python3 (e.g., python2, Apache Toree)
