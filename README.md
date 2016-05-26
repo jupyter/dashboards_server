@@ -33,7 +33,7 @@ The following libraries are known to work with the dashboard server:
 
 * jupyter_dashboards 0.5.x
 * jupyter_dashboards_bundlers 0.7.x
-* ipywidgets 5.1.1+
+* ipywidgets 5.1.5+
 * jupyter_declarativewidgets 0.5.x
 * Bokeh 0.11.x
 * Plotly 1.9.x
