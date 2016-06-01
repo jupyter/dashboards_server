@@ -69,7 +69,7 @@ dev: kernel-gateway-container ## Run dashobard server on localhost
 dev-logging: KG_PUBLIC_IP?=$$(docker-machine ip $$(docker-machine active))
 dev-logging: kernel-gateway-container ## Run dashboard server with debug logging on localhost
 	NODE_ENV='development' gulp build
-	KERNEL_GATEWAY_URL=http://$(KG_IP):$(KG_PUBLIC_PORT) npm run start-logging
+	KERNEL_GATEWAY_URL=http://$(KG_PUBLIC_IP):$(KG_PUBLIC_PORT) npm run start-logging
 
 dev-debug: KG_PUBLIC_IP?=$$(docker-machine ip $$(docker-machine active))
 dev-debug: kernel-gateway-container ## Run dashboard server with node debugger on localhost
