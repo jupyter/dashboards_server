@@ -13,6 +13,10 @@ var WebSocketClient = require('websocket').client;
 var WebSocketConnection = require('websocket').connection;
 var WebSocketServer = require('websocket').server;
 
+// 5 MB, half of tornado's (kernel gateway's) max_buffer_size
+// 10 MB caused issues, see comment in tornado source code as to why (?)
+var FRAGMENTATION_THRESHOLD = 0x3200000;
+
 /**
  * Websocket proxy between client/browser and kernel gateway which rewrites execution requests to
  * the gateway, replacing numeric index values with the associated code block.
@@ -41,7 +45,9 @@ function WsRewriter(args) {
     var wsserver = new WebSocketServer({
         httpServer: args.server,
         autoAcceptConnections: false,
-        maxReceivedFrameSize: Number.MAX_SAFE_INTEGER
+        maxReceivedFrameSize: Number.MAX_SAFE_INTEGER,
+        maxReceivedMessageSize: Number.MAX_SAFE_INTEGER,
+        fragmentationThreshold: FRAGMENTATION_THRESHOLD 
     });
 
     wsserver.on('request', this._handleWsRequest.bind(this));
@@ -69,7 +75,9 @@ WsRewriter.prototype._handleWsRequest = function(req) {
     // for every WS connection request from the client/browser, create a new connection to
     // the kernel gateway
     var wsclient = new WebSocketClient({
-        maxReceivedFrameSize: Number.MAX_SAFE_INTEGER
+        maxReceivedFrameSize: Number.MAX_SAFE_INTEGER,
+        maxReceivedMessageSize: Number.MAX_SAFE_INTEGER,
+        fragmentationThreshold: FRAGMENTATION_THRESHOLD
     });
 
     wsclient.on('connect', function(clientConn) {
