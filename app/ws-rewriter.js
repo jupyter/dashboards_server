@@ -47,7 +47,7 @@ function WsRewriter(args) {
         autoAcceptConnections: false,
         maxReceivedFrameSize: Number.MAX_SAFE_INTEGER,
         maxReceivedMessageSize: Number.MAX_SAFE_INTEGER,
-        fragmentationThreshold: FRAGMENTATION_THRESHOLD 
+        fragmentationThreshold: FRAGMENTATION_THRESHOLD
     });
 
     wsserver.on('request', this._handleWsRequest.bind(this));
@@ -59,6 +59,7 @@ WsRewriter.prototype._handleWsRequest = function(req) {
 
     var self = this;
     var servConn = req.accept(null, req.origin); // accept from all origins
+    setupWSLogging(servConn);
 
     var pendingServMsgs = [];
     function handleServMsg(data) {
@@ -82,6 +83,7 @@ WsRewriter.prototype._handleWsRequest = function(req) {
 
     wsclient.on('connect', function(clientConn) {
         debug('ws-client connected');
+        setupWSLogging(clientConn);
         // connected to kernel gateway -- now setup proxying between client/browser & gateway
         self._setupProxying(servConn, clientConn);
         // delete listeners that are no longer necessary
@@ -108,6 +110,26 @@ WsRewriter.prototype._handleWsRequest = function(req) {
 
     this.emit('request', req, servConn);
 };
+
+// The websocket lib logs low level websocket messaging in 'WebSocketConnection'. However, it is
+// a proprietary implementation which buffers messages and doesn't print them as they happen.
+// Here, we override that with the standard 'debug' impl.
+function setupWSLogging(conn) {
+    var _debug = conn._debug;
+    if (!_debug) {
+        // internal API has changed; do nothing
+        console.warn('WebSocketConnection no longer has `_debug` function; can\'t setup logging');
+        return;
+    }
+    if (!_debug.enabled) {
+        // logging for websocket connection not enabled
+        return;
+    }
+
+    // replace logging function
+    conn._debug = require('debug')('websocket:connection');
+    conn._debug.enabled = true;
+}
 
 WsRewriter.prototype._setupProxying = function(servConn, clientConn) {
     var self = this;
