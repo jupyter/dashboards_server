@@ -13,10 +13,10 @@
 var $ = require('jquery');
 
     var Config = window.jupyter_dashboard.Config;
-    var cellMargin = Config.cellMargin;
+    var cellMargin = Config.layout.cellMargin;
     var halfMargin = cellMargin / 2;
-    var cellHeight = Config.defaultCellHeight;
-    var numColumns = Config.maxColumns;
+    var cellHeight = Config.layout.defaultCellHeight;
+    var numColumns = Config.layout.maxColumns;
     var visibleCells = $('.dashboard-cell:not(.hidden)');
     var maxY = visibleCells.map(function(i, cell) {
             return $(cell).attr('data-layout-row');
@@ -67,10 +67,10 @@ var $ = require('jquery');
 
         // cell padding
         sheet.insertRule('.dashboard-cell { padding: 0px ' + halfMargin + 'px) }', 0);
-        // try to account for the difference in DOM structure between classic 
+        // try to account for the difference in DOM structure between classic
         // notebook and phosphor components for text cells to make alignment
         // a bit better
-        sheet.insertRule('.dashboard-cell.text-cell.rendered_html { padding: 0.5em calc(0.5em + ' + 
+        sheet.insertRule('.dashboard-cell.text-cell.rendered_html { padding: 0.5em calc(0.5em + ' +
             halfMargin + 'px) 0.5em calc(0.4em + ' + halfMargin + 'px) }', 0);
     }
 
