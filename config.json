@@ -60,15 +60,4 @@
     // Forward auth strategy user profile to every kernel launched for every dashboard visited on the server
     // e.g., so the kernel can re-use an auth token to access an external service
     KG_FORWARD_USER_AUTH: false
-
-    //////////////////////////////
-    // Dashboard rendering options
-    //////////////////////////////
-
-    // Number of pixels between cells
-    DB_CELL_MARGIN: 10
-    // Number of pixels in each row
-    DB_DEFAULT_CELL_HEIGHT: 20
-    // Number of dashboard grid columns
-    DB_MAX_COLUMNS: 12
 }

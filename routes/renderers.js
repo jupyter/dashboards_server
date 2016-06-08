@@ -92,20 +92,6 @@ function _renderDashboard(req, res, next, opts) {
             var activeView = getObject(notebook, 'metadata.extensions.jupyter_dashboards.activeView') ||
                              NO_LAYOUT;
 
-            // backwards compatibility - old grid layouts don't have layout set
-            if (activeView === NO_LAYOUT) {
-                var isGrid = notebook.cells.some(function(cell) {
-                    var layout = getObject(cell, 'metadata.urth.dashboard.layout');
-                    return layout &&
-                           ['row','col','width','height'].every(function(p) {
-                               return layout.hasOwnProperty(p);
-                           });
-                });
-                if (isGrid) {
-                    activeView = 'grid';
-                }
-            }
-
             res.status(200);
             res.render('dashboard', {
                 title: title,
