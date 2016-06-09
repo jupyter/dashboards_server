@@ -315,7 +315,7 @@ if (Element && !Element.prototype.matches) {
     }
 
     function _renderDashboard() {
-        if (Config.layout === 'grid') {
+        if (Config.layout.type === 'grid') {
             Layout.createStyle();
         }
         $container.removeClass('invisible');

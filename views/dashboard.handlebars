@@ -13,11 +13,11 @@
 <div id="outer-dashboard">
     {{! Might need to refactor this line to better handle author mode?}}
     <div id="dashboard-container" class="invisible container"
-        data-dashboard-layout="{{dashboardLayout}}">
+        data-dashboard-layout="{{getLayoutType notebook.metadata activeView}}">
         {{#each notebook.cells}}
-            {{#if (isVisible metadata)}}
+            {{#if (isVisible metadata ../activeView)}}
                 <div class="cell dashboard-cell {{mapCellType cell_type}}" data-cell-index="{{@index}}"
-                    {{~#each metadata.urth.dashboard.layout~}}
+                    {{~#each (getActiveViewCellProps metadata ../activeView)~}}
                         data-layout-{{@key}}="{{this}}"
                     {{~/each~}}
                     >{{{markdownContent cell_type source}}}</div>
@@ -41,15 +41,9 @@
         var Config = db.Config = db.Config || {};
         Config.kernelname = "{{notebook.metadata.kernelspec.name}}";
         // values from notebook metadata
-        {{#each notebook.metadata.urth.dashboard}}
-            Config.{{@key}} = "{{this}}";
-        {{/each}}
-
-        // default layout values
-        {{#each (defaultDashboardConfig dashboardLayout)}}
-            {{#unless (lookup ../notebook.metadata.urth.dashboard @key)}}
-            Config.{{@key}} = "{{this}}";
-            {{/unless}}
+        Config.layout = Config.layout || {};
+        {{#each (getActiveViewProps notebook.metadata)}}
+            Config.layout.{{@key}} = "{{this}}";
         {{/each}}
 
         // Declarative widget support

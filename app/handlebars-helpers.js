@@ -4,27 +4,20 @@
  */
 var commonmark = require('commonmark');
 var config = require('./config');
+var getObject = require('./get-object');
 var urljoin = require('url-join');
 
 var reader = new commonmark.Parser();
 var writer = new commonmark.HtmlRenderer();
 
+function getViewProps(metadata, activeView) {
+    var db = getObject(metadata, 'extensions.jupyter_dashboards');
+    return db && db.views[activeView];
+}
+
 module.exports = {
     config: function(name) {
         return config.get(name);
-    },
-
-    defaultDashboardConfig: function(layout) {
-        if (layout === 'grid') {
-            return {
-                layout: 'grid',
-                cellMargin: config.get('DB_CELL_MARGIN'),
-                defaultCellHeight: config.get('DB_DEFAULT_CELL_HEIGHT'),
-                maxColumns: config.get('DB_MAX_COLUMNS')
-            };
-        } else {
-            return {};
-        }
     },
 
     fsIcon: function(type) {
@@ -39,11 +32,25 @@ module.exports = {
         return value;
     },
 
-    isVisible: function(metadata) {
-        return metadata &&
-               metadata.urth &&
-               metadata.urth.dashboard &&
-               !metadata.urth.dashboard.hidden;
+    getActiveViewCellProps: getViewProps,
+
+    getActiveViewProps: function(nbMetadata) {
+        var db = getObject(nbMetadata, 'extensions.jupyter_dashboards');
+        return db && db.views[db.activeView];
+    },
+
+    getLayoutType: function(nbMetadata, activeView) {
+        var props = getViewProps(nbMetadata, activeView);
+        if (!props) {
+            // no dashboards metadata; just return the give active view string
+            return activeView;
+        }
+        return props.type;
+    },
+
+    isVisible: function(metadata, activeView) {
+        var props = getViewProps(metadata, activeView);
+        return props && !props.hidden;
     },
 
     mapCellType: function(cellType) {

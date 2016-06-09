@@ -9,6 +9,7 @@ var appendExt = require('../app/append-ext');
 var config = require('../app/config');
 var debug = require('debug')('dashboard-proxy:renderer');
 var fs = require('fs');
+var getObject = require('../app/get-object');
 var nbfs = require('../app/notebook-fs');
 var nbstore = require('../app/notebook-store');
 var path = require('path');
@@ -88,27 +89,8 @@ function _renderDashboard(req, res, next, opts) {
             debug('Success loading nb');
 
             // get dashboard layout from notebook-level dashboard metadata
-            var dashboardLayout = (notebook.metadata &&
-                                  notebook.metadata.urth &&
-                                  notebook.metadata.urth.dashboard &&
-                                  notebook.metadata.urth.dashboard.layout) ||
-                                  NO_LAYOUT;
-
-            // backwards compatibility - old grid layouts don't have layout set
-            if (dashboardLayout === NO_LAYOUT) {
-                var isGrid = notebook.cells.some(function(cell) {
-                    return cell.metadata &&
-                           cell.metadata.urth &&
-                           cell.metadata.urth.dashboard &&
-                           cell.metadata.urth.dashboard.layout &&
-                           ['row','col','width','height'].every(function(p) {
-                               return cell.metadata.urth.dashboard.layout.hasOwnProperty(p);
-                           });
-                });
-                if (isGrid) {
-                    dashboardLayout = 'grid';
-                }
-            }
+            var activeView = getObject(notebook, 'metadata.extensions.jupyter_dashboards.activeView') ||
+                             NO_LAYOUT;
 
             res.status(200);
             res.render('dashboard', {
@@ -117,7 +99,7 @@ function _renderDashboard(req, res, next, opts) {
                 username: req.session.username,
                 hideChrome: hideChrome,
                 supportsDeclWidgets: stats.supportsDeclWidgets,
-                dashboardLayout: dashboardLayout,
+                activeView: activeView,
                 // need to set document.baseURI with trailing slash
                 // (i.e. "/dashboards/nb/") so relative paths load correctly
                 baseURI: urljoin(req.originalUrl, '/')
