@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.0 (2016-06-17)
+
+* Switch to the [v1 dashboard layout specification](https://github.com/jupyter-incubator/dashboards/wiki/Dashboard-Metadata-and-Rendering)
+* Update example notebooks for compatibility with `jupyter_declarativewidgets` 0.6.0
+* Fix websocket disconnects due to large messages
+* Improve websocket logging
+
 ## 0.6.1 (2016-05-27)
 
 * Fix extra padding around grid layout cells
