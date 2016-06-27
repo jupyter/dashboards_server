@@ -6,11 +6,13 @@ A NodeJS application that can display Jupyter notebooks as dynamic dashboards ou
 
 ![Dashboards server screenshot](etc/server_intro.png)
 
-This repository is a portion of the `jupyter-incubator/dashboards` effort which covers:
+The Jupyter Incubator Dashboards effort covers:
 
-* [Arranging](https://github.com/jupyter-incubator/dashboards) notebook outputs in a grid-layout
-* [Bundling](https://github.com/jupyter-incubator/dashboards_bundlers) notebooks and associated assets for deployment as dashboards
-* [Serving](https://github.com/jupyter-incubator/dashboards_server) notebook-defined dashboards as standalone web apps (**this repo**)
+1. Arranging notebook outputs in a grid- or report-like layout 
+2. Bundling notebooks and associated assets for deployment as dashboards 
+3. Serving notebook-defined dashboards as standalone web apps
+
+This repository focuses on (3) above, while [jupyter-incubator/dashboards](https://github.com/jupyter-incubator/dashboards) handles (1) and [jupyter-incubator/dashboards_bundlers](https://github.com/jupyter-incubator/dashboards_bundlers) implements (2).
 
 See https://github.com/jupyter-incubator/dashboards/wiki for an overview of the entire dashboards effort.
 
