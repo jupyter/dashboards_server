@@ -8,9 +8,9 @@
 var $ = require('jquery');
 var AnsiParser = require('ansi-parser');
 var Services = require('jupyter-js-services');
-var OutputArea = require('../../node_modules/jupyter-js-notebook/lib/output-area/index');
-var RenderMime = require('jupyter-js-ui/lib/rendermime');
-var renderers = require('jupyter-js-ui/lib/renderers');
+var OutputArea = require('jupyterlab/lib/notebook/output-area');
+var RenderMime = require('jupyterlab/lib/rendermime').RenderMime;
+var renderers = require('jupyterlab/lib/renderers');
 var PhWidget = require('phosphor-widget');
 
 var Widgets = require('jupyter-js-widgets');
@@ -69,11 +69,12 @@ if (Element && !Element.prototype.matches) {
             _getCodeCells().each(function() {
                 var $cell = $(this);
 
+                var view = new OutputAreaWidget({ rendermime: renderMime });
                 var model = new OutputAreaModel();
-                model.trusted = true; // always trust notebooks
-                var view = new OutputAreaWidget(model, renderMime);
+                view.model = model;
+                view.trusted = true; // always trust notebooks
 
-                model.outputs.changed.connect(function(sender, args) {
+                model.changed.connect(function(sender, args) {
                     // add rendered_html class on the view to match what notebook does
                     if (args.newValue.data &&
                         args.newValue.data.hasOwnProperty('text/html')) {
@@ -139,7 +140,6 @@ if (Element && !Element.prototype.matches) {
     // create a rendermime instance with all the standard mimetype
     // transformers used in notebooks
     function _createRenderMime() {
-        var rm = new RenderMime.RenderMime();
         var transformers = [
             new renderers.JavascriptRenderer(),
             new renderers.MarkdownRenderer(),
@@ -160,16 +160,17 @@ if (Element && !Element.prototype.matches) {
             new renderers.ImageRenderer(),
             new renderers.SVGRenderer(),
             new renderers.LatexRenderer(),
-            new renderers.ConsoleTextRenderer(),
             new renderers.TextRenderer()
         ];
+        var mimeMap = {};
+        var order = [];
         transformers.forEach(function(t) {
             t.mimetypes.forEach(function(m) {
-                rm.order.push(m);
-                rm.renderers[m] = t;
+                order.push(m);
+                mimeMap[m] = t;
             });
         });
-        return rm;
+        return new RenderMime(mimeMap, order);
     }
 
     // shim kernel object on notebook for backward compatibility
