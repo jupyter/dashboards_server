@@ -214,10 +214,17 @@ var Widgets = require('jupyter-js-widgets');
         var cells = this._pendingExecutions;
         nb.get_cells = function() {
             return Object.keys(cells).map(function(id) {
+                // matplotlib expects `outputs` to be an array
+                var model = cells[id].outputAreaModel;
+                var outputs = [];
+                for (var i = 0, len = model.length; i < len; i++) {
+                    outputs.push(model.get(i));
+                }
+
                 return {
                     cell_type: 'code', // each _pendingExecution cell is code
                     output_area: {
-                        outputs: cells[id].outputAreaModel.outputs.internal
+                        outputs: outputs
                     }
                 };
             });
