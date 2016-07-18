@@ -177,16 +177,15 @@ if (Element && !Element.prototype.matches) {
     function _setKernelShims(kernel) {
         var nb = window.Jupyter.notebook;
         nb.kernel = kernel;
-        var KernelStatus = Services.KernelStatus;
 
         kernel.is_connected = function() {
-            return kernel.status === KernelStatus.Busy || kernel.status === KernelStatus.Idle;
+            return kernel.status === 'busy' || kernel.status === 'idle';
         };
 
         // if the kernel is not already started and idle, wait for it to be
-        if (kernel.status !== KernelStatus.Idle) {
+        if (kernel.status !== 'idle') {
             var puller = function(kernel, status) {
-                if (status === Services.KernelStatus.Idle) {
+                if (status === 'idle') {
                     kernel.statusChanged.disconnect(puller);
                     nb.events.trigger('kernel_ready.Kernel');
                 }
@@ -308,8 +307,8 @@ if (Element && !Element.prototype.matches) {
     // show the user an indicator on error
     function _registerKernelErrorHandler(kernel) {
         kernel.statusChanged.connect(function(kernel, status) {
-            if (status === Services.KernelStatus.Dead ||
-                status === Services.KernelStatus.Reconnecting) {
+            if (status === 'dead' ||
+                status === 'reconnecting') {
                 ErrorIndicator.show();
             }
         });
