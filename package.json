@@ -45,7 +45,7 @@
     "http-proxy": "^1.12.0",
     "jupyter-js-services": "^0.15.2",
     "jupyter-js-widgets": "^1.2.0",
-    "jupyterlab": "0.0.12",
+    "jupyterlab": "^0.1.0",
     "morgan": "^1.6.1",
     "nconf": "^0.8.2",
     "passport": "^0.3.2",
