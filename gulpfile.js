@@ -34,6 +34,7 @@ var webpackStatsOptions = {
 
 // base configuration
 var webpackConfig = {
+    bail: true,
     entry: {
         'dashboard': './client/js/dashboard.js'
     },
