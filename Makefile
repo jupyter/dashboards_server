@@ -109,7 +109,6 @@ else \
 		-e KG_ALLOW_ORIGIN='*' \
 		-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
 		-e KG_BASE_URL=$(KG_BASE_URL) \
-		-e KG_LIST_KERNELS='True' \
 		$(KG_IMAGE_NAME); \
 fi;
 endef
