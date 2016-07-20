@@ -6,7 +6,7 @@
  * Normal routes that require login (if enabled)
  */
 var config = require('../app/config');
-var renderers = require('./renderers');
+var renderers = require('../app/renderers');
 var router = require('express').Router();
 
 /* GET /dashboards/* - a single dashboard or list of files (subdirectories) */

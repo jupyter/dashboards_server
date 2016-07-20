@@ -8,6 +8,7 @@
 var authToken = require('../app/auth-token');
 var config = require('../app/config');
 var link = require('../app/public-link');
+var nbdelete = require('../app/notebook-delete');
 var upload = require('../app/notebook-upload');
 var router = require('express').Router();
 var urljoin = require('url-join');
@@ -27,5 +28,7 @@ router.post('/notebooks(/*)', authToken, upload, function(req, res) {
     }
     res.status(201).json(resBody);
 });
+
+router.delete('/notebooks(/*)', authToken, nbdelete);
 
 module.exports = router;
