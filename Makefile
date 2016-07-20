@@ -48,7 +48,7 @@ test-image:
 
 images: kernel-gateway-image dashboard-server-image test-image ## Build all dev docker images
 build: images
-	
+
 define KILL
 @echo '-- Removing Docker containers'
 @-docker rm -f $(DASHBOARD_CONTAINER_NAME) $(KG_CONTAINER_NAME) $(TEST_CONTAINER_NAME) 2> /dev/null || true

@@ -79,7 +79,7 @@ function _renderList(req, res, next) {
 }
 
 function _renderDashboard(req, res, next, opts) {
-    var dbpath = (opts && opts.dbpath) || req.params[0];
+    var dbpath = (opts && opts.dbpath) || req.params[0] || '';
     var title =  path.basename(dbpath, DB_EXT);
     var hideChrome = !!(opts && opts.hideChrome);
     var stats = (opts && opts.stats) || nbfs.stat(dbpath);
