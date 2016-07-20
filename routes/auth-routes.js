@@ -29,6 +29,7 @@ router.post('/notebooks(/*)', authToken, upload, function(req, res) {
     res.status(201).json(resBody);
 });
 
+/* DELETE /notebooks/* - delete a dashboard notebook */
 router.delete('/notebooks(/*)', authToken, nbdelete);
 
 module.exports = router;
