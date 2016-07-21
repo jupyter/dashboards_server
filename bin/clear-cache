@@ -1,0 +1,73 @@
+#!/usr/bin/env node
+/**
+ * Copyright (c) Jupyter Development Team.
+ * Distributed under the terms of the Modified BSD License.
+ */
+
+/**
+ * Command-line script which allows clearing of the Dashboard Server cache.
+ */
+
+var hjson = require('hjson');
+var nconf = require('nconf');
+var path = require('path');
+var request = require('request');
+var urljoin = require('url-join');
+
+var DEFAULT_HOST = 'http://localhost:3000';
+
+// Config defaults are in an HJSON file in the root of the source tree
+var defaultConfig = path.join(__dirname, '..', 'config.json');
+
+// Configure nconf config mechanisms in order of precedence
+var config = nconf.argv({
+                      'h': {
+                          alias: 'help',
+                          describe: 'show this help text'
+                      },
+                      'host': {
+                          'default': DEFAULT_HOST,
+                          describe: 'dashboard server host and port',
+                          type: 'string'
+                      },
+                      'auth-token': {
+                          describe: 'authorization token for admin privileges',
+                          type: 'string'
+                      }
+                  }, 'Clear dashboard server cache')
+                  .file({ file: defaultConfig, format: hjson });
+
+// Show the config defaults for --help
+if (config.get('help')) {
+    return nconf.stores.argv.showHelp();
+}
+
+var authToken = config.get('auth-token') ||  // command line
+                config.get('AUTH_TOKEN');    // config.json
+var host = config.get('host');
+
+var opts = {
+    url: urljoin(host, '/_api/cache'),
+    headers: {}
+};
+
+if (authToken) {
+    opts.headers.Authorization = 'token ' + authToken;
+}
+
+request.delete(opts, function(err, res, body) {
+    if (err || res.statusCode !== 200) {
+        var errmsg = err;
+        if (!errmsg) {
+            try {
+                var m = JSON.parse(body);
+                errmsg = 'could not reset cache: ' + m.message;
+            } catch(e) {
+                errmsg = 'could not reset cache';
+            }
+        }
+        console.error('ERROR:', errmsg);
+        process.exit(1);
+    }
+    console.log('Cache reset!');
+});
