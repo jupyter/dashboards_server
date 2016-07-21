@@ -23,8 +23,8 @@ var notebookFile = '../resources/upload-notebook-test.ipynb';
 // upload files to test listing
 function upload(uploadUrl, fileUrl, cb) {
     return util.upload(urljoin(postUrl, uploadUrl), fileUrl)
-        .then(function(res, body) {
-            expect(res.statusCode).to.equal(201);
+        .then(function(args) {
+            expect(args.res.statusCode).to.equal(201);
             return new Promise(function(resolve, reject) {
                 request.get({
                     url: getUrl // list URL

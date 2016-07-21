@@ -21,7 +21,7 @@ describe('delete notebook', function() {
     it('should delete a notebook file', function(done) {
         // uploading test notebook file
         util.upload(targetUrl, testNotebook)
-            .then(function(res) {
+            .then(function() {
                 // check if the notebook file is succesfully uploaded
                 return new Promise(function(resolve, reject) {
                     request.get(getUrl, function(err, res, body) {
@@ -33,8 +33,8 @@ describe('delete notebook', function() {
             .then(function() {
                 // delete test notebook file
                 return util.delete(targetUrl)
-                    .then(function(res) {
-                        expect(res.statusCode).to.equal(204);
+                    .then(function(args) {
+                        expect(args.res.statusCode).to.equal(204);
                     });
             })
             .then(function() {
@@ -52,20 +52,20 @@ describe('delete notebook', function() {
     it('should fail to delete a non-notebook file/directory', function(done) {
         // uploading test notebook bundle
         util.upload(targetUrl, testBundledNotebook)
-            .then(function(res) {
+            .then(function() {
                 // check if the notebook bundle is succesfully uploaded
                 return new Promise(function(resolve, reject) {
-                        request.get(getUrl, function(err, res, body) {
-                            expect(res.statusCode).to.equal(200);
-                            resolve();
-                        });
+                    request.get(getUrl, function(err, res, body) {
+                        expect(res.statusCode).to.equal(200);
+                        resolve();
+                    });
                 });
             })
             .then(function() {
                 // attempt to delete image file (should not be successful)
                 return util.delete(badTargetUrl)
-                    .then(function(res) {
-                        expect(res.statusCode).to.equal(400);
+                    .then(function(args) {
+                        expect(args.res.statusCode).to.equal(400);
                     });
             })
             .then(done);
@@ -76,8 +76,8 @@ describe('delete notebook', function() {
 
         // delete test notebook bundle
         util.delete(targetUrl)
-            .then(function(res) {
-                expect(res.statusCode).to.equal(204);
+            .then(function(args) {
+                expect(args.res.statusCode).to.equal(204);
             })
             .then(function() {
                 // check that test notebook bundle is deleted
