@@ -30,6 +30,8 @@ var FRAGMENTATION_THRESHOLD = 0x3200000;
  * @param  {String} args.host - kernel gateway host/domain
  * @param  {String} args.basePath - kernel gateway base URL
  * @param  {Object} args.headers - kernel gateway headers
+ * @param  {Object} args.requestOptions - additional options passed to http(s).request() when
+ *                                        connecting to kernel gateway
  * @param  {Function} args.sessionToNbPath - callback to return a notebook path for the session ID
  */
 function WsRewriter(args) {
@@ -39,6 +41,7 @@ function WsRewriter(args) {
     this._host = args.host;
     this._basePath = args.basePath;
     this._headers = args.headers;
+    this._requestOptions = args.requestOptions;
     this._sessionToNbPath = args.sessionToNbPath;
 
     // create a websocket server which will listen for requests coming from the client/browser
@@ -106,7 +109,7 @@ WsRewriter.prototype._handleWsRequest = function(req) {
 
     // kick off connection to kernel gateway WS
     var url = urljoin(this._host, this._basePath, req.resourceURL.path).replace(/^http/, 'ws');
-    wsclient.connect(url, null, null, this._headers);
+    wsclient.connect(url, null, null, this._headers, this._requestOptions);
 
     this.emit('request', req, servConn);
 };

@@ -60,4 +60,19 @@
     // Forward auth strategy user profile to every kernel launched for every dashboard visited on the server
     // e.g., so the kernel can re-use an auth token to access an external service
     KG_FORWARD_USER_AUTH: false
+
+    ////////////////////////////////
+    // Proxy & other backend options
+    ////////////////////////////////
+
+    // Additional network settings for communicating with backend (e.g. proxy)
+    //   - if backend requires basic auth, set 'user'/'password'
+    //   - if backend requires additional headers on each request, set in 'requestHeaders'
+    //AJAX_SETTINGS: {
+    //    user: fakeuser
+    //    password: fakepass
+    //    requestHeaders: {
+    //        fake-header: somevalue
+    //    }
+    //}
 }
