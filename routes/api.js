@@ -16,6 +16,7 @@ var WsRewriter = require('../app/ws-rewriter');
 
 var nbstore = require('../app/notebook-store');
 
+var ajaxSettings = config.get('AJAX_SETTINGS') || {};
 var kgUrl = config.get('KERNEL_GATEWAY_URL');
 var kgAuthToken = config.get('KG_AUTH_TOKEN');
 var kgBaseUrl = config.get('KG_BASE_URL');
@@ -30,13 +31,24 @@ var kernelIdRe = new RegExp('^.*/kernels/([^/]*)');
 // Create the proxy server instance. Don't bother to configure SSL here because
 // it's not exposed directly. Rather, it's part of a proxyRoute that is used
 // by the top-level app.
-var proxy = httpProxy.createProxyServer({
+var psOpts = {
     target: urljoin(kgUrl, kgBaseUrl, '/api'),
     changeOrigin: true,
     hostRewrite: true,
     autoRewrite: true,
     protocolRewrite: true
-});
+};
+// set basic auth params if specified
+var basicAuth;
+if (ajaxSettings.user && ajaxSettings.password) {
+    basicAuth = ajaxSettings.user + ':' + ajaxSettings.password;
+    psOpts.auth = basicAuth;
+}
+// set additional request headers if specified
+if (typeof ajaxSettings.requestHeaders === 'object') {
+    psOpts.headers = ajaxSettings.requestHeaders;
+}
+var proxy = httpProxy.createProxyServer(psOpts);
 
 function initWsProxy(server) {
     if (wsProxy) {
@@ -50,11 +62,17 @@ function initWsProxy(server) {
         headers.Authorization = 'token ' + kgAuthToken;
     }
 
+    // set additional request headers if specified
+    if (typeof ajaxSettings.requestHeaders === 'object') {
+        headers = Object.assign({}, ajaxSettings.requestHeaders, headers);
+    }
+
     wsProxy = new WsRewriter({
         server: server,
         host: kgUrl,
         basePath: kgBaseUrl,
         headers: headers,
+        requestOptions: basicAuth ? { auth: basicAuth } : null,
         sessionToNbPath: function(session) {
             return urlToDashboard(sessions[session]);
         }
@@ -177,12 +195,27 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
                 req.body.name = '';
             }
 
+            // add basic auth params, if specified
+            var auth;
+            if (basicAuth) {
+                auth = {
+                    user: ajaxSettings.user,
+                    pass: ajaxSettings.password
+                };
+            }
+
+            // add additional headers from config, if specified
+            if (typeof ajaxSettings.requestHeaders === 'object') {
+                headers = Object.assign({}, ajaxSettings.requestHeaders, headers);
+            }
+
             // Pass the (modified) request to the kernel gateway.
             debug('Issuing request for kernel', req.body);
             request({
                 url: urljoin(kgUrl, kgBaseUrl, '/api/kernels'),
                 method: 'POST',
                 headers: headers,
+                auth: auth,
                 json: req.body
             }, function(err, response, body) {
                 if (err) {
