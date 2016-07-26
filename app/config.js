@@ -47,7 +47,7 @@ if(!nbDir) {
     try {
         fs.mkdirSync(nbDir);
     } catch(e) {
-        if(e.code !== 'EEXIST') {
+        if(e.code !== 'EEXIST' && e.code !== 'EROFS') {
             throw e;
         }
     }
