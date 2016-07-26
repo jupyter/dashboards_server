@@ -16,7 +16,7 @@ var WsRewriter = require('../app/ws-rewriter');
 
 var nbstore = require('../app/notebook-store');
 
-var ajaxSettings = config.get('AJAX_SETTINGS') || {};
+var proxySettings = config.get('PROXY_SETTINGS') || {};
 var kgUrl = config.get('KERNEL_GATEWAY_URL');
 var kgAuthToken = config.get('KG_AUTH_TOKEN');
 var kgBaseUrl = config.get('KG_BASE_URL');
@@ -40,13 +40,13 @@ var psOpts = {
 };
 // set basic auth params if specified
 var basicAuth;
-if (ajaxSettings.user && ajaxSettings.password) {
-    basicAuth = ajaxSettings.user + ':' + ajaxSettings.password;
+if (proxySettings.user && proxySettings.password) {
+    basicAuth = proxySettings.user + ':' + proxySettings.password;
     psOpts.auth = basicAuth;
 }
 // set additional request headers if specified
-if (typeof ajaxSettings.requestHeaders === 'object') {
-    psOpts.headers = ajaxSettings.requestHeaders;
+if (typeof proxySettings.requestHeaders === 'object') {
+    psOpts.headers = proxySettings.requestHeaders;
 }
 var proxy = httpProxy.createProxyServer(psOpts);
 
@@ -63,8 +63,8 @@ function initWsProxy(server) {
     }
 
     // set additional request headers if specified
-    if (typeof ajaxSettings.requestHeaders === 'object') {
-        headers = Object.assign({}, ajaxSettings.requestHeaders, headers);
+    if (typeof proxySettings.requestHeaders === 'object') {
+        headers = Object.assign({}, proxySettings.requestHeaders, headers);
     }
 
     wsProxy = new WsRewriter({
@@ -199,14 +199,14 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
             var auth;
             if (basicAuth) {
                 auth = {
-                    user: ajaxSettings.user,
-                    pass: ajaxSettings.password
+                    user: proxySettings.user,
+                    pass: proxySettings.password
                 };
             }
 
             // add additional headers from config, if specified
-            if (typeof ajaxSettings.requestHeaders === 'object') {
-                headers = Object.assign({}, ajaxSettings.requestHeaders, headers);
+            if (typeof proxySettings.requestHeaders === 'object') {
+                headers = Object.assign({}, proxySettings.requestHeaders, headers);
             }
 
             // Pass the (modified) request to the kernel gateway.
