@@ -45,11 +45,9 @@ if(!nbDir) {
     nbDir = path.resolve(nbDir);
     // Create directory if it does not exist
     try {
-        fs.mkdirSync(nbDir);
+      fs.statSync(nbDir);
     } catch(e) {
-        if(e.code !== 'EEXIST') {
-            throw e;
-        }
+      fs.mkdirSync(nbDir);
     }
     config.set('NOTEBOOKS_DIR', nbDir);
 }
