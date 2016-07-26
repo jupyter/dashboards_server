@@ -1,0 +1,139 @@
+#!/usr/bin/env node
+/**
+ * Copyright (c) Jupyter Development Team.
+ * Distributed under the terms of the Modified BSD License.
+ */
+
+/**
+ * Command-line script which allows clearing of the Dashboard Server cache.
+ */
+
+var fs = require('fs');
+var hjson = require('hjson');
+var nconf = require('nconf');
+var path = require('path');
+var request = require('request');
+var urljoin = require('url-join');
+var yargs = require('yargs');
+
+// Config defaults are in an HJSON file in the root of the source tree
+var defaultConfig = path.join(__dirname, '..', 'config.json');
+var config = nconf.file({ file: defaultConfig, format: hjson });
+
+var DEFAULT_HOST = 'http://localhost:3000';
+
+// common options shared by all commands
+var commonOpts = {
+    'host': {
+        describe: 'dashboard server host and port',
+        default: DEFAULT_HOST,
+        type: 'string'
+    },
+    'auth-token': {
+        describe: 'authorization token for admin privelages, defaults to reading from config file',
+        type: 'string'
+    }
+};
+
+// command to clear the dashboard server cache
+var clear_cache_command = {
+    command: 'clear-cache [options]',
+    describe: 'Clear dashboard server cache',
+    builder: commonOpts,
+    handler: function(argv) {
+        var opts = {
+            url: urljoin(argv.host, '/_api/cache')
+        };
+
+        sendRequest('delete', argv, opts, 200)
+            .then(function() {
+                console.log('Cache reset!');
+                process.exit(0);
+            })
+            .catch(function() {
+                console.error('ERROR: ', 'could not reset cache.', err || '');
+                process.exit(1);
+            });
+    }
+};
+
+// command to delete a dashboard
+var delete_command = {
+    command: 'delete [options] <path>',
+    describe: 'Delete dashboard from server',
+    builder: commonOpts,
+    handler: function(argv) {
+        var opts = {
+            url: urljoin(argv.host, '/_api/notebooks', argv.path)
+        };
+
+        sendRequest('delete', argv, opts, 204)
+            .then(function() {
+                console.log('Dashboard deleted!');
+                process.exit(0);
+            })
+            .catch(function() {
+                console.error('ERROR: ', 'could not delete dashboard.', err || '');
+                process.exit(1);
+            });
+    }
+};
+
+// command to upload a dashboard
+var upload_command = {
+    command: 'upload [options] <file> <dest>',
+    describe: 'Upload a dashboard to the dashboard server',
+    builder: commonOpts,
+    handler: function(argv) {
+        var datapath = path.resolve(argv.file);
+        var opts = {
+            url: urljoin(argv.host, '/_api/notebooks', argv.dest),
+            formData: {
+                file: fs.createReadStream(datapath)
+            }
+        };
+
+        sendRequest('post', argv, opts, 201)
+            .then(function() {
+                console.log('Dashboard successfully uploaded!');
+                process.exit(0);
+            })
+            .catch(function(err) {
+                console.error('ERROR:', 'could not upload dashboard.', err || '');
+                process.exit(1);
+            });
+    }
+};
+
+function sendRequest(method, argv, opts, expectedResponseCode) {
+    var authToken = argv['auth-token'] ||       // command line
+                    config.get('AUTH_TOKEN');   // config.json
+
+    opts.headers = opts.headers || {};
+
+    if (authToken) {
+        opts.headers.Authorization = 'token ' + authToken;
+    }
+
+    return new Promise(function(resolve, reject) {
+        request[method](opts, function(err, res, body) {
+            if (err || res.statusCode !== expectedResponseCode) {
+                if (!err) {
+                    try {
+                        var m = JSON.parse(body);
+                        err = m.message;
+                    } catch(e) {}
+                }
+                reject(err);
+            }
+            resolve();
+        });
+    });
+}
+
+yargs.command(clear_cache_command)
+     .command(delete_command)
+     .command(upload_command)
+     .strict()
+     .help()
+     .argv;
