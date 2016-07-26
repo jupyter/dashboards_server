@@ -108,6 +108,8 @@ if (Element && !Element.prototype.matches) {
             console.error(err);
             ErrorIndicator.show();
         });
+    }).catch(function(e) {
+        ErrorIndicator.show();
     });
 
     // shim Jupyter Notebook objects for backwards compatibility
