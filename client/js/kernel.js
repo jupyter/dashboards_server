@@ -54,7 +54,7 @@ var Services = require('jupyter-js-services');
                 kernel.statusChanged.connect(function(_kernel, status) {
                     clearTimeout(debounced);
                     debounced = setTimeout(function() {
-                        var isBusy = status === Services.KernelStatus.Busy;
+                        var isBusy = status === 'busy';
                         showBusyIndicator(isBusy);
                     }, 500);
                 });
@@ -62,8 +62,7 @@ var Services = require('jupyter-js-services');
             })
             .catch(function(e) {
                 showBusyIndicator(false);
-                console.error('failed to create kernel', e);
-                throw e;
+                throw new Error('Failed to create kernel');
             });
     }
 

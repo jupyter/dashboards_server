@@ -64,7 +64,7 @@ if (Element && !Element.prototype.matches) {
         var widgetsReady = _initDeclWidgets();
 
         // ensure client-side widgets are ready before executing code
-        widgetsReady.then(function() {
+        return widgetsReady.then(function() {
             // setup and execute code cells
             _getCodeCells().each(function() {
                 var $cell = $(this);
@@ -103,12 +103,9 @@ if (Element && !Element.prototype.matches) {
                 // widget *subarea* with its output areas and DOM container
                 widgetManager.trackPending(kernelFuture, $widgetSubArea.get(0), model);
             });
-        })
-        .catch(function(err) {
-            console.error(err);
-            ErrorIndicator.show();
         });
-    }).catch(function(e) {
+    }).catch(function(err) {
+        console.error(err);
         ErrorIndicator.show();
     });
 
