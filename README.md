@@ -42,7 +42,7 @@ The following libraries are known to work with the dashboard server:
 
 ## Install it
 
-You can install the dashboard server using `npm`.
+Install Node 5.x and npm 3.5.x. Then install the dashboard server using `npm`.
 
 ```
 npm install -g jupyter-dashboards-server
