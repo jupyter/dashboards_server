@@ -78,7 +78,7 @@ This workflow requires multiple components working in concert.
 
 ![Minimal dashboard app deployment diagram](etc/simple_deploy.png)
 
-To bring all of these pieces together, you can start with the [recipes in the jupyter-incubator/dashboards_setup repo](https://github.com/jupyter-incubator/dashboards-setup). (We'll gladly take PRs that reduce the complexity of getting everything set up!)
+To bring all of these pieces together, you can start with the [recipes in the jupyter-incubator/dashboards_setup repo](https://github.com/jupyter-incubator/dashboards_setup). (We'll gladly take PRs that reduce the complexity of getting everything set up!)
 
 Alternatively, you can clone this git repository and build the Docker images we use for development in order to run the demos in `etc/notebooks`. After setting up Docker (e.g. using [docker-machine](https://docs.docker.com/machine/get-started/)), run the following and then visit `http://<your docker host ip>:3000`.
 
