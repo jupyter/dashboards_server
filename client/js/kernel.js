@@ -18,6 +18,14 @@ var Services = require('jupyter-js-services');
 
     var _kernel;
 
+    function showBusyIndicator(isBusy) {
+        $('.busy-indicator')
+            .toggleClass('show', isBusy)
+            // Prevent progress animation when hidden by removing 'active' class.
+            .find('.progress-bar')
+                .toggleClass('active', isBusy);
+    }
+
     function _startKernel(kernelname) {
         var loc = window.location;
         var kernelUrl = loc.protocol + '//' + loc.host;
@@ -35,6 +43,9 @@ var Services = require('jupyter-js-services');
             }
         };
 
+        // Show busy while a kernel is starting since some kernels take time
+        showBusyIndicator(true);
+
         return Services.startNewKernel(kernelOptions).then(function(kernel) {
                 _kernel = kernel;
 
@@ -44,18 +55,14 @@ var Services = require('jupyter-js-services');
                     clearTimeout(debounced);
                     debounced = setTimeout(function() {
                         var isBusy = status === 'busy';
-                        $('.busy-indicator')
-                            .toggleClass('show', isBusy)
-                            // Prevent progress animation when hidden by removing 'active' class.
-                            .find('.progress-bar')
-                                .toggleClass('active', isBusy);
+                        showBusyIndicator(isBusy);
                     }, 500);
                 });
                 return kernel;
             })
             .catch(function(e) {
-                console.error('failed to create kernel', e);
-                throw e;
+                showBusyIndicator(false);
+                throw new Error('Failed to create kernel: ' + e.message);
             });
     }
 
