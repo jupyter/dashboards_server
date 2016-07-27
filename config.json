@@ -68,7 +68,7 @@
     // Additional network settings for communicating with backend (e.g. proxy)
     //   - if backend requires basic auth, set 'user'/'password'
     //   - if backend requires additional headers on each request, set in 'requestHeaders'
-    //AJAX_SETTINGS: {
+    //PROXY_SETTINGS: {
     //    user: fakeuser
     //    password: fakepass
     //    requestHeaders: {
