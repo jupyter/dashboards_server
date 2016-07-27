@@ -62,7 +62,7 @@ var Services = require('jupyter-js-services');
             })
             .catch(function(e) {
                 showBusyIndicator(false);
-                throw new Error('Failed to create kernel');
+                throw new Error('Failed to create kernel: ' + e.message);
             });
     }
 
