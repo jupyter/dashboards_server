@@ -14,11 +14,12 @@ var upload = require('../app/notebook-upload');
 var router = require('express').Router();
 var urljoin = require('url-join');
 
+var PUBLIC_LINK_PATTERN = config.get('PUBLIC_LINK_PATTERN');
 var UPLOAD_MESSAGE = 'Notebook successfully uploaded';
 
 /* POST /notebooks/* - upload a dashboard notebook */
 router.post('/notebooks(/*)', authToken, upload, function(req, res) {
-    var publicLink = link(req);
+    var publicLink = link(req, PUBLIC_LINK_PATTERN);
     var resBody = {
         message: UPLOAD_MESSAGE,
         status: 201,
