@@ -146,16 +146,17 @@ if (Element && !Element.prototype.matches) {
             // NOTE: The HTMLRenderer doesn't work with current Safari versions -- inline JS scripts
             // don't load. This simple implementation works around it by using jQuery to add the
             // HTML to the DOM; this does run inline scripts.
-            {
-                mimetypes: ['text/html'],
-                render: function(mimetype, data) {
+            (function() {
+                var r = new renderers.HTMLRenderer();
+                r.render = function(mimetype, data) {
                     var widget = new PhWidget.Widget();
                     widget.onAfterAttach = function() {
                         $(widget.node).html(data);
                     };
                     return widget;
-                }
-            },
+                };
+                return r;
+            })(),
             new renderers.ImageRenderer(),
             new renderers.SVGRenderer(),
             new renderers.LatexRenderer(),
@@ -169,7 +170,7 @@ if (Element && !Element.prototype.matches) {
                 mimeMap[m] = t;
             });
         });
-        return new RenderMime(mimeMap, order);
+        return new RenderMime({ renderers: mimeMap, order: order });
     }
 
     // shim kernel object on notebook for backward compatibility
