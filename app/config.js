@@ -45,11 +45,15 @@ if(!nbDir) {
     nbDir = path.resolve(nbDir);
     // Create directory if it does not exist
     try {
-        fs.statSync(nbDir);
+        var st = fs.statSync(nbDir);
     } catch(e) {
         fs.mkdirSync(nbDir);
     }
-    config.set('NOTEBOOKS_DIR', nbDir);
+    if (st.isDirectory()) {
+        config.set('NOTEBOOKS_DIR', nbDir);
+    } else {
+        throw new Error("NOTEBOOKS_DIR is not a directory.");
+    }
 }
 debug('resolved NOTEBOOKS_DIR: ' + config.get('NOTEBOOKS_DIR'));
 
