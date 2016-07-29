@@ -50,13 +50,15 @@
     "nconf": "^0.8.2",
     "passport": "^0.3.2",
     "passport-local": "^1.0.0",
+    "prompt": "^1.0.0",
     "request": "^2.67.0",
     "requirejs": "^2.1.21",
     "rimraf": "^2.5.2",
     "serve-favicon": "^2.3.0",
     "tmp": "0.0.28",
     "url-join": "0.0.1",
-    "websocket": "^1.0.22"
+    "websocket": "^1.0.22",
+    "yargs": "^4.8.1"
   },
   "devDependencies": {
     "chai": "^3.4.1",

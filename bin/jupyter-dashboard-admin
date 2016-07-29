@@ -1,0 +1,222 @@
+#!/usr/bin/env node
+/**
+ * Copyright (c) Jupyter Development Team.
+ * Distributed under the terms of the Modified BSD License.
+ */
+
+/**
+ * Command-line script which allows clearing of the Dashboard Server cache.
+ */
+
+var fs = require('fs');
+var hjson = require('hjson');
+var nconf = require('nconf');
+var path = require('path');
+var prompt = require('prompt');
+var publicLink = require('../app/public-link');
+var request = require('request');
+var urljoin = require('url-join');
+var yargs = require('yargs');
+
+// Config defaults are in an HJSON file in the root of the source tree
+var defaultConfig = path.join(__dirname, '..', 'config.json');
+var config = nconf.file({ file: defaultConfig, format: hjson });
+
+// create default host from config options
+var defaultHost = publicLink({
+    host: config.get('IP'),
+    port: config.get('PORT')
+}, config.get('PUBLIC_LINK_PATTERN'));
+
+// prompt settings
+prompt.message = '';
+prompt.delimiter = '';
+prompt.start();
+var uploadPromptSettings = {
+    name: 'yesno',
+    message: 'Destination [{dest}] already exists. Do you want to overwrite?',
+    validator: /y[es]*|n[o]?/,
+    warning: 'Respond with yes or no',
+    default: 'no'
+};
+
+// common options shared by all commands
+var commonOpts = {
+    'host': {
+        default: defaultHost,
+        describe: 'dashboard server host and port',
+        global: true,
+        type: 'string'
+    },
+    'auth-token': {
+        describe: 'authorization token for admin privelages, defaults to reading from config file',
+        global: true,
+        type: 'string'
+    }
+};
+
+// command to clear the dashboard server cache
+var clear_cache_command = {
+    command: 'clear-cache [options]',
+    describe: 'Clear dashboard server cache',
+    handler: function(argv) {
+        var opts = {
+            url: urljoin(argv.host, '/_api/cache')
+        };
+
+        sendRequest('delete', argv, opts, 200)
+            .then(function() {
+                console.log('Cache reset');
+                process.exit(0);
+            })
+            .catch(function() {
+                console.error('ERROR: ', 'could not reset cache.', err || '');
+                process.exit(1);
+            });
+    }
+};
+
+// command to delete a dashboard
+var delete_command = {
+    command: 'delete [options] <path>',
+    describe: 'Delete dashboard from server',
+    builder: function(yargs) {
+        return yargs.epilogue('  path          path of dashboard to delete');
+    },
+    handler: function(argv) {
+        var opts = {
+            url: urljoin(argv.host, '/_api/notebooks', argv.path)
+        };
+
+        sendRequest('delete', argv, opts, 204)
+            .then(function() {
+                console.log('Dashboard deleted');
+                process.exit(0);
+            })
+            .catch(function() {
+                console.error('ERROR: ', 'could not delete dashboard.', err || '');
+                process.exit(1);
+            });
+    }
+};
+
+// command to upload a dashboard
+var upload_command = {
+    command: 'upload [options] <file> <pathname>',
+    describe: 'Upload a dashboard to the dashboard server',
+    builder: function(yargs) {
+        return yargs.option({
+                        overwrite: {
+                            default: false,
+                            describe: 'overwrite existing dashboard/dir/file at <pathname>',
+                            type: 'boolean'
+                        }
+                    })
+                    .epilogue('  file          path to a local notebook\n' +
+                              '  pathname      path & name of destination dashboard;\n' +
+                              '                should not include ".ipynb" extension');
+    },
+    handler: function(argv) {
+        // ensure that destination doesn't still include notebook extension
+        var dest = argv.pathname;
+        if (dest.endsWith('.ipynb')) {
+            yargs.showHelp();
+            console.error('ERROR: <pathname> should be the (optional) path and name of the destination dashboard -- it should not have an ".ipynb" extension.');
+            process.exit(1);
+        }
+        var destUrl = urljoin(argv.host, '/dashboards', dest);
+
+        // check is destination already exists
+        new Promise(function(resolve, reject) {
+            if (argv.overwrite) {
+                // user has already specified that he/she wishes to overwrite destination pathname
+                resolve();
+                return;
+            }
+
+            request.get(destUrl, function(err, res, body) {
+                if (err) {
+                    console.error('ERROR: failure contacting server: ' + err);
+                    process.exit(1);
+                }
+
+                if (res.statusCode === 404) {
+                    // nothing at destination, so we can safely upload
+                    resolve();
+                    return;
+                }
+
+                // ask user if he/she wants to overwrite destination
+                uploadPromptSettings.message = uploadPromptSettings.message.replace('{dest}', destUrl);
+                prompt.get(uploadPromptSettings, function(err, result) {
+                    if (err) {
+                        console.error('ERROR: unknown error: ' + err);
+                        process.exit(1);
+                    }
+                    if (result.yesno === 'y' || result.yesno === 'yes') {
+                        resolve();
+                    } else {
+                        reject();
+                    }
+                });
+            });
+        })
+        .then(function() {
+            // we are good to upload
+            var datapath = path.resolve(argv.file);
+            var opts = {
+                url: urljoin(argv.host, '/_api/notebooks', dest),
+                formData: {
+                    file: fs.createReadStream(datapath)
+                }
+            };
+
+            sendRequest('post', argv, opts, 201)
+            .then(function() {
+                console.log('Dashboard uploaded to: ' + destUrl);
+                process.exit(0);
+            })
+            .catch(function(err) {
+                console.error('ERROR:', 'could not upload dashboard.', err || '');
+                process.exit(1);
+            });
+        });
+    }
+};
+
+function sendRequest(method, argv, opts, expectedResponseCode) {
+    var authToken = argv['auth-token'] ||       // command line
+                    config.get('AUTH_TOKEN');   // config.json
+
+    opts.headers = opts.headers || {};
+
+    if (authToken) {
+        opts.headers.Authorization = 'token ' + authToken;
+    }
+
+    return new Promise(function(resolve, reject) {
+        request[method](opts, function(err, res, body) {
+            if (err || res.statusCode !== expectedResponseCode) {
+                if (!err) {
+                    try {
+                        var m = JSON.parse(body);
+                        err = m.message;
+                    } catch(e) {}
+                }
+                reject(err);
+            }
+            resolve();
+        });
+    });
+}
+
+var yargs = yargs.usage('Usage: $0 <command> [options]')
+     .options(commonOpts)
+     .command(clear_cache_command)
+     .command(delete_command)
+     .command(upload_command)
+     .demand(1)
+     .strict()
+     .help('h')
+     .alias('h', 'help');
+var argv = yargs.argv;
