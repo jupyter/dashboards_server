@@ -46,14 +46,23 @@ if(!nbDir) {
     // Create directory if it does not exist
     try {
         var st = fs.statSync(nbDir);
+        if (!st.isDirectory()) {
+            throw new Error('NOTEBOOKS_DIR "' + nbDir + '" is not a directory.');
+        }
     } catch(e) {
-        fs.mkdirSync(nbDir);
+        if (e.code === 'ENOENT') {
+            // dir doesn't exist; try to create it
+            try {
+                fs.mkdirSync(nbDir);
+            } catch(e) {
+                console.error('Failed to create required directory "' + nbDir + '": ' + e.message);
+                throw e;
+            }
+        } else {
+            throw e;
+        }
     }
-    if (st.isDirectory()) {
-        config.set('NOTEBOOKS_DIR', nbDir);
-    } else {
-        throw new Error("NOTEBOOKS_DIR is not a directory.");
-    }
+    config.set('NOTEBOOKS_DIR', nbDir);
 }
 debug('resolved NOTEBOOKS_DIR: ' + config.get('NOTEBOOKS_DIR'));
 
