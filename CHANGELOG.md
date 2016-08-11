@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0 (2016-08-11)
+
+* Add [REST API](https://github.com/jupyter-incubator/dashboards_server/wiki/Server-API) to allow sysadmin to delete dashboards and clear server cache
+* Add config options to allow passing auth & headers to proxy server
+* Allow running on read-only file system
+* Update Jupyter dependencies to use Jupyterlab
+* Fix taxi_demo_grid sample notebook and added sample Scala notebook using Declarative Widgets
+
 ## 0.7.0 (2016-06-17)
 
 * Switch to the [v1 dashboard layout specification](https://github.com/jupyter-incubator/dashboards/wiki/Dashboard-Metadata-and-Rendering)
