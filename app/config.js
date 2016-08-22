@@ -45,9 +45,20 @@ if(!nbDir) {
     nbDir = path.resolve(nbDir);
     // Create directory if it does not exist
     try {
-        fs.mkdirSync(nbDir);
+        var st = fs.statSync(nbDir);
+        if (!st.isDirectory()) {
+            throw new Error('NOTEBOOKS_DIR "' + nbDir + '" is not a directory.');
+        }
     } catch(e) {
-        if(e.code !== 'EEXIST') {
+        if (e.code === 'ENOENT') {
+            // dir doesn't exist; try to create it
+            try {
+                fs.mkdirSync(nbDir);
+            } catch(e) {
+                console.error('Failed to create required directory "' + nbDir + '": ' + e.message);
+                throw e;
+            }
+        } else {
             throw e;
         }
     }
