@@ -7,10 +7,11 @@
 
 var $ = require('jquery');
 var AnsiParser = require('ansi-parser');
-var Services = require('jupyter-js-services');
+var defaultSanitizer = require('jupyterlab/lib/sanitizer').defaultSanitizer;
 var OutputArea = require('jupyterlab/lib/notebook/output-area');
 var RenderMime = require('jupyterlab/lib/rendermime').RenderMime;
 var renderers = require('jupyterlab/lib/renderers');
+var Services = require('jupyter-js-services');
 var PhWidget = require('phosphor-widget');
 
 var Widgets = require('jupyter-js-widgets');
@@ -148,10 +149,17 @@ if (Element && !Element.prototype.matches) {
             // HTML to the DOM; this does run inline scripts.
             (function() {
                 var r = new renderers.HTMLRenderer();
-                r.render = function(mimetype, data) {
+                r.render = function(options) {
+                    var source = options.source;
+                    if (options.sanitizer) {
+                        source = options.sanitizer.sanitize(source);
+                    }
                     var widget = new PhWidget.Widget();
                     widget.onAfterAttach = function() {
-                        $(widget.node).html(data);
+                        $(widget.node).html(source);
+                        if (options.resolver) {
+                            renderers.resolveUrls(widget.node, options.resolver);
+                        }
                     };
                     return widget;
                 };
@@ -170,7 +178,11 @@ if (Element && !Element.prototype.matches) {
                 mimeMap[m] = t;
             });
         });
-        return new RenderMime({ renderers: mimeMap, order: order });
+        return new RenderMime({
+            renderers: mimeMap,
+            order: order,
+            sanitizer: defaultSanitizer
+        });
     }
 
     // shim kernel object on notebook for backward compatibility

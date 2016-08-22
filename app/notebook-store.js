@@ -82,6 +82,10 @@ function _uncache(nbpath) {
     delete _cache[nbpath];
 }
 
+function _resetCache() {
+    _cache = {};
+}
+
 module.exports = {
     /**
      * Loads, parses, and returns cells (minus code) of the notebook specified by nbpath
@@ -99,5 +103,9 @@ module.exports = {
      * Removes the specified notebook from the cache
      * @param {String} nbpath - path of notebook to remove from cache
      */
-    uncache: _uncache
+    uncache: _uncache,
+    /**
+     * Removes all entries from the cache
+     */
+    resetCache: _resetCache
 };
