@@ -45,11 +45,12 @@
     "http-proxy": "^1.12.0",
     "jupyter-js-services": "0.17.x",
     "jupyter-js-widgets": "1.2.x",
-    "jupyterlab": "0.1.3",
+    "jupyterlab": "0.2.0",
     "morgan": "^1.6.1",
     "nconf": "^0.8.2",
     "passport": "^0.3.2",
     "passport-local": "^1.0.0",
+    "phosphor": "^0.6.1",
     "prompt": "^1.0.0",
     "request": "^2.67.0",
     "requirejs": "^2.1.21",
@@ -63,7 +64,7 @@
   "devDependencies": {
     "chai": "^3.4.1",
     "css-loader": "^0.23.1",
-    "file-loader": "^0.8.5",
+    "file-loader": "^0.9.0",
     "gulp": "^3.9.0",
     "gulp-expect-file": "0.0.7",
     "gulp-less": "^3.0.1",
@@ -79,7 +80,7 @@
     "proxyquire": "^1.7.3",
     "sinon": "^1.17.2",
     "sinon-chai": "^2.8.0",
-    "style-loader": "^0.13.0",
+    "style-loader": "^0.13.1",
     "url-loader": "^0.5.7",
     "webpack": "^1.12.12"
   }
