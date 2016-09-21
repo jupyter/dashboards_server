@@ -27,6 +27,8 @@
     HTTPS_PORT: 3001
     // Optional HTTPS key
     HTTPS_KEY_FILE: null
+    // Optional Base URL to serve from
+    BASE_URL: "/"
     // Optional HTTPS certificate
     HTTPS_CERT_FILE: null
     // Cookie session secret (default: randomly generate)
@@ -44,6 +46,8 @@
     PASSWORD: null
     // "Presentation Mode" - Disable all UI Chrome, only render a dashboard
     PRESENTATION_MODE: false
+    // Where to prepend the public link pattern in the assets
+    ASSETS_USE_PUBLIC_LINK: false
 
     /////////////////////////
     // Kernel Gateway options

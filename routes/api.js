@@ -25,8 +25,13 @@ var kgKernelRetentionTime = config.get('KG_KERNEL_RETENTIONTIME');
 var wsProxy;
 var sessions = {};
 var disconnectedKernels = {};
+
+var base_url = config.get('BASE_URL');
+base_url_expr = base_url.replace("/", "\\/");
 var apiRe = new RegExp('^/api(/.*$)');
 var kernelIdRe = new RegExp('^.*/kernels/([^/]*)');
+var notebookPathRe = new RegExp('^' + base_url + '(?:dashboards(-plain)?)?(.*)$');
+
 
 // Create the proxy server instance. Don't bother to configure SSL here because
 // it's not exposed directly. Rather, it's part of a proxyRoute that is used
@@ -156,6 +161,7 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
 
     // Configure the proxy for websocket connections BEFORE the first websocket
     // request. Take the opportunity to do so here.
+    // console.log(req.connection.server);
     initWsProxy(req.connection.server);
 
     // Forward the user object in the session to the kernel gateway.
@@ -173,7 +179,7 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
         return res.status(500).end();
     }
 
-    var matches = notebookPathHeader.match(/^\/(?:dashboards(-plain)?)?(.*)$/);
+    var matches = notebookPathHeader.match(notebookPathRe);
     if (!matches) {
         error('Invalid notebook path header');
         return res.status(500).end();

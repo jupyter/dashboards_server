@@ -28,7 +28,7 @@ var Services = require('jupyter-js-services');
 
     function _startKernel(kernelname) {
         var loc = window.location;
-        var kernelUrl = loc.protocol + '//' + loc.host;
+        var kernelUrl = loc.protocol + '//' + loc.host + DASHBOARDS_BASE_URL;
         var clientId = _uuid();
         var kernelOptions = {
             baseUrl: kernelUrl,

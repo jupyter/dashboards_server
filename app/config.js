@@ -25,6 +25,25 @@ if(config.get('help')) {
     process.exit(0);
 }
 
+// BASE_URL modifiers
+var base_url = config.get('BASE_URL');
+if (!base_url) {
+   config.set('BASE_URL', '/');
+}
+else{
+   var lastChar = base_url.substr(-1);
+   if (lastChar !== '/') {
+      base_url = base_url + '/';
+      config.set('BASE_URL', base_url);
+   }
+}
+
+var publicLink = config.get('PUBLIC_LINK_PATTERN');
+if (base_url) {
+   publicLink = publicLink + base_url;
+}
+config.set('PUBLIC_LINK_PATTERN', publicLink);
+
 // Shortcut to set local auth strategy with a shared username/password.
 // Validation of username/password happens in the auth-local module since it's
 // specific to this strategy.

@@ -52,5 +52,8 @@
         {{/if}}
     })();
 </script>
-<script src="/components/require.js"></script>
-<script src="/components/dashboard.js"></script>
+<script>
+DASHBOARDS_BASE_URL = '{{ urlJoin '/' }}'
+</script>
+<script src="{{urlJoin 'components' 'require.js'}}"></script>
+<script src="{{urlJoin 'components' 'dashboard.js'}}"></script>

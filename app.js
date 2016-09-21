@@ -33,6 +33,8 @@ app.locals.ENV = env;
 app.locals.ENV_DEVELOPMENT = env == 'development';
 debug('Using environment ' + env);
 
+var base_url = config.get('BASE_URL');
+
 //////////////
 // VIEW ENGINE
 //////////////
@@ -50,14 +52,15 @@ app.set('view engine', 'handlebars');
 // MISC MIDDLEWARE
 //////////////////
 
-app.use(logger('dev'));
-app.use(cookieParser());
-app.use(flash());
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(favicon(__dirname + '/public/favicon.ico', { maxAge: 604800000})); // maxAge: 1 week
+app.use(base_url, logger('dev'));
+app.use(base_url, cookieParser());
+app.use(base_url, flash());
+
+app.use(base_url, express.static(path.join(__dirname, 'public')));
+app.use(base_url, favicon(__dirname + '/public/favicon.ico', { maxAge: 604800000})); // maxAge: 1 week
 
 // redirect trailing slash
-app.use(function(req, res, next) {
+app.use(base_url, function(req, res, next) {
    if(req.url.substr(-1) === '/' && req.url.length > 1) {
        res.redirect(301, req.url.slice(0, -1));
    } else {
@@ -66,7 +69,7 @@ app.use(function(req, res, next) {
 });
 
 // cookie session configuration
-app.use(cookieSession({
+app.use(base_url, cookieSession({
     secret: config.get('SESSION_SECRET_TOKEN'),
     cookie: {maxAge: 24*3600*1000} //cookie max age set to one day
 }));
@@ -75,7 +78,7 @@ app.use(cookieSession({
 // PUBLIC ROUTES (auth token, no login)
 ///////////////////////////////////////
 
-app.use('/_api', authRoutes);
+app.use(base_url + '_api', authRoutes);
 
 ////////
 // AUTHENTICATION
@@ -117,11 +120,11 @@ if(config.get('AUTH_STRATEGY')) {
 ///////////////////////
 
 if (config.get('PRESENTATION_MODE')) {
-    app.use('/', presentationRoutes);
+    app.use(base_url, presentationRoutes);
 } else {
-    app.use('/', routes);
+    app.use(base_url, routes);
 }
-app.use('/api', apiRoutes);
+app.use(base_url + 'api', apiRoutes);
 
 
 /////////////////
