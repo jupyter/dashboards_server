@@ -10,6 +10,10 @@ var urljoin = require('url-join');
 var reader = new commonmark.Parser();
 var writer = new commonmark.HtmlRenderer();
 
+var base_url = config.get('BASE_URL');
+var public_link_pattern = config.get('PUBLIC_LINK_PATTERN');
+var assets_use_public_link = config.get('ASSETS_USE_PUBLIC_LINK');
+
 function getViewProps(metadata, activeView) {
     var db = getObject(metadata, 'extensions.jupyter_dashboards');
     return db && db.views[activeView];
@@ -77,6 +81,20 @@ module.exports = {
     urlJoin: function() {
         // need varargs but Handlebars adds an arg to the end, so slice it off
         var args = Array.apply(null, arguments).slice(0, arguments.length-1);
+        args.splice(0, 0, base_url)
+        return urljoin.apply(null, args);
+    },
+
+    assetsUrlJoin: function() {
+        // need varargs but Handlebars adds an arg to the end, so slice it off
+        var args = Array.apply(null, arguments).slice(0, arguments.length-1);
+        if (assets_use_public_link) {
+            args.splice(0, 0, public_link_pattern);
+        }
+        else {
+            // Just prepend the BASE_URL
+            args.splice(0, 0, base_url);
+        }
         return urljoin.apply(null, args);
     },
 

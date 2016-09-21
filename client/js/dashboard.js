@@ -15,7 +15,7 @@ var PhWidget = require('phosphor-widget');
 
 var Widgets = require('jupyter-js-widgets');
 require('jquery-ui/themes/smoothness/jquery-ui.min.css');
-require("jupyter-js-widgets/css/widgets.min.css");
+require('jupyter-js-widgets/css/widgets.min.css');
 
 var WidgetManager = require('./widget-manager');
 var ErrorIndicator = require('./error-indicator');

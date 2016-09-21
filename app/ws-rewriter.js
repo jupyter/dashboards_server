@@ -5,6 +5,7 @@
 var debug = require('debug')('dashboard-proxy:server');
 var error = require('debug')('dashboard-proxy:server:error');
 var EventEmitter = require('events').EventEmitter;
+var config = require('../app/config');
 var nbstore = require('./notebook-store');
 var Promise = require('es6-promise').Promise;
 var urljoin = require('url-join');
@@ -12,6 +13,8 @@ var util = require('util');
 var WebSocketClient = require('websocket').client;
 var WebSocketConnection = require('websocket').connection;
 var WebSocketServer = require('websocket').server;
+
+var base_url = config.get('BASE_URL');
 
 // 5 MB, half of tornado's (kernel gateway's) max_buffer_size
 // 10 MB caused issues, see comment in tornado source code as to why (?)
@@ -108,7 +111,8 @@ WsRewriter.prototype._handleWsRequest = function(req) {
     });
 
     // kick off connection to kernel gateway WS
-    var url = urljoin(this._host, this._basePath, req.resourceURL.path).replace(/^http/, 'ws');
+    req_url_path = req.resourceURL.path.replace(base_url, "\/")
+    var url = urljoin(this._host, this._basePath, req_url_path).replace(/^http/, 'ws');
     wsclient.connect(url, null, null, this._headers, this._requestOptions);
 
     this.emit('request', req, servConn);
