@@ -13,7 +13,6 @@ var passport = require('passport');
 var ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
 var favicon = require('serve-favicon');
 var flash = require('connect-flash');
-var urljoin = require('url-join');
 
 var hbsHelpers = require('./app/handlebars-helpers');
 var config = require('./app/config');

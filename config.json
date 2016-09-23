@@ -12,7 +12,7 @@
     // Mode in which the dashboard server express environment runs
     NODE_ENV: development
     // Optional Prefix URL to serve from
-    PREFIX_URL: /PREFIX
+    //PREFIX_URL: /prefix
     // Base URL pattern for building public link for an uploaded notebook.
     // Supports placeholder strings (values come from request host header):
     //   {protocol} - request protocol (HTTP or HTTPS)
