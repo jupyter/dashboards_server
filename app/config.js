@@ -8,6 +8,7 @@ var path = require('path');
 var fs = require('fs');
 var crypto = require('crypto');
 var debug = require('debug')('dashboard-proxy:config');
+var urljoin = require('url-join');
 
 // Config defaults are in an HJSON file in the root of the source tree
 var defaultConfig = path.join(__dirname, '..', 'config.json');
@@ -24,6 +25,24 @@ if(config.get('help')) {
     console.log(text);
     process.exit(0);
 }
+
+// PREFIX_URL modifiers
+var prefix_url = config.get('PREFIX_URL');
+if (!prefix_url) {
+   config.set('PREFIX_URL', '/');
+} else {
+   var lastChar = prefix_url.substr(-1);
+   if (lastChar !== '/') {
+      prefix_url = prefix_url + '/';
+      config.set('PREFIX_URL', prefix_url);
+   }
+}
+
+var publicLink = config.get('PUBLIC_LINK_PATTERN');
+if (prefix_url) {
+   publicLink = urljoin(publicLink , prefix_url);
+}
+config.set('PUBLIC_LINK_PATTERN', publicLink);
 
 // Shortcut to set local auth strategy with a shared username/password.
 // Validation of username/password happens in the auth-local module since it's

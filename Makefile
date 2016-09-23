@@ -62,16 +62,16 @@ kill: ## Kill all running docker containers
 dev-install: ## Install all dev deps on localhost
 	npm install --quiet
 
-dev: KG_PUBLIC_IP?=$$(docker-machine ip $$(docker-machine active))
+dev: KG_PUBLIC_IP?=localhost
 dev: kernel-gateway-container ## Run dashobard server on localhost
 	NODE_ENV='development' KG_BASE_URL=$(KG_BASE_URL) KERNEL_GATEWAY_URL=http://$(KG_PUBLIC_IP):$(KG_PUBLIC_PORT) gulp
 
-dev-logging: KG_PUBLIC_IP?=$$(docker-machine ip $$(docker-machine active))
+dev-logging: KG_PUBLIC_IP?=localhost
 dev-logging: kernel-gateway-container ## Run dashboard server with debug logging on localhost
 	NODE_ENV='development' gulp build
 	KERNEL_GATEWAY_URL=http://$(KG_PUBLIC_IP):$(KG_PUBLIC_PORT) npm run start-logging
 
-dev-debug: KG_PUBLIC_IP?=$$(docker-machine ip $$(docker-machine active))
+dev-debug: KG_PUBLIC_IP?=localhost
 dev-debug: kernel-gateway-container ## Run dashboard server with node debugger on localhost
 	NODE_ENV='development' KG_BASE_URL=$(KG_BASE_URL) KERNEL_GATEWAY_URL=http://$(KG_PUBLIC_IP):$(KG_PUBLIC_PORT) gulp debug
 

@@ -21,6 +21,8 @@ var DB_INDEX_DIR = config.get('DB_INDEX_DIR');
 var DB_EXT = config.get('DB_FILE_EXT');
 var NO_LAYOUT = 'no-layout';
 
+var prefixUrl = config.get('PREFIX_URL');
+
 function _renderList(req, res, next) {
     var listPath = req.params[0] || '';
     nbstore.list(listPath).then(
@@ -64,7 +66,8 @@ function _renderList(req, res, next) {
                         username: req.session.username,
                         items: values,
                         title: 'Dashboards',
-                        url: req.params[0]
+                        url: req.params[0],
+                        prefixUrl: prefixUrl
                     });
                 },
                 function failure(err) {
@@ -100,6 +103,7 @@ function _renderDashboard(req, res, next, opts) {
                 hideChrome: hideChrome,
                 supportsDeclWidgets: stats.supportsDeclWidgets,
                 activeView: activeView,
+                prefixUrl: prefixUrl,
                 // need to set document.baseURI with trailing slash
                 // (i.e. "/dashboards/nb/") so relative paths load correctly
                 baseURI: urljoin(req.originalUrl, '/')

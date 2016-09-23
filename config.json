@@ -11,6 +11,8 @@
 
     // Mode in which the dashboard server express environment runs
     NODE_ENV: development
+    // Optional Prefix URL to serve from
+    PREFIX_URL: /PREFIX
     // Base URL pattern for building public link for an uploaded notebook.
     // Supports placeholder strings (values come from request host header):
     //   {protocol} - request protocol (HTTP or HTTPS)
@@ -50,7 +52,7 @@
     /////////////////////////
 
     // URL of the kernel gateway / jupyter notebook server to contact for kernels
-    KERNEL_GATEWAY_URL: http://192.168.99.100:8888
+    KERNEL_GATEWAY_URL: http://localhost:8888
     // Authorization token required for kernel gateway requests
     KG_AUTH_TOKEN: null
     // Kernel gateway base URL (gets appended to KERNEL_GATEWAY_URL)

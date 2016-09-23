@@ -16,6 +16,7 @@ var WsRewriter = require('../app/ws-rewriter');
 
 var nbstore = require('../app/notebook-store');
 
+var prefixUrl = config.get('PREFIX_URL');
 var proxySettings = config.get('PROXY_SETTINGS') || {};
 var kgUrl = config.get('KERNEL_GATEWAY_URL');
 var kgAuthToken = config.get('KG_AUTH_TOKEN');
@@ -25,8 +26,9 @@ var kgKernelRetentionTime = config.get('KG_KERNEL_RETENTIONTIME');
 var wsProxy;
 var sessions = {};
 var disconnectedKernels = {};
-var apiRe = new RegExp('^/api(/.*$)');
 var kernelIdRe = new RegExp('^.*/kernels/([^/]*)');
+// `prefixUrl` is guaranteed to end in `/`
+var notebookPathRe = new RegExp('^' + (prefixUrl || '/') + '(?:dashboards(-plain)?)?(.*)$');
 
 // Create the proxy server instance. Don't bother to configure SSL here because
 // it's not exposed directly. Rather, it's part of a proxyRoute that is used
@@ -173,7 +175,7 @@ router.post('/kernels', bodyParser.json({ type: 'text/plain' }), function(req, r
         return res.status(500).end();
     }
 
-    var matches = notebookPathHeader.match(/^\/(?:dashboards(-plain)?)?(.*)$/);
+    var matches = notebookPathHeader.match(notebookPathRe);
     if (!matches) {
         error('Invalid notebook path header');
         return res.status(500).end();

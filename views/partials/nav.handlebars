@@ -6,7 +6,7 @@
 <nav class="navbar navbar-default">
     <div class="container">
         <div class="navbar-left-container">
-            <a class="navbar-brand" href="/" title="Home">Jupyter Dashboard</a>
+            <a class="navbar-brand" href="{{prefixUrl}}" title="Home">Jupyter Dashboard</a>
         </div>
 
         <div class="navbar-right-container">
@@ -20,7 +20,7 @@
             </span>
 
             {{#if user}}
-                <form class="navbar-form navbar-right" action="/logout" method="post">
+                <form class="navbar-form navbar-right" action="{{urlJoin prefixUrl '/logout'}}" method="post">
                     <button type="submit" class="navbar-btn logout-btn btn btn-link">Log out, {{user.username}}</button>
                 </form>
             {{/if}}

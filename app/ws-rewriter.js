@@ -2,6 +2,7 @@
  * Copyright (c) Jupyter Development Team.
  * Distributed under the terms of the Modified BSD License.
  */
+var config = require('../app/config');
 var debug = require('debug')('dashboard-proxy:server');
 var error = require('debug')('dashboard-proxy:server:error');
 var EventEmitter = require('events').EventEmitter;
@@ -12,6 +13,8 @@ var util = require('util');
 var WebSocketClient = require('websocket').client;
 var WebSocketConnection = require('websocket').connection;
 var WebSocketServer = require('websocket').server;
+
+var prefixUrl = config.get('PREFIX_URL');
 
 // 5 MB, half of tornado's (kernel gateway's) max_buffer_size
 // 10 MB caused issues, see comment in tornado source code as to why (?)
@@ -108,7 +111,8 @@ WsRewriter.prototype._handleWsRequest = function(req) {
     });
 
     // kick off connection to kernel gateway WS
-    var url = urljoin(this._host, this._basePath, req.resourceURL.path).replace(/^http/, 'ws');
+    var reqPath = req.resourceURL.path.replace(prefixUrl, '/'); // remove dashboard server's prefix URL
+    var url = urljoin(this._host, this._basePath, reqPath).replace(/^http/, 'ws');
     wsclient.connect(url, null, null, this._headers, this._requestOptions);
 
     this.emit('request', req, servConn);

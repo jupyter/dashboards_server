@@ -13,6 +13,7 @@ var passport = require('passport');
 var ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
 var favicon = require('serve-favicon');
 var flash = require('connect-flash');
+var urljoin = require('url-join');
 
 var hbsHelpers = require('./app/handlebars-helpers');
 var config = require('./app/config');
@@ -23,6 +24,10 @@ var apiRoutes = require('./routes/api');
 var presentationRoutes = require('./routes/presentation');
 
 var app = express();
+var prefixRouter = express.Router();
+
+var prefixUrl = config.get('PREFIX_URL');
+app.use(prefixUrl, prefixRouter);
 
 //////////////
 // ENVIRONMENT
@@ -50,14 +55,14 @@ app.set('view engine', 'handlebars');
 // MISC MIDDLEWARE
 //////////////////
 
-app.use(logger('dev'));
-app.use(cookieParser());
-app.use(flash());
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(favicon(__dirname + '/public/favicon.ico', { maxAge: 604800000})); // maxAge: 1 week
+prefixRouter.use(logger('dev'));
+prefixRouter.use(cookieParser());
+prefixRouter.use(flash());
+prefixRouter.use(express.static(path.join(__dirname, 'public')));
+prefixRouter.use(favicon(__dirname + '/public/favicon.ico', { maxAge: 604800000})); // maxAge: 1 week
 
 // redirect trailing slash
-app.use(function(req, res, next) {
+prefixRouter.use(function(req, res, next) {
    if(req.url.substr(-1) === '/' && req.url.length > 1) {
        res.redirect(301, req.url.slice(0, -1));
    } else {
@@ -66,7 +71,7 @@ app.use(function(req, res, next) {
 });
 
 // cookie session configuration
-app.use(cookieSession({
+prefixRouter.use(cookieSession({
     secret: config.get('SESSION_SECRET_TOKEN'),
     cookie: {maxAge: 24*3600*1000} //cookie max age set to one day
 }));
@@ -75,7 +80,7 @@ app.use(cookieSession({
 // PUBLIC ROUTES (auth token, no login)
 ///////////////////////////////////////
 
-app.use('/_api', authRoutes);
+prefixRouter.use('/_api', authRoutes);
 
 ////////
 // AUTHENTICATION
@@ -83,8 +88,8 @@ app.use('/_api', authRoutes);
 
 if(config.get('AUTH_STRATEGY')) {
     // Initialize passport and restore auth state from session
-    app.use(passport.initialize());
-    app.use(passport.session());
+    prefixRouter.use(passport.initialize());
+    prefixRouter.use(passport.session());
 
     // Load auth strategy based on config
     var strategy = require(config.get('AUTH_STRATEGY'))(app);
@@ -99,14 +104,14 @@ if(config.get('AUTH_STRATEGY')) {
     });
 
     // Destroy session on any attempt to logout
-    app.all('/logout', function(req, res) {
+    prefixRouter.all('/logout', function(req, res) {
         req.session = null;
         res.redirect('/');
     });
     // Ensure login on all following routes
-    app.use(ensureLoggedIn());
+    prefixRouter.use(ensureLoggedIn());
     // Pass passport user object to all views
-    app.use(function(req, res, next) {
+    prefixRouter.use(function(req, res, next) {
         res.locals.user = req.user;
         next();
     });
@@ -117,11 +122,11 @@ if(config.get('AUTH_STRATEGY')) {
 ///////////////////////
 
 if (config.get('PRESENTATION_MODE')) {
-    app.use('/', presentationRoutes);
+    prefixRouter.use('/', presentationRoutes);
 } else {
-    app.use('/', routes);
+    prefixRouter.use('/', routes);
 }
-app.use('/api', apiRoutes);
+prefixRouter.use('/api', apiRoutes);
 
 
 /////////////////
@@ -129,14 +134,14 @@ app.use('/api', apiRoutes);
 /////////////////
 
 // forward 404 to error handler
-app.use(function(req, res, next) {
+prefixRouter.use(function(req, res, next) {
     var err = new Error('Not Found');
     err.status = 404;
     next(err);
 });
 
 // general error handling
-app.use(function(err, req, res, next) {
+prefixRouter.use(function(err, req, res, next) {
     var stacktrace = '';
     var status = err.status || 500;
     if (app.get('env') === 'development') {

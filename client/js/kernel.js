@@ -7,6 +7,9 @@
 
 var $ = require('jquery');
 var Services = require('jupyter-js-services');
+var urljoin = require('url-join');
+
+var prefixUrl = window.jupyter_dashboard.Config.prefixUrl || '';
 
     var _outputAreaHandledMsgs = {
         'clear_output': 1,
@@ -28,7 +31,7 @@ var Services = require('jupyter-js-services');
 
     function _startKernel(kernelname) {
         var loc = window.location;
-        var kernelUrl = loc.protocol + '//' + loc.host;
+        var kernelUrl = urljoin(loc.protocol + '//' + loc.host, prefixUrl);
         var clientId = _uuid();
         var kernelOptions = {
             baseUrl: kernelUrl,
