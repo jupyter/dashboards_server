@@ -14,8 +14,6 @@ var WebSocketClient = require('websocket').client;
 var WebSocketConnection = require('websocket').connection;
 var WebSocketServer = require('websocket').server;
 
-var prefixUrl = config.get('PREFIX_URL');
-
 // 5 MB, half of tornado's (kernel gateway's) max_buffer_size
 // 10 MB caused issues, see comment in tornado source code as to why (?)
 var FRAGMENTATION_THRESHOLD = 0x3200000;
@@ -46,6 +44,11 @@ function WsRewriter(args) {
     this._headers = args.headers;
     this._requestOptions = args.requestOptions;
     this._sessionToNbPath = args.sessionToNbPath;
+
+    var baseUrl = config.get('BASE_URL');
+    if (baseUrl) {
+        this._reBaseUrl = new RegExp('^' + baseUrl);
+    }
 
     // create a websocket server which will listen for requests coming from the client/browser
     var wsserver = new WebSocketServer({
@@ -111,7 +114,10 @@ WsRewriter.prototype._handleWsRequest = function(req) {
     });
 
     // kick off connection to kernel gateway WS
-    var reqPath = req.resourceURL.path.replace(prefixUrl, '/'); // remove dashboard server's prefix URL
+
+    var reqPath = this._reBaseUrl ?
+            req.resourceURL.path.replace(this._reBaseUrl, '/') : // remove dashboard server's base URL
+            req.resourceURL.path;
     var url = urljoin(this._host, this._basePath, reqPath).replace(/^http/, 'ws');
     wsclient.connect(url, null, null, this._headers, this._requestOptions);
 

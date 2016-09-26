@@ -13,6 +13,7 @@ var passport = require('passport');
 var ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
 var favicon = require('serve-favicon');
 var flash = require('connect-flash');
+var urljoin = require('url-join');
 
 var hbsHelpers = require('./app/handlebars-helpers');
 var config = require('./app/config');
@@ -23,10 +24,16 @@ var apiRoutes = require('./routes/api');
 var presentationRoutes = require('./routes/presentation');
 
 var app = express();
-var prefixRouter = express.Router();
 
-var prefixUrl = config.get('PREFIX_URL');
-app.use(prefixUrl, prefixRouter);
+// check if we're configured to server under prefixed path
+var dbserver = app;
+var baseUrl = config.get('BASE_URL');
+var removePrefix = config.get('REMOVE_PREFIX');
+if (baseUrl && !removePrefix) {
+    debug('Serving paths with base path ' + baseUrl);
+    dbserver = express.Router();
+    app.use(baseUrl, dbserver);
+}
 
 //////////////
 // ENVIRONMENT
@@ -36,6 +43,12 @@ var env = config.get('NODE_ENV') || 'development';
 app.locals.ENV = env;
 app.locals.ENV_DEVELOPMENT = env == 'development';
 debug('Using environment ' + env);
+
+/////////
+// PROXY
+/////////
+
+app.set('trust proxy', config.get('TRUST_PROXY'));
 
 //////////////
 // VIEW ENGINE
@@ -54,23 +67,26 @@ app.set('view engine', 'handlebars');
 // MISC MIDDLEWARE
 //////////////////
 
-prefixRouter.use(logger('dev'));
-prefixRouter.use(cookieParser());
-prefixRouter.use(flash());
-prefixRouter.use(express.static(path.join(__dirname, 'public')));
-prefixRouter.use(favicon(__dirname + '/public/favicon.ico', { maxAge: 604800000})); // maxAge: 1 week
+dbserver.use(logger('dev'));
+dbserver.use(cookieParser());
+dbserver.use(flash());
+dbserver.use(express.static(path.join(__dirname, 'public')));
+dbserver.use(favicon(__dirname + '/public/favicon.ico', { maxAge: 604800000})); // maxAge: 1 week
 
 // redirect trailing slash
-prefixRouter.use(function(req, res, next) {
-   if(req.url.substr(-1) === '/' && req.url.length > 1) {
-       res.redirect(301, req.url.slice(0, -1));
-   } else {
-       next();
-   }
+dbserver.use(function(req, res, next) {
+    var url = req.url;
+    if (url.substr(-1) === '/' && url.length > 1) {
+        // baseUrl + url is necessary to accomodate when server running from prefixed URL
+        // (see BASE_URL in config.json)
+        res.redirect(301, urljoin(req.baseUrl, url.slice(0, -1)));
+    } else {
+        next();
+    }
 });
 
 // cookie session configuration
-prefixRouter.use(cookieSession({
+dbserver.use(cookieSession({
     secret: config.get('SESSION_SECRET_TOKEN'),
     cookie: {maxAge: 24*3600*1000} //cookie max age set to one day
 }));
@@ -79,7 +95,7 @@ prefixRouter.use(cookieSession({
 // PUBLIC ROUTES (auth token, no login)
 ///////////////////////////////////////
 
-prefixRouter.use('/_api', authRoutes);
+dbserver.use('/_api', authRoutes);
 
 ////////
 // AUTHENTICATION
@@ -87,8 +103,8 @@ prefixRouter.use('/_api', authRoutes);
 
 if(config.get('AUTH_STRATEGY')) {
     // Initialize passport and restore auth state from session
-    prefixRouter.use(passport.initialize());
-    prefixRouter.use(passport.session());
+    dbserver.use(passport.initialize());
+    dbserver.use(passport.session());
 
     // Load auth strategy based on config
     var strategy = require(config.get('AUTH_STRATEGY'))(app);
@@ -103,14 +119,14 @@ if(config.get('AUTH_STRATEGY')) {
     });
 
     // Destroy session on any attempt to logout
-    prefixRouter.all('/logout', function(req, res) {
+    dbserver.all('/logout', function(req, res) {
         req.session = null;
         res.redirect('/');
     });
     // Ensure login on all following routes
-    prefixRouter.use(ensureLoggedIn());
+    dbserver.use(ensureLoggedIn());
     // Pass passport user object to all views
-    prefixRouter.use(function(req, res, next) {
+    dbserver.use(function(req, res, next) {
         res.locals.user = req.user;
         next();
     });
@@ -121,11 +137,11 @@ if(config.get('AUTH_STRATEGY')) {
 ///////////////////////
 
 if (config.get('PRESENTATION_MODE')) {
-    prefixRouter.use('/', presentationRoutes);
+    dbserver.use('/', presentationRoutes);
 } else {
-    prefixRouter.use('/', routes);
+    dbserver.use('/', routes);
 }
-prefixRouter.use('/api', apiRoutes);
+dbserver.use('/api', apiRoutes);
 
 
 /////////////////
@@ -133,14 +149,14 @@ prefixRouter.use('/api', apiRoutes);
 /////////////////
 
 // forward 404 to error handler
-prefixRouter.use(function(req, res, next) {
+dbserver.use(function(req, res, next) {
     var err = new Error('Not Found');
     err.status = 404;
     next(err);
 });
 
 // general error handling
-prefixRouter.use(function(err, req, res, next) {
+dbserver.use(function(err, req, res, next) {
     var stacktrace = '';
     var status = err.status || 500;
     if (app.get('env') === 'development') {

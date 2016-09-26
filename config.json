@@ -11,39 +11,64 @@
 
     // Mode in which the dashboard server express environment runs
     NODE_ENV: development
-    // Optional Prefix URL to serve from
-    //PREFIX_URL: /prefix
+
+    // Interface on which the dashboard server listens
+    IP: 127.0.0.1
+
+    // Port on which the dashboard server listens
+    PORT: 3000
+
+    // Base path under which all paths are served. If running behind a reverse proxy which strips
+    // the base URL before passing requests to this server, then wrap value in '[]'.
+    // For example, if BASE_URL = "/foo", then
+    //      proxied req "http://host/foo/bar" -> dashboard server request "/foo/bar"
+    // If BASE_URL = "[/foo]", then
+    //      proxied req "http://host/foo/bar" -> dashboard server request "/bar"
+    // Note that in the 2nd case, client-side files will still need to contain the BASE_URL.
+    BASE_URL: ""
+
+    // Set when running this server behind a proxy. Passed directly to Express. Possible values
+    // can be found here: https://expressjs.com/en/guide/behind-proxies.html
+    TRUST_PROXY: true
+
     // Base URL pattern for building public link for an uploaded notebook.
     // Supports placeholder strings (values come from request host header):
     //   {protocol} - request protocol (HTTP or HTTPS)
     //   {host} - value of the host header, (hostname[:port])
     //   {port} - port extracted from the host header
+    //   {baseUrl} - base URL for paths, as defined by BASE_URL
     // Examples using placeholders: {protocol}://{host}
     //                              {protocol}://192.168.99.100:{port}
-    PUBLIC_LINK_PATTERN: http://127.0.0.1:3000
-    // Interface on which the dashboard server listens
-    IP: 127.0.0.1
-    // Port on which the dashboard server listens
-    PORT: 3000
+    //                              {protocol}://192.168.99.100:{port}/{baseUrl}
+    PUBLIC_LINK_PATTERN: http://127.0.0.1:3000/{baseUrl}
+
     // HTTPS_PORT, HTTPS Port on which the dashboard server listens
     HTTPS_PORT: 3001
+
     // Optional HTTPS key
     HTTPS_KEY_FILE: null
+
     // Optional HTTPS certificate
     HTTPS_CERT_FILE: null
+
     // Cookie session secret (default: randomly generate)
     SESSION_SECRET_TOKEN: null
+
     // Directory that contains notebooks to serve as dashboards relative to
     // the current working directory. Defaults to <package-dir>/data if left
     // unset.
     NOTEBOOKS_DIR: ""
+
     // Secret for authentication tokens
     AUTH_TOKEN: null
+
     // User auth strategy (default: no auth)
     AUTH_STRATEGY: null
+
     // Username/password for ./app/auth-local strategy
     USERNAME: null
     PASSWORD: null
+
     // "Presentation Mode" - Disable all UI Chrome, only render a dashboard
     PRESENTATION_MODE: false
 
@@ -53,12 +78,16 @@
 
     // URL of the kernel gateway / jupyter notebook server to contact for kernels
     KERNEL_GATEWAY_URL: http://localhost:8888
+
     // Authorization token required for kernel gateway requests
     KG_AUTH_TOKEN: null
+
     // Kernel gateway base URL (gets appended to KERNEL_GATEWAY_URL)
     KG_BASE_URL: ""
+
     // Delay kernel cleanup for this many milliseconds to allow a client to reconnect
     KG_KERNEL_RETENTIONTIME: 30000
+
     // Forward auth strategy user profile to every kernel launched for every dashboard visited on the server
     // e.g., so the kernel can re-use an auth token to access an external service
     KG_FORWARD_USER_AUTH: false

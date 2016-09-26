@@ -7,6 +7,7 @@ var config = require('../app/config');
 var debug = require('debug')('dashboard-proxy:server');
 var error = require('debug')('dashboard-proxy:server:error');
 var httpProxy = require('http-proxy');
+var nbstore = require('../app/notebook-store');
 var request = require('request');
 var router = require('express').Router();
 var url = require('url');
@@ -14,9 +15,7 @@ var urljoin = require('url-join');
 var urlToDashboard = require('../app/url-to-dashboard');
 var WsRewriter = require('../app/ws-rewriter');
 
-var nbstore = require('../app/notebook-store');
-
-var prefixUrl = config.get('PREFIX_URL');
+var baseUrl = config.get('BASE_URL');
 var proxySettings = config.get('PROXY_SETTINGS') || {};
 var kgUrl = config.get('KERNEL_GATEWAY_URL');
 var kgAuthToken = config.get('KG_AUTH_TOKEN');
@@ -27,8 +26,13 @@ var wsProxy;
 var sessions = {};
 var disconnectedKernels = {};
 var kernelIdRe = new RegExp('^.*/kernels/([^/]*)');
-// `prefixUrl` is guaranteed to end in `/`
-var notebookPathRe = new RegExp('^' + (prefixUrl || '/') + '(?:dashboards(-plain)?)?(.*)$');
+var notebookPathRe;
+if (baseUrl) {
+    // `baseUrl` is guaranteed to end in `/`
+    notebookPathRe = new RegExp('^' + (baseUrl || '/') + '(?:dashboards(-plain)?)?(/.*)$');
+} else {
+    notebookPathRe = new RegExp('^/(?:dashboards(-plain)?)?(.*)$');
+}
 
 // Create the proxy server instance. Don't bother to configure SSL here because
 // it's not exposed directly. Rather, it's part of a proxyRoute that is used

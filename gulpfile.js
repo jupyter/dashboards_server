@@ -11,13 +11,14 @@ var gulp = require('gulp'),
     gutil = require('gulp-util'),
     merge = require('merge-stream'),
     expect = require('gulp-expect-file'),
-    config = require('./app/config');
+    config = require('./app/config'),
+    urljoin = require('url-join');
 
 // default to 'production' if not set
 var NODE_ENV = process.env.NODE_ENV && process.env.NODE_ENV.toLowerCase() === 'development' ?
         'development' : 'production';
 
-var prefixUrl = config.get('PREFIX_URL');
+var baseUrl = config.get('BASE_URL') || '/';
 
 var webpackStatsOptions = {
     colors: gutil.colors.supportsColor,
@@ -62,7 +63,7 @@ var webpackConfig = {
     output: {
         filename: '[name].js',
         path: './public/components',
-        publicPath: '/components/'
+        publicPath: urljoin(baseUrl, '/components/')
     }
 };
 
@@ -124,7 +125,7 @@ gulp.task('less', function () {
         .pipe(plumber())
         .pipe(less({
             globalVars: {
-                PREFIX_URL: '"' + prefixUrl + '"'
+                BASE_URL: '"' + baseUrl + '"'
             }
         }))
         .pipe(gulp.dest('./public/css'));

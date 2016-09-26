@@ -39,8 +39,8 @@
     (function() {
         var db = window.jupyter_dashboard = window.jupyter_dashboard || {};
         var Config = db.Config = db.Config || {};
-        {{#if (config PREFIX_URL)}}
-            Config.prefixUrl = '{{{config "PREFIX_URL"}}}';
+        {{#if (config BASE_URL)}}
+            Config.baseUrl = '{{{config "BASE_URL"}}}';
         {{/if}}
         Config.kernelname = "{{notebook.metadata.kernelspec.name}}";
         // values from notebook metadata
@@ -55,5 +55,5 @@
         {{/if}}
     })();
 </script>
-<script src="{{urlJoin prefixUrl '/components/require.js'}}"></script>
-<script src="{{urlJoin prefixUrl '/components/dashboard.js'}}"></script>
+<script src="{{urlJoin baseUrl '/components/require.js'}}"></script>
+<script src="{{urlJoin baseUrl '/components/dashboard.js'}}"></script>

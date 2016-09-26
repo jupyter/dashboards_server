@@ -8,13 +8,13 @@
         <li class="list-header list-group-item">
             <label class="list-header-label">Dashboards</label>
             <ul class="breadcrumb">
-                <li><a href="{{urlJoin prefixUrl '/dashboards'}}"><i class="fa fa-home"></i></a></li>
+                <li><a href="{{urlJoin baseUrl '/dashboards'}}"><i class="fa fa-home"></i></a></li>
                 {{#each (basename url)}}
                     <li>
                         {{#if @last}}
                             <label class="breadcrumb-end">{{urlBasename this}}</label>
                         {{else}}
-                            <a class="breadcrumb-link" href="{{urlJoin prefixUrl '/dashboards' this}}">{{urlBasename this}}</a>
+                            <a class="breadcrumb-link" href="{{urlJoin baseUrl '/dashboards' this}}">{{urlBasename this}}</a>
                         {{/if}}
                     </li>
                 {{/each}}
@@ -23,7 +23,7 @@
         {{#each items}}
             <li class="list-group-item">
                 <i class="list-item-icon {{fsIcon type}}"></i>
-                <a href="{{urlJoin ../prefixUrl '/dashboards' path}}">{{urlBasename path}}</a>
+                <a href="{{urlJoin ../baseUrl '/dashboards' path}}">{{urlBasename path}}</a>
             </li>
         {{/each}}
     </ul>

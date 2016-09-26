@@ -9,7 +9,7 @@ var $ = require('jquery');
 var Services = require('jupyter-js-services');
 var urljoin = require('url-join');
 
-var prefixUrl = window.jupyter_dashboard.Config.prefixUrl || '';
+var baseUrl = window.jupyter_dashboard.Config.baseUrl || '';
 
     var _outputAreaHandledMsgs = {
         'clear_output': 1,
@@ -31,7 +31,7 @@ var prefixUrl = window.jupyter_dashboard.Config.prefixUrl || '';
 
     function _startKernel(kernelname) {
         var loc = window.location;
-        var kernelUrl = urljoin(loc.protocol + '//' + loc.host, prefixUrl);
+        var kernelUrl = urljoin(loc.protocol + '//' + loc.host, baseUrl);
         var clientId = _uuid();
         var kernelOptions = {
             baseUrl: kernelUrl,

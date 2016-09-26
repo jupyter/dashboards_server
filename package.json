@@ -18,7 +18,8 @@
   "scripts": {
     "build": "gulp build",
     "start": "node ./bin/jupyter-dashboards-server",
-    "start-debug": "node-inspector & node --debug-brk ./bin/jupyter-dashboards-server",
+    "start-debug": "node-inspector & node --debug ./bin/jupyter-dashboards-server",
+    "start-debug-brk": "node-inspector & node --debug-brk ./bin/jupyter-dashboards-server",
     "start-logging": "DEBUG=express:*,dashboard-proxy:* node ./bin/jupyter-dashboards-server",
     "test": "mocha test/base/**/*-test.js",
     "integration-test": "mocha test/integration/default/**/*-test.js",

@@ -26,23 +26,25 @@ if(config.get('help')) {
     process.exit(0);
 }
 
-// PREFIX_URL modifiers
-var prefix_url = config.get('PREFIX_URL');
-if (!prefix_url) {
-   config.set('PREFIX_URL', '/');
-} else {
-   var lastChar = prefix_url.substr(-1);
-   if (lastChar !== '/') {
-      prefix_url = prefix_url + '/';
-      config.set('PREFIX_URL', prefix_url);
-   }
+// BASE_URL
+var baseUrl = config.get('BASE_URL');
+if (baseUrl) {
+    var lastChar = baseUrl.substr(-1);
+    if (baseUrl[0] === '[' && lastChar === ']') {
+        baseUrl = baseUrl.slice(1, -1);
+        lastChar = baseUrl.substr(-1);
+        config.set('REMOVE_PREFIX', true);
+    }
+    if (lastChar !== '/') {
+        baseUrl = baseUrl + '/';
+    }
+    config.set('BASE_URL', baseUrl);
 }
 
-var publicLink = config.get('PUBLIC_LINK_PATTERN');
-if (prefix_url) {
-   publicLink = urljoin(publicLink , prefix_url);
+var trustProxy = config.get('TRUST_PROXY');
+if (!trustProxy) {
+    config.set('TRUST_PROXY', false);
 }
-config.set('PUBLIC_LINK_PATTERN', publicLink);
 
 // Shortcut to set local auth strategy with a shared username/password.
 // Validation of username/password happens in the auth-local module since it's

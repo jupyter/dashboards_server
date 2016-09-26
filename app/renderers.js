@@ -21,7 +21,8 @@ var DB_INDEX_DIR = config.get('DB_INDEX_DIR');
 var DB_EXT = config.get('DB_FILE_EXT');
 var NO_LAYOUT = 'no-layout';
 
-var prefixUrl = config.get('PREFIX_URL');
+var baseUrl = config.get('BASE_URL');
+var removePrefix = config.get('REMOVE_PREFIX');
 
 function _renderList(req, res, next) {
     var listPath = req.params[0] || '';
@@ -67,7 +68,7 @@ function _renderList(req, res, next) {
                         items: values,
                         title: 'Dashboards',
                         url: req.params[0],
-                        prefixUrl: prefixUrl
+                        baseUrl: baseUrl
                     });
                 },
                 function failure(err) {
@@ -103,10 +104,10 @@ function _renderDashboard(req, res, next, opts) {
                 hideChrome: hideChrome,
                 supportsDeclWidgets: stats.supportsDeclWidgets,
                 activeView: activeView,
-                prefixUrl: prefixUrl,
+                baseUrl: baseUrl,
                 // need to set document.baseURI with trailing slash
                 // (i.e. "/dashboards/nb/") so relative paths load correctly
-                baseURI: urljoin(req.originalUrl, '/')
+                documentBaseURI: urljoin(removePrefix ? baseUrl : '', req.originalUrl, '/')
             });
         })
         .catch(function error(err) {
