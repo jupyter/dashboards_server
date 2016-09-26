@@ -88,6 +88,20 @@ make examples
 make demo-container
 ```
 
+### Run behind proxy
+
+The dashboards server can be run behind a reverse proxy. In order to do so, you will need to set the following options in **config.json**:
+
+* `TRUST_PROXY` - The simple option is to just set this to `true`. However, if you require further configuration on which requests to trust, this option can also take values as specified by the [Express documentation](https://expressjs.com/en/guide/behind-proxies.html).
+* `BASE_URL` - Specify the base URL (prefix) at which the dashboards server will run. The server supports two options here:
+    * **Pass prefix along** - If the proxy will pass along requests with the prefix base URL, specify a simple path value for `BASE_URL`:
+
+            BASE_URL: "/db"   # will allow proxying of "http://proxy_host/db/..." to "http://dashboards_host/db/..."
+
+    * **Strip out prefix** - If the proxy will remove the prefix from the requests, specify the path wrapped with brackets (`[]`):
+
+            BASE_URL: "[/db]" # will allow proxying of "http://proxy_host/db/..." to "http://dashboards_host/..."
+
 ## Develop It
 
 To setup a development environment, install these minimum versions on your host machine.

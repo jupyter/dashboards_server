@@ -31,7 +31,7 @@ if (baseUrl) {
     // `baseUrl` is guaranteed to end in `/`
     notebookPathRe = new RegExp('^' + (baseUrl || '/') + '(?:dashboards(-plain)?)?(/.*)$');
 } else {
-    notebookPathRe = new RegExp('^/(?:dashboards(-plain)?)?(.*)$');
+    notebookPathRe = new RegExp('^/(?:dashboards(-plain)?)?(/.*)$');
 }
 
 // Create the proxy server instance. Don't bother to configure SSL here because
