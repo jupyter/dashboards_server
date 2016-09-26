@@ -29,7 +29,7 @@
 
     // Set when running this server behind a proxy. Passed directly to Express. Possible values
     // can be found here: https://expressjs.com/en/guide/behind-proxies.html
-    TRUST_PROXY: true
+    //TRUST_PROXY: true
 
     // Base URL pattern for building public link for an uploaded notebook.
     // Supports placeholder strings (values come from request host header):
