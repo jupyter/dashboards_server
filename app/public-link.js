@@ -2,9 +2,14 @@
  * Copyright (c) Jupyter Development Team.
  * Distributed under the terms of the Modified BSD License.
  */
+var config = require('./config');
+
 var PROTOCOL = /\{protocol\}/g;
 var HOST = /\{host\}/g;
 var PORT = /\{port\}/g;
+var BASE_URL = /\{baseUrl\}/g;
+
+var baseUrl = config.get('BASE_URL');
 
 /**
  * Generates a base URL that can be used to build public links. Uses a pattern, such as that
@@ -36,6 +41,7 @@ module.exports = function(req, pattern) {
         return pattern
             .replace(PROTOCOL, protocol)
             .replace(HOST, host)
-            .replace(PORT, port);
+            .replace(PORT, port)
+            .replace(BASE_URL, baseUrl);
     }
 };

@@ -2,6 +2,7 @@
  * Copyright (c) Jupyter Development Team.
  * Distributed under the terms of the Modified BSD License.
  */
+var config = require('../app/config');
 var debug = require('debug')('dashboard-proxy:server');
 var error = require('debug')('dashboard-proxy:server:error');
 var EventEmitter = require('events').EventEmitter;
@@ -43,6 +44,11 @@ function WsRewriter(args) {
     this._headers = args.headers;
     this._requestOptions = args.requestOptions;
     this._sessionToNbPath = args.sessionToNbPath;
+
+    var baseUrl = config.get('BASE_URL');
+    if (baseUrl) {
+        this._reBaseUrl = new RegExp('^' + baseUrl);
+    }
 
     // create a websocket server which will listen for requests coming from the client/browser
     var wsserver = new WebSocketServer({
@@ -108,7 +114,11 @@ WsRewriter.prototype._handleWsRequest = function(req) {
     });
 
     // kick off connection to kernel gateway WS
-    var url = urljoin(this._host, this._basePath, req.resourceURL.path).replace(/^http/, 'ws');
+
+    var reqPath = this._reBaseUrl ?
+            req.resourceURL.path.replace(this._reBaseUrl, '/') : // remove dashboard server's base URL
+            req.resourceURL.path;
+    var url = urljoin(this._host, this._basePath, reqPath).replace(/^http/, 'ws');
     wsclient.connect(url, null, null, this._headers, this._requestOptions);
 
     this.emit('request', req, servConn);

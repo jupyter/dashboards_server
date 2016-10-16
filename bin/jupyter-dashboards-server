@@ -35,7 +35,7 @@ if (config.get('SSL_OPTIONS')) {
     server = https.createServer(options, app).listen(https_port, ip);
 
     http.createServer(function (req, res) {
-        var url_location = "https://" + req.headers['host'].split(":")[0] + ":" + https_port + req.url;
+        var url_location = "https://" + req.headers.host.split(":")[0] + ":" + https_port + req.url;
         res.writeHead(301, { "Location": url_location});
         res.end();
     }).listen(port, ip);
@@ -81,9 +81,9 @@ function onError(error) {
     throw error;
   }
 
-  var bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
+  var bind = typeof port === 'string' ?
+             'Pipe ' + port :
+             'Port ' + port;
 
   // handle specific listen errors with friendly messages
   switch (error.code) {
@@ -106,8 +106,8 @@ function onError(error) {
 
 function onListening() {
   var addr = server.address();
-  var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : addr.address + ':' + addr.port;
+  var bind = typeof addr === 'string' ?
+             'pipe ' + addr :
+             addr.address + ':' + addr.port + (config.get('BASE_URL') || '');
   console.log('Jupyter dashboard server listening on ' + bind);
 }

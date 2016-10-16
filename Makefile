@@ -16,6 +16,9 @@ HTTP_PORT?=3000
 HTTPS_PORT?=3001
 TEST_CONTAINER_NAME:=$(DASHBOARD_CONTAINER_NAME)-test
 TEST_IMAGE_NAME:=jupyter-incubator/$(TEST_CONTAINER_NAME)
+PROXY_CONTAINER_NAME:=reverse-proxy
+PROXY_IMAGE_NAME:=nginx:alpine
+PROXY_PUBLIC_PORT:=8080
 
 help:
 # http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
@@ -51,7 +54,7 @@ build: images
 
 define KILL
 @echo '-- Removing Docker containers'
-@-docker rm -f $(DASHBOARD_CONTAINER_NAME) $(KG_CONTAINER_NAME) $(TEST_CONTAINER_NAME) 2> /dev/null || true
+@-docker rm -f $(DASHBOARD_CONTAINER_NAME) $(KG_CONTAINER_NAME) $(TEST_CONTAINER_NAME) $(PROXY_CONTAINER_NAME) 2> /dev/null || true
 endef
 
 kill: ## Kill all running docker containers
@@ -62,16 +65,16 @@ kill: ## Kill all running docker containers
 dev-install: ## Install all dev deps on localhost
 	npm install --quiet
 
-dev: KG_PUBLIC_IP?=$$(docker-machine ip $$(docker-machine active))
+dev: KG_PUBLIC_IP?=localhost
 dev: kernel-gateway-container ## Run dashobard server on localhost
 	NODE_ENV='development' KG_BASE_URL=$(KG_BASE_URL) KERNEL_GATEWAY_URL=http://$(KG_PUBLIC_IP):$(KG_PUBLIC_PORT) gulp
 
-dev-logging: KG_PUBLIC_IP?=$$(docker-machine ip $$(docker-machine active))
+dev-logging: KG_PUBLIC_IP?=localhost
 dev-logging: kernel-gateway-container ## Run dashboard server with debug logging on localhost
 	NODE_ENV='development' gulp build
 	KERNEL_GATEWAY_URL=http://$(KG_PUBLIC_IP):$(KG_PUBLIC_PORT) npm run start-logging
 
-dev-debug: KG_PUBLIC_IP?=$$(docker-machine ip $$(docker-machine active))
+dev-debug: KG_PUBLIC_IP?=localhost
 dev-debug: kernel-gateway-container ## Run dashboard server with node debugger on localhost
 	NODE_ENV='development' KG_BASE_URL=$(KG_BASE_URL) KERNEL_GATEWAY_URL=http://$(KG_PUBLIC_IP):$(KG_PUBLIC_PORT) gulp debug
 
@@ -128,11 +131,27 @@ demo-container: | build kernel-gateway-container ## Run dashboard server in a do
 	--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
 	$(DASHBOARD_IMAGE_NAME) $(CMD)
 
-debug-container: CMD=start-debug
-debug-container: demo-container ## Run dashboard server with debug logging in a docker container
+debug-container: CMD=start-debug-brk
+debug-container: demo-container ## Run dashboard server with node debugger in a docker container (debugger at http://127.0.0.1:9711/?port=5858)
 
 logging-container: CMD=start-logging
-logging-container: demo-container ## Run dashboard server with node debugger in a docker container
+logging-container: demo-container ## Run dashboard server with debug logging in a docker container
+
+proxy-container: | build kernel-gateway-container ## Run dashboard behind a reverse proxy
+	@echo '-- Starting dashboard server container'
+	$(DASHBOARD_SERVER) -d \
+		-e KERNEL_GATEWAY_URL=http://$(KG_CONTAINER_NAME):8888 \
+		-e KG_AUTH_TOKEN=$(KG_AUTH_TOKEN) \
+		-e KG_BASE_URL=$(KG_BASE_URL) \
+		--link $(KG_CONTAINER_NAME):$(KG_CONTAINER_NAME) \
+		$(DASHBOARD_IMAGE_NAME) start-debug
+	@echo '-- Starting reverse proxy container'
+	@docker run -d \
+		--name $(PROXY_CONTAINER_NAME) \
+		-p $(PROXY_PUBLIC_PORT):80 \
+		-v `pwd`/etc/nginx/nginx.vh.default.conf:/etc/nginx/conf.d/default.conf:ro \
+		--link $(DASHBOARD_CONTAINER_NAME):dashboards_server \
+		$(PROXY_IMAGE_NAME)
 
 ############### Unit and integration tests
 

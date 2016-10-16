@@ -8,9 +8,9 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width">
         <title>{{title }}</title>
-        <link rel="stylesheet" href="/css/style.css">
-        {{#if baseURI}}
-            <base href="{{baseURI}}">
+        <link rel="stylesheet" href="{{urlJoin baseUrl '/css/style.css'}}">
+        {{#if documentBaseURI}}
+            <base href="{{documentBaseURI}}">
         {{/if}}
     </head>
     <body>

@@ -10,11 +10,15 @@ var gulp = require('gulp'),
     webpack = require('webpack'),
     gutil = require('gulp-util'),
     merge = require('merge-stream'),
-    expect = require('gulp-expect-file');
+    expect = require('gulp-expect-file'),
+    config = require('./app/config'),
+    urljoin = require('url-join');
 
 // default to 'production' if not set
 var NODE_ENV = process.env.NODE_ENV && process.env.NODE_ENV.toLowerCase() === 'development' ?
         'development' : 'production';
+
+var baseUrl = config.get('BASE_URL') || '/';
 
 var webpackStatsOptions = {
     colors: gutil.colors.supportsColor,
@@ -59,7 +63,7 @@ var webpackConfig = {
     output: {
         filename: '[name].js',
         path: './public/components',
-        publicPath: '/components/'
+        publicPath: urljoin(baseUrl, '/components/')
     }
 };
 
@@ -119,7 +123,11 @@ gulp.task('copy:components', function() {
 gulp.task('less', function () {
     gulp.src('./client/less/style.less')
         .pipe(plumber())
-        .pipe(less())
+        .pipe(less({
+            globalVars: {
+                BASE_URL: '"' + baseUrl + '"'
+            }
+        }))
         .pipe(gulp.dest('./public/css'));
 });
 
@@ -130,7 +138,7 @@ gulp.task('watch', function() {
 
 var nodemonOptions = {
     script: 'bin/jupyter-dashboards-server',
-    ext: 'js handlebars coffee',
+    ext: 'js handlebars json',
     stdout: false,
     ignore: ['data/*']
 };
@@ -143,7 +151,7 @@ gulp.task('develop', ['build'], function () {
 });
 
 gulp.task('debug-option', function() {
-    nodemonOptions.exec = 'node-inspector --no-preload & node --debug';
+    nodemonOptions.exec = 'node-inspector --no-preload & node --debug-brk';
 });
 
 gulp.task('open-debug-tab', function() {
