@@ -8,6 +8,7 @@
  * https://github.com/jupyter-incubator/dashboards_server/wiki/Authentication
  * for details.
  */
+var url = require('url');
 var config = require('./config');
 var passport = require('passport');
 var Auth0Strategy = require('passport-auth0');
@@ -18,7 +19,7 @@ module.exports = function(app) {
         passport.authenticate('auth0', { failureRedirect: '/login' }),
         function(req, res) {
             if (!req.user) {
-                throw new Error('user null');
+                throw new Error('User name must be set');
             }
             res.redirect("/");
         }
@@ -31,7 +32,16 @@ module.exports = function(app) {
 
     app.post('/logout', function(req, res){
         req.logout();
-        res.redirect('https://' + config.get('AUTH0_DOMAIN') + '/v2/logout?returnTo=' + config.get('PUBLIC_LINK_PATTERN') + '&client_id=' + config.get('AUTH0_CLIENT_ID'));
+        var logout_obj_url = {
+            host: config.get('AUTH0_DOMAIN'),
+            pathname: '/v2/logout',
+            query: {
+                'returnTo': config.get('PUBLIC_LINK_PATTERN'),
+                'client_id': config.get('AUTH0_CLIENT_ID'),
+            }
+        };
+        var logout_url = url.format(logout_obj_url);
+        res.redirect(logout_url);
     });
 
     var strategy = new Auth0Strategy({
