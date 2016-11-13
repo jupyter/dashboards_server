@@ -41,14 +41,16 @@ describe('dashboard with widgets', function() {
             .goto(getUrl)
             .wait('.widget-hslider')
             .end()
-            .then(done);
+            .then(done)
+            .catch(done);
     });
     it('should contain declarative widgets', function(done) {
         nightmare
             .goto(getUrl)
             .wait('urth-core-channel')
             .end()
-            .then(done);
+            .then(done)
+            .catch(done);
     });
     it('should interact with declarative widget', function(done) {
         var input = 'urth-core-function ~ input';
@@ -57,17 +59,19 @@ describe('dashboard with widgets', function() {
             .goto(getUrl)
             .wait(function(sel) {
                 // wait for the initial input value to be programatically set
-                return document.querySelector(sel).value === 'world';
+                var node = document.querySelector(sel);
+                return node ? node.value === 'world' : false;
             }, input)
             .insert(input)
             .insert(input, inputValue)
             .click('.invoke-btn')
             .wait(function(value) {
                 // wait for the widget label to update with the input value
-                return document.querySelector('#test1').textContent ===
-                    'Hello ' + value + '!';
+                var node = document.querySelector('#test1');
+                return node ? (node.textContent === 'Hello ' + value + '!') : false;
             }, inputValue)
             .end()
-            .then(done);
+            .then(done)
+            .catch(done);
     });
 });
