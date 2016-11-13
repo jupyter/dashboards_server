@@ -1,54 +1,69 @@
-[![Build Status](https://travis-ci.org/jupyter-incubator/dashboards_server.svg?branch=master)](https://travis-ci.org/jupyter-incubator/dashboards_server) [![Google Group](https://img.shields.io/badge/-Google%20Group-lightgrey.svg)](https://groups.google.com/forum/#!forum/jupyter)
+[![npm version](https://img.shields.io/npm/v/jupyter-dashboards-server.svg)](https://www.npmjs.com/package/jupyter-dashboards-server)
+[![Build
+Status](https://travis-ci.org/jupyter-incubator/dashboards_server.svg?branch=master)](https://travis-ci.org/jupyter-incubator/dashboards_server)
+[![Google
+Group](https://img.shields.io/badge/-Google%20Group-lightgrey.svg)](https://groups.google.com/forum/#!forum/jupyter)
 
 # Jupyter Dashboards Server
 
-A NodeJS application that can display Jupyter notebooks as dynamic dashboards outside of the Jupyter Notebook server.
+A NodeJS application that can display Jupyter notebooks as dynamic dashboards
+outside of the Jupyter Notebook server.
 
 ![Dashboards server screenshot](etc/server_intro.png)
 
 The Jupyter Incubator Dashboards effort covers:
 
-1. Arranging notebook outputs in a grid- or report-like layout 
-2. Bundling notebooks and associated assets for deployment as dashboards 
+1. Arranging notebook outputs in a grid- or report-like layout
+2. Bundling notebooks and associated assets for deployment as dashboards
 3. Serving notebook-defined dashboards as standalone web apps
 
-This repository focuses on (3) above, while [jupyter-incubator/dashboards](https://github.com/jupyter-incubator/dashboards) handles (1) and [jupyter-incubator/dashboards_bundlers](https://github.com/jupyter-incubator/dashboards_bundlers) implements (2).
+This repository focuses on (3) above, while
+[jupyter-incubator/dashboards](https://github.com/jupyter-incubator/dashboards)
+handles (1) and
+[jupyter-incubator/dashboards_bundlers](https://github.com/jupyter-incubator/dashboards_bundlers)
+implements (2).
 
-See https://github.com/jupyter-incubator/dashboards/wiki for an overview of the entire dashboards effort.
+See https://github.com/jupyter-incubator/dashboards/wiki for an overview of the entire dashboard incubation effort.
 
 ## What it Gives You
 
-* Ability to run a Jupyter Notebook with [layout metadata](https://github.com/jupyter-incubator/dashboards) as a standalone dashboard application
-* Ability to navigate a list of multiple notebooks and select one to run as a dashboards
+* Ability to run **some** Jupyter notebooks as standalone dashboard applications
+* Ability to navigate a list of multiple notebooks and select one to run as a
+  dashboard
 * Optional shared login to secure access to the dashboard server
-* Ability to add custom authentication mechanisms using the [Passport](http://passportjs.org/) middleware for Node.js
-* API for POSTing notebooks to the server at runtime with optional authentication (`/_api/notebooks`)
+* Ability to add custom authentication mechanisms using the
+  [Passport](http://passportjs.org/) middleware for Node.js
+* An API for POSTing notebooks to the server at runtime with optional
+  authentication (`/_api/notebooks`)
 
-The behavior of the application is similar to that of [Thebe](https://github.com/oreillymedia/thebe), but with some key technical differences:
-
-* The notebook code is visible only in the NodeJS application backend.
-* The NodeJS backend is the only actor that can send notebook code to a kernel for execution.
-* The browser client can only send [Jupyter comm messages](http://jupyter-client.readthedocs.org/en/latest/messaging.html#opening-a-comm) to kernels (*not* arbitrary code).
-* The application uses the [jupyter-js-services](https://github.com/jupyter/jupyter-js-services) and [jupyter-js-widgets](https://github.com/ipython/ipywidgets/tree/master/jupyter-js-widgets) libraries for communication with kernels.
-
-The following libraries are known to work with the dashboard server:
+The qualification in the first bullet stems from the fact that supporting
+one-click deploy of notebooks with arbitrary JavaScript and kernel dependencies
+is a "Really Hard Problem." We've invested effort in getting these dashboard,
+visualization, and widget libraries working in the dashboard server.
 
 * jupyter_dashboards 0.6.x
 * jupyter_dashboards_bundlers 0.8.x
-* ipywidgets 5.1.5+
+* ipywidgets 5.2.x
 * jupyter_declarativewidgets 0.6.x
+* matplotlib 1.5.x
 * Bokeh 0.11.x
 * Plotly 1.9.x
 
+If you try another library and find that it does not work in the dashboard
+server, see the wiki page about [Widget Support](https://github.com/jupyter-incubator/dashboards_server/wiki/Authentication) below for steps
+you might take to resolve the problem.
+
 ## Install it
 
-Install Node 5.x and npm 3.5.x. Then install the dashboard server using `npm`.
+Install Node 5.x and npm 3.5.x. Use `npm` to install the
+`jupyter-dashboards-server` package.
 
 ```
 npm install -g jupyter-dashboards-server
 ```
 
-You can then run the dashboard server from the command line. See the next section about how to install and configure the other prerequisite components.
+You can then run the dashboard server from the command line. See the next
+section about how to install and configure the other prerequisite components.
 
 ```
 # shows a list of all nconf options
@@ -67,9 +82,13 @@ jupyter-dashboards-server --KERNEL_GATEWAY_URL=http://my.gateway.com/
 The dashboard server is meant to enable the following workflow:
 
 1. Alice authors a notebook document using Jupyter Notebook.
-2. Alice adds a dashboard layout to her notebook using the `jupyter_dashboards` extension.
-3. Alice [associates required frontend assets](https://github.com/jupyter-incubator/contentmanagement/blob/master/etc/notebooks/associations_demo/associations_demo.ipynb) with her notebook.
-4. Alice one-click deploys her notebook and associated assets to a `jupyter_dashboards_server` using `jupyter_dashboards_bundlers`.
+2. Alice adds a dashboard layout to her notebook using the `jupyter_dashboards`
+   extension.
+3. Alice [associates required frontend
+   assets](https://github.com/jupyter-incubator/contentmanagement/blob/master/etc/notebooks/associations_demo/associations_demo.ipynb)
+   with her notebook.
+4. Alice one-click deploys her notebook and associated assets to a
+   `jupyter_dashboards_server` using `jupyter_dashboards_bundlers`.
 5. Bob visits the dashboards server.
 6. Bob interacts with Alice's notebook as a dashboard.
 7. Alice updates her notebook and redeploys it to the dashboards server.
@@ -78,9 +97,16 @@ This workflow requires multiple components working in concert.
 
 ![Minimal dashboard app deployment diagram](etc/simple_deploy.png)
 
-To bring all of these pieces together, you can start with the [recipes in the jupyter-incubator/dashboards_setup repo](https://github.com/jupyter-incubator/dashboards_setup). (We'll gladly take PRs that reduce the complexity of getting everything set up!)
+To bring all of these pieces together, you can start with the [recipes in the
+jupyter-incubator/dashboards_setup
+repo](https://github.com/jupyter-incubator/dashboards_setup). (We'll gladly take
+PRs that reduce the complexity of getting everything set up!)
 
-Alternatively, you can clone this git repository and build the Docker images we use for development in order to run the demos in `etc/notebooks`. After setting up Docker (e.g. using [docker-machine](https://docs.docker.com/machine/get-started/)), run the following and then visit `http://<your docker host ip>:3000`.
+Alternatively, you can clone this git repository and build the Docker images we
+use for development in order to run the demos in `etc/notebooks`. After setting
+up Docker (e.g. using
+[docker-machine](https://docs.docker.com/machine/get-started/)), run the
+following and then visit `http://<your docker host ip>:3000`.
 
 ```
 make build
@@ -88,19 +114,28 @@ make examples
 make demo-container
 ```
 
-### Run behind proxy
+### Run Behind a Proxy
 
-The dashboards server can be run behind a reverse proxy. In order to do so, you will need to set the following options in **config.json**:
+The dashboards server can be run behind a reverse proxy. In order to do so, you
+will need to set the following options as command line args or in environment vars.
 
-* `TRUST_PROXY` - The simple option is to just set this to `true`. However, if you require further configuration on which requests to trust, this option can also take values as specified by the [Express documentation](https://expressjs.com/en/guide/behind-proxies.html).
-* `BASE_URL` - Specify the base URL (prefix) at which the dashboards server will run. The server supports two options here:
-    * **Pass prefix along** - If the proxy will pass along requests with the prefix base URL, specify a simple path value for `BASE_URL`:
+* `TRUST_PROXY` - The simple option is to just set this to `true`. However, if
+  you require further configuration on which requests to trust, this option can
+  also take values as specified by the [Express
+  documentation](https://expressjs.com/en/guide/behind-proxies.html).
+* `BASE_URL` - Specify the base URL (prefix) at which the dashboards server will
+  run. The server supports two options here: passing the prefix along with the
+  request or stripping the prefix off the request.
 
-            BASE_URL: "/db"   # will allow proxying of "http://proxy_host/db/..." to "http://dashboards_host/db/..."
+For example:
 
-    * **Strip out prefix** - If the proxy will remove the prefix from the requests, specify the path wrapped with brackets (`[]`):
+```bash
+# allow proxying of "http://proxy_host/db/..." to "http://dashboards_host/db/..."
+jupyter-dashboards-server --TRUST_PROXY=true --BASE_URL=/db --KERNEL_GATEWAY_URL=http://my.gateway.com/
 
-            BASE_URL: "[/db]" # will allow proxying of "http://proxy_host/db/..." to "http://dashboards_host/..."
+# allow proxying of "http://proxy_host/db/..." to "http://dashboards_host/..."
+jupyter-dashboards-server --TRUST_PROXY=true --BASE_URL='[/db]' --KERNEL_GATEWAY_URL=http://my.gateway.com/
+```
 
 ## Develop It
 
@@ -110,7 +145,6 @@ To setup a development environment, install these minimum versions on your host 
 * npm 3.5.3
 * gulp 3.9.0
 * Docker 1.9.1
-* Docker Machine 0.5.6
 
 With these installed, you can use the `make dev-*` targets. Run `make help` to see the full gamut of targets and options. See the next few sections for the most common patterns.
 
@@ -181,8 +215,11 @@ make integration-test
 make install-test
 ```
 
-## Detailed Developer Documentation
+## Technical Details
 
-* [Server API](https://github.com/jupyter-incubator/dashboards_server/wiki/Server-API) - server endpoints
-    * Also contains information about **bundled dashboards** (allowing specification of external resources).
+See the wiki associated with this project for additional technical details about the project including:
+
+* [Server API](https://github.com/jupyter-incubator/dashboards_server/wiki/Server-API) - server endpoints and information about **bundled dashboards**
 * [Authentication](https://github.com/jupyter-incubator/dashboards_server/wiki/Authentication) - examples of integrating 3rd-party authentication strategies
+* [Relation to Thebe](https://github.com/jupyter-incubator/dashboards_server/wiki/Relation-to-Thebe) - how the dashboard server differs from [Thebe](https://github.com/oreillymedia/thebe)
+
