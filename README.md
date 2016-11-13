@@ -50,8 +50,9 @@ visualization, and widget libraries working in the dashboard server.
 * Plotly 1.9.x
 
 If you try another library and find that it does not work in the dashboard
-server, see the wiki page about [Widget Support](https://github.com/jupyter-incubator/dashboards_server/wiki/Authentication) below for steps
-you might take to resolve the problem.
+server, see the wiki page about [Widget
+Support](https://github.com/jupyter-incubator/dashboards_server/wiki/Authentication)
+below for steps you might take to resolve the problem.
 
 ## Install it
 
@@ -79,21 +80,10 @@ jupyter-dashboards-server --KERNEL_GATEWAY_URL=http://my.gateway.com/
 
 ## Run It
 
-The dashboard server is meant to enable the following workflow:
-
-1. Alice authors a notebook document using Jupyter Notebook.
-2. Alice adds a dashboard layout to her notebook using the `jupyter_dashboards`
-   extension.
-3. Alice [associates required frontend
-   assets](https://github.com/jupyter-incubator/contentmanagement/blob/master/etc/notebooks/associations_demo/associations_demo.ipynb)
-   with her notebook.
-4. Alice one-click deploys her notebook and associated assets to a
-   `jupyter_dashboards_server` using `jupyter_dashboards_bundlers`.
-5. Bob visits the dashboards server.
-6. Bob interacts with Alice's notebook as a dashboard.
-7. Alice updates her notebook and redeploys it to the dashboards server.
-
-This workflow requires multiple components working in concert.
+The dashboard server is meant to support the [layout-bundler-deploy
+workflow](https://github.com/jupyter-incubator/dashboards/wiki)
+described on the project overview page. This workflow requires multiple
+components working in concert.
 
 ![Minimal dashboard app deployment diagram](etc/simple_deploy.png)
 
@@ -217,9 +207,4 @@ make install-test
 
 ## Technical Details
 
-See the wiki associated with this project for additional technical details about the project including:
-
-* [Server API](https://github.com/jupyter-incubator/dashboards_server/wiki/Server-API) - server endpoints and information about **bundled dashboards**
-* [Authentication](https://github.com/jupyter-incubator/dashboards_server/wiki/Authentication) - examples of integrating 3rd-party authentication strategies
-* [Relation to Thebe](https://github.com/jupyter-incubator/dashboards_server/wiki/Relation-to-Thebe) - how the dashboard server differs from [Thebe](https://github.com/oreillymedia/thebe)
-
+See the [wiki attached to this project](https://github.com/jupyter-incubator/dashboards_server/wiki) for additional technical details including the server API, authentication plugins, adding support for new widgets, and more.
