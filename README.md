@@ -51,7 +51,7 @@ visualization, and widget libraries working in the dashboard server.
 
 If you try another library and find that it does not work in the dashboard
 server, see the wiki page about [Widget
-Support](https://github.com/jupyter-incubator/dashboards_server/wiki/Authentication)
+Support](https://github.com/jupyter-incubator/dashboards_server/wiki/Widget-Support)
 below for steps you might take to resolve the problem.
 
 ## Install it
