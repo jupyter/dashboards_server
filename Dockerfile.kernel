@@ -5,7 +5,7 @@ FROM jupyter/all-spark-notebook:8015c88c4b11
 
 # Collection versions in one place. Would like to use ARG, but docker verison on
 # travis does not yet support it.
-ENV KERNEL_GATEWAY_VER=0.5.0
+ENV KERNEL_GATEWAY_VER=1.1.*
 ENV IPYWIDGETS_VER=5.2.2
 ENV DECLWIDGETS_VER=0.7.*
 
