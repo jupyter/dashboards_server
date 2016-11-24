@@ -27,7 +27,7 @@ See https://github.com/jupyter-incubator/dashboards/wiki for an overview of the 
 
 ## What it Gives You
 
-* Ability to run **some** Jupyter notebooks as standalone dashboard applications
+* Ability to run **some** Jupyter notebooks as standalone dashboard applications [1]
 * Ability to navigate a list of multiple notebooks and select one to run as a
   dashboard
 * Optional shared login to secure access to the dashboard server
@@ -36,7 +36,7 @@ See https://github.com/jupyter-incubator/dashboards/wiki for an overview of the 
 * An API for POSTing notebooks to the server at runtime with optional
   authentication (`/_api/notebooks`)
 
-The qualification in the first bullet stems from the fact that supporting
+The qualification in [1] stems from the fact that supporting
 one-click deploy of notebooks with arbitrary JavaScript and kernel dependencies
 is a "Really Hard Problem." We've invested effort in getting these dashboard,
 visualization, and widget libraries working in the dashboard server.
