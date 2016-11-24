@@ -13,8 +13,9 @@
   },
   "preferGlobal": true,
   "bin": {
-    "jupyter-dashboards-server": "./bin/jupyter-dashboards-server"
-  },
+    "jupyter-dashboards-server": "./bin/jupyter-dashboards-server",
+    "jupyter-dashboards-admin": "./bin/jupyter-dashboards-admin"
+   },
   "scripts": {
     "build": "gulp build",
     "start": "node ./bin/jupyter-dashboards-server",
