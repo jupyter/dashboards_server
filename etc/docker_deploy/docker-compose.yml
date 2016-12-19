@@ -1,0 +1,44 @@
+version: "2"
+
+services:
+  notebook:
+    build:
+      context: .
+      dockerfile: Dockerfile.notebook
+    image: jupyter-box/notebook
+    ports:
+      - "8888:8888"
+    depends_on:
+      - dashboards
+    links:
+      - dashboards
+    environment:
+        DASHBOARD_REDIRECT_URL: http://{hostname}:3000/
+        DASHBOARD_SERVER_URL: http://dashboards:3000/
+        DASHBOARD_SERVER_AUTH_TOKEN: notebook_to_dashboard_secret
+
+  dashboards:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboards
+    image: jupyter-box/dashboards
+    ports:
+      - "3000:3000"
+    depends_on:
+      - kernel_gateway
+    links:
+      - kernel_gateway
+    environment:
+      PORT: 3000
+      KERNEL_GATEWAY_URL: http://kernel_gateway:8888
+      AUTH_TOKEN: notebook_to_dashboard_secret
+      USERNAME: demo
+      PASSWORD: demo
+
+  kernel_gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.kernel
+    image: jupyter-box/kernel_gateway
+    environment:
+      KG_ALLOW_ORIGIN: '*'
