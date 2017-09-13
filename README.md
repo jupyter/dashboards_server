@@ -4,7 +4,11 @@ Status](https://travis-ci.org/jupyter-incubator/dashboards_server.svg?branch=mas
 [![Google
 Group](https://img.shields.io/badge/-Google%20Group-lightgrey.svg)](https://groups.google.com/forum/#!forum/jupyter)
 
-# Jupyter Dashboards Server
+# [RETIRED] Jupyter Dashboards Server
+
+**This project has been retired.** See the [proposal to move the project to jupyter-attic](https://github.com/jupyter/enhancement-proposals/blob/master/jupyter-dashboards-deployment-attic/jupyter-dashboards-deployment-attic.md), [announcement of the proposal on the mailing list](https://groups.google.com/forum/#!topic/jupyter/icEtCVLniRc), and [Steering Council vote on the proposal PR](https://github.com/jupyter/enhancement-proposals/pull/22) for more information.
+
+----
 
 A NodeJS application that can display Jupyter notebooks as dynamic dashboards
 outside of the Jupyter Notebook server.
