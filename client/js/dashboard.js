@@ -7,11 +7,12 @@
 
 var $ = require('jquery');
 var AnsiParser = require('ansi-parser');
-var Services = require('jupyter-js-services');
+var defaultSanitizer = require('jupyterlab/lib/sanitizer').defaultSanitizer;
 var OutputArea = require('jupyterlab/lib/notebook/output-area');
 var RenderMime = require('jupyterlab/lib/rendermime').RenderMime;
 var renderers = require('jupyterlab/lib/renderers');
-var PhWidget = require('phosphor-widget');
+var Services = require('jupyter-js-services');
+var PhWidget = require('phosphor/lib/ui/widget').Widget;
 
 var Widgets = require('jupyter-js-widgets');
 require('jquery-ui/themes/smoothness/jquery-ui.min.css');
@@ -24,6 +25,10 @@ var Layout = require('./layout');
 
 // ES6 Promise polyfill
 require('es6-promise').polyfill();
+
+// see src/renderers/index.ts in Jupyterlab
+var RENDERED_CLASS = 'jp-Rendered';
+var RENDERED_HTML = 'jp-Rendered-html';
 
 // Element.prototype.matches polyfill -- fixes widgets rendering issue in IE 11
 // See ipywidgets' embed-webpack.js
@@ -83,7 +88,7 @@ if (Element && !Element.prototype.matches) {
                 });
 
                 // attach the view to the cell dom node
-                view.attach(this);
+                PhWidget.attach(view, this);
 
                 // create the widget area and widget subarea dom structure used
                 // by ipywidgets in jupyter
@@ -146,16 +151,25 @@ if (Element && !Element.prototype.matches) {
             // NOTE: The HTMLRenderer doesn't work with current Safari versions -- inline JS scripts
             // don't load. This simple implementation works around it by using jQuery to add the
             // HTML to the DOM; this does run inline scripts.
-            {
-                mimetypes: ['text/html'],
-                render: function(mimetype, data) {
-                    var widget = new PhWidget.Widget();
-                    widget.onAfterAttach = function() {
-                        $(widget.node).html(data);
-                    };
+            (function() {
+                var r = new renderers.HTMLRenderer();
+                r.render = function(options) {
+                    // see src/renderers/index.ts in Jupyterlab
+                    var widget = new PhWidget();
+                    widget.addClass(RENDERED_HTML);
+                    widget.addClass(RENDERED_CLASS);
+                    var source = options.source;
+                    if (options.sanitizer) {
+                        source = options.sanitizer.sanitize(source);
+                    }
+                    $(widget.node).html(source);
+                    if (options.resolver) {
+                        renderers.resolveUrls(widget.node, options.resolver);
+                    }
                     return widget;
-                }
-            },
+                };
+                return r;
+            })(),
             new renderers.ImageRenderer(),
             new renderers.SVGRenderer(),
             new renderers.LatexRenderer(),
@@ -169,7 +183,11 @@ if (Element && !Element.prototype.matches) {
                 mimeMap[m] = t;
             });
         });
-        return new RenderMime(mimeMap, order);
+        return new RenderMime({
+            renderers: mimeMap,
+            order: order,
+            sanitizer: defaultSanitizer
+        });
     }
 
     // shim kernel object on notebook for backward compatibility
