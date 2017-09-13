@@ -164,6 +164,7 @@ dbserver.use(function(err, req, res, next) {
         stacktrace = err.stack;
         if (status >= 500 && status < 600) {
             console.log('STACK:', err.stack);
+            console.log('ERROR:', err);
         }
     }
 
