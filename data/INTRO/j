@@ -1,0 +1,164 @@
+
+# coding: utf-8
+
+# EqVol import
+# ===
+# 
+# This Jupyter Notebook defines a standard import pipeline for Equity Volatilities. It starts by defining the import pipeline steps:
+# - Load from excel
+# - Do core validations such as checking the correct columns are available. Basic sanity checks
+# - Roll any terms that fall off 7 days before maturity
+# - Roll any surfaces that are completely missing according to the calendar
+# - Extrapolate any holes in vol surfaces based on  https://rd.springer.com/article/10.1057/jdhf.2012.1 by regressing the following equation
+# \begin{align}
+# \sigma(K,T) & = \beta_1 + \beta_2K +\beta_3K^2 +\beta_4KT +\beta_5T \\
+# \end{align} with K the strike and T the term to maturity
+# - Lastly interpolate the import surface into a standard structure for the common database
+
+# In[370]:
+
+
+get_ipython().run_line_magic('reload_ext', 'autoreload')
+get_ipython().run_line_magic('autoreload', '2')
+
+
+# In[371]:
+
+
+from IPython.display import Javascript, display
+from ipywidgets import widgets
+def run_all(ev):
+    display(Javascript('IPython.notebook.execute_cells_below()'))
+
+button = widgets.Button(description="Create next input")
+button.on_click(run_all)
+display(button)
+
+
+# In[372]:
+
+
+import StandardBankPipeline as sbp
+import datetime
+from __future__ import print_function
+from ipywidgets import interact, interactive, fixed, interact_manual
+import ipywidgets as widgets
+from ipywidgets import Button, Layout
+import seaborn as sns
+
+print('Start')
+processPipeline = sbp.Pipeline()
+
+#Import pipeline
+#
+def evolimport():
+ processPipeline.Import.AddStep(sbp.CsvLoad())
+ processPipeline.Import.AddStep(sbp.CheckCoreVolValidations())
+#processPipeline.AddStep(sbp.FilterAsPerRole('VolGuy'))
+ processPipeline.Import.AddStep(sbp.Roll7DayTermDropoff())
+ processPipeline.Import.AddStep(sbp.FillHoles())
+#processPipeline.AddStep(sbp.LoadUserData('mydata.csv'))
+ processPipeline.Import.AddStep(sbp.ExportCsv('pre-interpolate.csv'))
+ processPipeline.Import.AddStep(sbp.InterpolateIntoStandardStructure([ 60, 70, 80, 90, 100, 110, 120, 130, 150],
+                                                                    [40, 70, 100, 200, 280, 380, 560, 740, 920, 1100]))
+ processPipeline.Import.AddStep(sbp.ExportCsv('finalx.csv'))
+ processPipeline.Import.AddStep(sbp.RollMissingCalendarDays(sbp.Calendars.SACalendar)) 
+ processPipeline.Import.AddStep(sbp.ExportCsv('final.csv'))
+
+# validations on Standardised data
+#
+ processPipeline.Validation.AddStep(sbp.DayOnDayMove(.01,0.05))
+#processPipeline.Validation.AddStep(sbp.MaxConsecutiveZeroMoveValidation(2)) # Catches more than one day of rolling data as well
+ processPipeline.Validation.AddStep(sbp.ExpectedRange(0.039,0.67))
+#processPipeline.Validation.AddStep(sbp.GraphVolSamples)
+#processPipeline.Validation.AddStep(sbp.VolImportSummary)
+
+# DB commit
+#
+ processPipeline.Commit.AddStep(sbp.SaveToSql('EqVolStandard'))
+ return processPipeline
+evolimport()
+
+
+# Execute the pipeline
+# ===
+# Load a specific file for a specific date. Review the logs as the pipeline executes.
+
+# In[373]:
+
+
+def Execute(self):
+ processPipeline.Import.Execute(importFile='voldata-small.csv',importDate=datetime.datetime.now())
+ return processPipeline
+buttons1 = Button(description="Execute the pipeline")
+a = buttons1.on_click(Execute)
+display(buttons1)
+print('display execpipeline')
+
+
+
+
+
+
+# Verify import details
+# ===
+# 
+# Double  check the import
+
+# In[374]:
+
+
+# moar investigation
+
+def Verify(self):
+ processPipeline.Validation.Execute()
+ return processPipeline
+
+
+buttons2 = Button(description="Verify import details")
+a = buttons2.on_click(Verify)
+display(buttons2)
+
+def exe(self):
+ i= processPipeline.argPool["df"][5:]
+ print(i)
+ return processPipeline
+
+
+buttons4 = Button(description="Verify import details")
+a = buttons4.on_click(exe)
+display(buttons4)
+
+
+
+
+# Commit
+# ===
+# 
+# Insert the data into the common database, only run this  if you're happy with the data and want to push it into the common standardised repository.
+# 
+
+# In[375]:
+
+
+
+def commit(self):
+    processPipeline.Commit.Execute(User='Caz1')
+    return
+
+buttons5 = Button(description="Commit")
+a = buttons5.on_click(commit)
+display(buttons5)
+
+
+
+
+
+# In[376]:
+
+
+print('commit end3')
+
+
+# Test validate
+# ===
